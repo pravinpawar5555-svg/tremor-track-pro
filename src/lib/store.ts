@@ -19,8 +19,10 @@ export interface Plant {
   customer: string;
   location: string;
   machines: number;
-  frequency: Frequency;
+  /** One or more report cycles agreed with the customer. */
+  frequencies: Frequency[];
   contact: string;
+  contactPhone: string;
   engineerId: string;
 }
 
@@ -30,9 +32,6 @@ export interface DailyUpdate {
   engineerId: string;
   plantId: string;
   machinesChecked: number;
-  trend: number;
-  kpi: number;
-  fft: number;
   abnormal: number;
   remark: string;
   submittedAt: string; // HH:MM
@@ -88,6 +87,21 @@ export const frequencyLabel: Record<Frequency, string> = {
   "on-demand": "On demand",
 };
 
+export const allFrequencies: Frequency[] = ["weekly", "monthly", "on-demand"];
+
+/** Report cycles for a plant, tolerant of older single-cycle records. */
+export function plantFrequencies(p: Plant): Frequency[] {
+  const list = (p as Plant & { frequency?: Frequency }).frequencies;
+  if (list?.length) return list;
+  const legacy = (p as Plant & { frequency?: Frequency }).frequency;
+  return legacy ? [legacy] : [];
+}
+
+export function frequencyText(p: Plant) {
+  const list = plantFrequencies(p);
+  return list.length ? list.map((f) => frequencyLabel[f]).join(" · ") : "—";
+}
+
 export const reportStatusLabel: Record<ReportStatus, string> = {
   pending: "Pending",
   prepared: "Prepared",
@@ -135,12 +149,12 @@ export function reportTiming(r: ReportRow, today = TODAY): { late: boolean; days
 
 function seed(): AppData {
   const plants: Plant[] = [
-    { id: "pl-1", name: "Tata Steel — Kalinganagar CPP", customer: "Tata Steel", location: "Jajpur, Odisha", machines: 42, frequency: "weekly", contact: "S. Mohanty", engineerId: "eng-1" },
-    { id: "pl-2", name: "Reliance — Jamnagar Utilities", customer: "Reliance Industries", location: "Jamnagar, Gujarat", machines: 36, frequency: "weekly", contact: "A. Trivedi", engineerId: "eng-2" },
-    { id: "pl-3", name: "UltraTech — Awarpur Line 2", customer: "UltraTech Cement", location: "Chandrapur, MH", machines: 28, frequency: "monthly", contact: "R. Kulkarni", engineerId: "eng-1" },
-    { id: "pl-4", name: "Hindalco — Renukoot Smelter", customer: "Hindalco", location: "Sonbhadra, UP", machines: 24, frequency: "monthly", contact: "V. Singh", engineerId: "eng-2" },
-    { id: "pl-5", name: "Grasim — Nagda Pulp", customer: "Grasim Industries", location: "Nagda, MP", machines: 18, frequency: "weekly", contact: "D. Jain", engineerId: "eng-1" },
-    { id: "pl-6", name: "Deepak Fertilisers — Taloja", customer: "Deepak Fertilisers", location: "Taloja, MH", machines: 15, frequency: "on-demand", contact: "N. Shetty", engineerId: "eng-2" },
+    { id: "pl-1", name: "Tata Steel — Kalinganagar CPP", customer: "Tata Steel", location: "Jajpur, Odisha", machines: 42, frequencies: ["weekly", "monthly"], contact: "S. Mohanty", contactPhone: "+91 98200 11223", engineerId: "eng-1" },
+    { id: "pl-2", name: "Reliance — Jamnagar Utilities", customer: "Reliance Industries", location: "Jamnagar, Gujarat", machines: 36, frequencies: ["weekly"], contact: "A. Trivedi", contactPhone: "+91 99040 55117", engineerId: "eng-2" },
+    { id: "pl-3", name: "UltraTech — Awarpur Line 2", customer: "UltraTech Cement", location: "Chandrapur, MH", machines: 28, frequencies: ["monthly", "on-demand"], contact: "R. Kulkarni", contactPhone: "+91 98220 47761", engineerId: "eng-1" },
+    { id: "pl-4", name: "Hindalco — Renukoot Smelter", customer: "Hindalco", location: "Sonbhadra, UP", machines: 24, frequencies: ["monthly"], contact: "V. Singh", contactPhone: "+91 94150 30982", engineerId: "eng-2" },
+    { id: "pl-5", name: "Grasim — Nagda Pulp", customer: "Grasim Industries", location: "Nagda, MP", machines: 18, frequencies: ["weekly"], contact: "D. Jain", contactPhone: "+91 94250 66104", engineerId: "eng-1" },
+    { id: "pl-6", name: "Deepak Fertilisers — Taloja", customer: "Deepak Fertilisers", location: "Taloja, MH", machines: 15, frequencies: ["on-demand"], contact: "N. Shetty", contactPhone: "+91 98330 27745", engineerId: "eng-2" },
   ];
 
   const u = (
@@ -149,9 +163,6 @@ function seed(): AppData {
     engineerId: string,
     plantId: string,
     machinesChecked: number,
-    trend: number,
-    kpi: number,
-    fft: number,
     abnormal: number,
     remark: string,
     submittedAt: string,
@@ -161,25 +172,22 @@ function seed(): AppData {
     engineerId,
     plantId,
     machinesChecked,
-    trend,
-    kpi,
-    fft,
     abnormal,
     remark,
     submittedAt,
   });
 
   const updates: DailyUpdate[] = [
-    u(1, 0, "eng-1", "pl-1", 14, 14, 14, 6, 2, "Boiler feed pump 2A velocity rising, FFT reviewed — 1X dominant. Informed site.", "09:10"),
-    u(2, 0, "eng-1", "pl-5", 8, 8, 8, 2, 0, "All within limits.", "11:40"),
-    u(3, -1, "eng-1", "pl-3", 12, 12, 10, 4, 1, "Raw mill fan bearing under watch, trend flat this week.", "09:25"),
-    u(4, -1, "eng-2", "pl-2", 16, 16, 16, 5, 1, "Cooling tower fan 4 — KPI above alert, FFT taken for confirmation.", "09:05"),
-    u(5, -2, "eng-2", "pl-4", 10, 10, 8, 3, 0, "Normal. Two machines were not running.", "09:35"),
-    u(6, -2, "eng-1", "pl-1", 13, 13, 13, 4, 1, "Observation continued on BFP 2A.", "09:15"),
-    u(7, -3, "eng-2", "pl-2", 15, 15, 15, 3, 0, "Normal across compressors.", "09:20"),
-    u(8, -3, "eng-1", "pl-5", 9, 9, 9, 3, 1, "Pulp pump 3 crest factor high, to be re-checked.", "10:05"),
-    u(9, -4, "eng-2", "pl-6", 7, 7, 7, 7, 2, "On-demand study after site complaint — two machines abnormal.", "14:10"),
-    u(10, -4, "eng-1", "pl-3", 11, 11, 11, 2, 0, "Normal.", "09:30"),
+    u(1, 0, "eng-1", "pl-1", 14, 2, "Boiler feed pump 2A observed rising, informed site.", "09:10"),
+    u(2, 0, "eng-1", "pl-5", 8, 0, "All within limits.", "11:40"),
+    u(3, -1, "eng-1", "pl-3", 12, 1, "Raw mill fan bearing under watch, steady this week.", "09:25"),
+    u(4, -1, "eng-2", "pl-2", 16, 1, "Cooling tower fan 4 above alert, to be re-checked.", "09:05"),
+    u(5, -2, "eng-2", "pl-4", 10, 0, "Normal. Two machines were not running.", "09:35"),
+    u(6, -2, "eng-1", "pl-1", 13, 1, "Observation continued on BFP 2A.", "09:15"),
+    u(7, -3, "eng-2", "pl-2", 15, 0, "Normal across compressors.", "09:20"),
+    u(8, -3, "eng-1", "pl-5", 9, 1, "Pulp pump 3 to be re-checked.", "10:05"),
+    u(9, -4, "eng-2", "pl-6", 7, 2, "On-demand study after site complaint — two machines abnormal.", "14:10"),
+    u(10, -4, "eng-1", "pl-3", 11, 0, "Normal.", "09:30"),
   ];
 
   const r = (
@@ -240,7 +248,11 @@ function load() {
       const parsed = JSON.parse(raw) as Partial<AppData>;
       data = {
         engineers: parsed.engineers?.length ? parsed.engineers : defaultEngineers.map((e) => ({ ...e })),
-        plants: parsed.plants ?? data.plants,
+        plants: (parsed.plants ?? data.plants).map((p) => ({
+          ...p,
+          frequencies: plantFrequencies(p),
+          contactPhone: p.contactPhone ?? "",
+        })),
         updates: parsed.updates ?? data.updates,
         reports: parsed.reports ?? data.reports,
       };
@@ -391,12 +403,9 @@ export function sumUpdates(list: DailyUpdate[]) {
   return list.reduce(
     (a, u) => ({
       machinesChecked: a.machinesChecked + u.machinesChecked,
-      trend: a.trend + u.trend,
-      kpi: a.kpi + u.kpi,
-      fft: a.fft + u.fft,
       abnormal: a.abnormal + u.abnormal,
     }),
-    { machinesChecked: 0, trend: 0, kpi: 0, fft: 0, abnormal: 0 },
+    { machinesChecked: 0, abnormal: 0 },
   );
 }
 
