@@ -94,8 +94,8 @@ export const reportStatusLabel: Record<ReportStatus, string> = {
   sent: "Sent",
 };
 
-export function engineerName(id: string) {
-  return engineers.find((e) => e.id === id)?.name ?? "—";
+export function engineerName(d: AppData, id: string) {
+  return d.engineers.find((e) => e.id === id)?.name ?? "—";
 }
 
 // ---------------------------------------------------------------- dates
