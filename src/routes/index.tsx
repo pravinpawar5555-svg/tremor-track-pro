@@ -1,259 +1,262 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/console/AppShell";
-import { Dot, Kpi, Panel, PageHeader, Bar, SeverityChip, Td, Th, Tr, Button } from "@/components/console/ui";
-import { DistributionBars } from "@/components/console/charts";
+import { Bar, Chip, Empty, Kpi, Panel, PageHeader, StatusChip, Td, Th, TimingChip, Tr } from "@/components/console/ui";
 import {
-  analystStats,
-  attentionItems,
-  customerHealth,
-  fleetKpis,
-  isReviewed,
-  machineById,
-  machines,
-  reviewStatusLabel,
   TODAY,
-  workQueue,
-  customerById,
-  siteById,
-} from "@/lib/data";
+  analysts,
+  engineerName,
+  engineerSummary,
+  fmtDate,
+  frequencyLabel,
+  plantName,
+  plantSummary,
+  reportKpis,
+  reportTiming,
+  shiftDate,
+  sumUpdates,
+  todaysUpdates,
+  useData,
+} from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Manager Dashboard · Forbes Marshall Vibration Operations" },
+      { title: "Monitoring Control Centre — Forbes Marshall CM Portal" },
       {
         name: "description",
         content:
-          "Monitoring coverage, engineer accountability and the prioritised attention queue for the Forbes Marshall vibration monitoring team.",
+          "Central view of daily engineer work updates, plants observed, machines checked and customer report delivery status.",
       },
-      { property: "og:title", content: "Manager Dashboard · Vibration Operations" },
-      { property: "og:description", content: "Who reviewed what today, which machines are abnormal, and what needs attention now." },
+      { property: "og:title", content: "Monitoring Control Centre — Forbes Marshall CM Portal" },
+      {
+        property: "og:description",
+        content: "Daily engineer work updates, plant coverage and on-time customer report tracking in one dashboard.",
+      },
     ],
   }),
   component: Dashboard,
 });
 
 function Dashboard() {
-  const k = fleetKpis();
-  const stats = analystStats();
-  const attention = attentionItems();
-  const queue = workQueue().slice(0, 6);
-  const health = customerHealth();
-
-  const team = stats.reduce(
-    (t, s) => ({
-      assigned: t.assigned + s.assigned,
-      reviewed: t.reviewed + s.reviewed,
-      pending: t.pending + s.pending,
-      abnormalities: t.abnormalities + s.abnormalities,
-      alertsRaised: t.alertsRaised + s.alertsRaised,
-      followUps: t.followUps + s.followUps,
-      reports: t.reports + s.reports,
-    }),
-    { assigned: 0, reviewed: 0, pending: 0, abnormalities: 0, alertsRaised: 0, followUps: 0, reports: 0 },
-  );
+  const data = useData();
+  const today = todaysUpdates(data);
+  const totals = sumUpdates(today);
+  const rk = reportKpis(data);
+  const notUpdated = analysts.filter((a) => !today.some((u) => u.engineerId === a.id));
+  const overdueReports = data.reports
+    .filter((r) => r.status !== "sent" && reportTiming(r).late)
+    .sort((a, b) => (a.dueDate > b.dueDate ? 1 : -1));
+  const dueSoon = data.reports
+    .filter((r) => r.status !== "sent" && !reportTiming(r).late)
+    .sort((a, b) => (a.dueDate > b.dueDate ? 1 : -1))
+    .slice(0, 6);
+  const week = shiftDate(TODAY, -6);
+  const weekUpdates = data.updates.filter((u) => u.date >= week);
 
   return (
-    <AppShell crumbs={[{ label: "Forbes Marshall" }, { label: "All customers" }, { label: "Operations overview" }]}>
+    <AppShell>
       <PageHeader
-        title="Operations Overview"
-        subtitle={`Monitoring coverage and team activity for ${TODAY}`}
-        actions={
-          <div className="flex gap-2">
-            <Link to="/work-queue">
-              <Button>Open work queue</Button>
-            </Link>
-            <Link to="/reports">
-              <Button variant="solid">Generate report</Button>
-            </Link>
-          </div>
-        }
+        title="Monitoring Control Centre"
+        subtitle={`${fmtDate(TODAY)} · daily work updates, plant coverage and customer report delivery`}
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Customers" value={k.customers} />
-        <Kpi label="Machines due" value={k.due} hint={`${k.reviewed} reviewed · ${k.pending} pending`} />
-        <Kpi label="Reviewed today" value={k.reviewed} />
-        <Kpi label="Critical alerts" value={k.criticalAlerts} tone="critical" />
-        <Kpi label="Sites" value={k.sites} />
-        <Kpi label="Machines monitored" value={k.machines} />
-        <Kpi label="Completion" value={k.completion} unit="%" />
-        <Kpi label="Overdue actions" value={k.overdueActions} tone="high" hint={`${k.pendingActions} actions open`} />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
+        <Kpi
+          label="Today's updates"
+          value={`${today.length ? new Set(today.map((u) => u.engineerId)).size : 0}/${analysts.length}`}
+          tone={notUpdated.length ? "high" : "low"}
+          hint={notUpdated.length ? `${notUpdated.map((a) => a.name).join(", ")} pending` : "Both engineers updated"}
+        />
+        <Kpi label="Plants observed today" value={new Set(today.map((u) => u.plantId)).size} hint={`of ${data.plants.length} plants`} />
+        <Kpi label="Machines checked today" value={totals.machinesChecked} hint={`Trend ${totals.trend} · KPI ${totals.kpi} · FFT ${totals.fft}`} />
+        <Kpi label="Abnormal found today" value={totals.abnormal} tone={totals.abnormal ? "medium" : "low"} />
+        <Kpi label="Reports overdue" value={rk.overdue} tone={rk.overdue ? "high" : "low"} hint={`${rk.pending} pending in total`} />
+        <Kpi label="Report on-time rate" value={rk.onTimePct} unit="%" tone={rk.onTimePct >= 90 ? "low" : "medium"} hint={`${rk.sent} sent · ${rk.late} late`} />
       </div>
 
-      <div className="mt-4 grid items-start gap-4 lg:grid-cols-5">
-        <Panel title="Engineer Accountability" meta="Today" className="lg:col-span-3">
+      <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.2fr_1fr]">
+        <Panel title="Today's work update" meta={<Link to="/daily" className="text-signal">Open daily update</Link>}>
+          {today.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    <Th>Engineer</Th>
+                    <Th>Plant</Th>
+                    <Th align="right">Machines</Th>
+                    <Th align="right">Trend</Th>
+                    <Th align="right">KPI</Th>
+                    <Th align="right">FFT</Th>
+                    <Th align="right">Abnormal</Th>
+                    <Th align="right">At</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {today.map((u) => (
+                    <Tr key={u.id}>
+                      <Td>{engineerName(u.engineerId)}</Td>
+                      <Td className="max-w-[16rem] truncate">{plantName(data, u.plantId)}</Td>
+                      <Td align="right" mono>{u.machinesChecked}</Td>
+                      <Td align="right" mono>{u.trend}</Td>
+                      <Td align="right" mono>{u.kpi}</Td>
+                      <Td align="right" mono>{u.fft}</Td>
+                      <Td align="right" mono className={u.abnormal ? "text-sev-medium" : undefined}>{u.abnormal}</Td>
+                      <Td align="right" mono>{u.submittedAt}</Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <Empty>No engineer has submitted today's work update yet.</Empty>
+          )}
+          {today.length ? (
+            <div className="border-t border-line/60 px-4 py-2 text-xs text-mute">
+              Remarks: {today.map((u) => `${plantName(data, u.plantId).split(" — ")[0]} — ${u.remark}`).join(" | ")}
+            </div>
+          ) : null}
+        </Panel>
+
+        <Panel title="Needs my attention">
+          <div className="divide-y divide-line/60">
+            {notUpdated.map((a) => (
+              <div key={a.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
+                <div>
+                  <div className="font-medium">{a.name} has not submitted today's update</div>
+                  <div className="text-xs text-mute">Morning work update pending</div>
+                </div>
+                <Chip severity="high" label="Action" />
+              </div>
+            ))}
+            {overdueReports.map((r) => {
+              const t = reportTiming(r);
+              return (
+                <div key={r.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
+                  <div>
+                    <div className="font-medium">
+                      {frequencyLabel[r.type]} report not sent — {plantName(data, r.plantId)}
+                    </div>
+                    <div className="text-xs text-mute">
+                      {r.period} · due {fmtDate(r.dueDate)} · {engineerName(r.byEngineerId)}
+                    </div>
+                  </div>
+                  <TimingChip late={t.late} label={t.label} />
+                </div>
+              );
+            })}
+            {!notUpdated.length && !overdueReports.length ? <Empty>Nothing pending. All updates in and reports sent on time.</Empty> : null}
+          </div>
+        </Panel>
+      </div>
+
+      <div className="mt-4 grid items-start gap-4 xl:grid-cols-2">
+        <Panel title="Engineer activity — last 7 days" meta={<Link to="/engineers" className="text-signal">Details</Link>}>
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-sm">
               <thead>
                 <tr>
                   <Th>Engineer</Th>
-                  <Th align="right">Assigned</Th>
-                  <Th align="right">Reviewed</Th>
-                  <Th align="right">Pending</Th>
-                  <Th align="right">Abnorm.</Th>
-                  <Th align="right">Alerts</Th>
-                  <Th align="right">Reports</Th>
-                  <Th>Completion</Th>
+                  <Th align="right">Days updated</Th>
+                  <Th align="right">Plants</Th>
+                  <Th align="right">Machines</Th>
+                  <Th align="right">Abnormal</Th>
+                  <Th align="right">Reports sent</Th>
+                  <Th align="right">Late</Th>
                 </tr>
               </thead>
-              <tbody className="num">
-                {stats.map((s) => (
-                  <Tr key={s.engineer.id}>
-                    <Td className="font-sans font-medium">{s.engineer.name}</Td>
-                    <Td align="right">{s.assigned}</Td>
-                    <Td align="right">{s.reviewed}</Td>
-                    <Td align="right" className="text-sev-medium">
-                      {s.pending}
-                    </Td>
-                    <Td align="right" className="text-sev-medium">
-                      {s.abnormalities}
-                    </Td>
-                    <Td align="right" className="text-sev-high">
-                      {s.alertsRaised}
-                    </Td>
-                    <Td align="right">{s.reports}</Td>
-                    <Td>
-                      <div className="flex items-center gap-2">
-                        <Bar pct={(s.reviewed / s.assigned) * 100} />
-                        <span className="text-[11px] text-mute">{Math.round((s.reviewed / s.assigned) * 100)}%</span>
-                      </div>
-                    </Td>
-                  </Tr>
-                ))}
-                <tr className="border-t border-line/60 bg-black/[0.02] font-semibold">
-                  <Td className="font-sans">Team</Td>
-                  <Td align="right">{team.assigned}</Td>
-                  <Td align="right">{team.reviewed}</Td>
-                  <Td align="right">{team.pending}</Td>
-                  <Td align="right">{team.abnormalities}</Td>
-                  <Td align="right">{team.alertsRaised}</Td>
-                  <Td align="right">{team.reports}</Td>
-                  <Td>
-                    <span className="text-[11px] text-mute">{Math.round((team.reviewed / team.assigned) * 100)}%</span>
-                  </Td>
-                </tr>
+              <tbody>
+                {analysts.map((a) => {
+                  const s = engineerSummary(data, a.id);
+                  return (
+                    <Tr key={a.id}>
+                      <Td>
+                        <div className="font-medium">{a.name}</div>
+                        <div className="mt-1"><Bar pct={(s.daysUpdated / s.days) * 100} severity={s.daysUpdated >= 6 ? "low" : "medium"} /></div>
+                      </Td>
+                      <Td align="right" mono>{s.daysUpdated}/{s.days}</Td>
+                      <Td align="right" mono>{s.plantsCovered}</Td>
+                      <Td align="right" mono>{s.machinesChecked}</Td>
+                      <Td align="right" mono>{s.abnormal}</Td>
+                      <Td align="right" mono>{s.reportsSent}</Td>
+                      <Td align="right" mono className={s.reportsLate ? "text-sev-high" : undefined}>{s.reportsLate}</Td>
+                    </Tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
           <div className="border-t border-line/60 px-4 py-2 text-[11px] text-mute">
-            Counts describe workload, not diagnostic quality — open each review to judge the observation itself.
+            Counts come from the engineers' own daily updates — use them for coverage, not as a judgement of analysis quality.
           </div>
         </Panel>
 
-        <Panel title="Attention Required" meta="Priority" className="lg:col-span-2">
-          <ul className="divide-y divide-line/60">
-            {attention.map((item, i) => (
-              <li key={`${item.machineId}-${i}`} className={item.tag === "Data" ? "bg-sev-advisory/[0.06]" : undefined}>
-                <Link
-                  to="/machines/$machineId"
-                  params={{ machineId: item.machineId }}
-                  className="flex items-center gap-2.5 px-4 py-2.5 transition-[background-color] hover:bg-black/[0.03]"
-                >
-                  <Dot severity={item.severity} />
-                  <div className="min-w-0">
-                    <div className="truncate font-medium">{item.title}</div>
-                    <div className="truncate text-xs text-mute">{item.detail}</div>
-                  </div>
-                  <span className="ml-auto text-[10px] uppercase tracking-wide text-mute">{item.tag}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      </div>
-
-      <div className="mt-4 grid items-start gap-4 lg:grid-cols-5">
-        <Panel title="Today’s Work Queue" meta={`${k.reviewed} reviewed · ${k.pending} pending`} className="lg:col-span-3">
+        <Panel title="Reports due next" meta={`${rk.dueThisWeek} due within 7 days`}>
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-sm">
               <thead>
                 <tr>
-                  <Th>Customer</Th>
-                  <Th>Site</Th>
-                  <Th>Machine</Th>
-                  <Th>Priority</Th>
-                  <Th>Last data</Th>
+                  <Th>Plant</Th>
+                  <Th>Type</Th>
+                  <Th>Due</Th>
                   <Th>Status</Th>
-                  <Th align="right">Action</Th>
+                  <Th align="right">Owner</Th>
                 </tr>
               </thead>
-              <tbody className="num">
-                {queue.map((m) => (
-                  <Tr key={m.id}>
-                    <Td className="font-sans">{customerById(m.customerId).name}</Td>
-                    <Td className="font-sans">{siteById(m.siteId).name}</Td>
-                    <Td className="font-sans font-medium">{m.tag}</Td>
-                    <Td>
-                      <SeverityChip
-                        severity={m.criticality === "low" ? "advisory" : m.criticality === "medium" ? "medium" : m.criticality === "high" ? "high" : "critical"}
-                      />
-                    </Td>
-                    <Td>{m.lastDataAt}</Td>
-                    <Td className="font-sans text-xs">{reviewStatusLabel[m.reviewStatus]}</Td>
-                    <Td align="right">
-                      <Link to="/machines/$machineId" params={{ machineId: m.id }}>
-                        <Button>{isReviewed(m.reviewStatus) ? "Open" : "Review"}</Button>
-                      </Link>
-                    </Td>
+              <tbody>
+                {dueSoon.map((r) => (
+                  <Tr key={r.id}>
+                    <Td className="max-w-[14rem] truncate">{plantName(data, r.plantId)}</Td>
+                    <Td>{frequencyLabel[r.type]}</Td>
+                    <Td mono>{fmtDate(r.dueDate)}</Td>
+                    <Td><StatusChip status={r.status} /></Td>
+                    <Td align="right">{engineerName(r.byEngineerId)}</Td>
                   </Tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {!dueSoon.length ? <Empty>No upcoming reports scheduled.</Empty> : null}
         </Panel>
+      </div>
 
-        <div className="grid gap-4 lg:col-span-2">
-          <Panel title="Machine Health Distribution" meta="Sampled fleet">
-            <div className="p-4">
-              <DistributionBars
-                rows={[
-                  { label: "Normal", value: machines.filter((m) => m.condition === "normal").length, color: "bg-sev-low" },
-                  { label: "Watch / observation", value: machines.filter((m) => m.condition === "watch" || m.condition === "observation").length, color: "bg-sev-medium" },
-                  { label: "Abnormal", value: machines.filter((m) => m.condition === "abnormal").length, color: "bg-sev-high" },
-                  { label: "Critical", value: machines.filter((m) => m.condition === "critical").length, color: "bg-sev-critical" },
-                ]}
-              />
-            </div>
-          </Panel>
-
-          <Panel title="Customer Health" meta="Open alerts">
-            <ul className="divide-y divide-line/60">
-              {health.map((h) => (
-                <li key={h.customer.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <Dot severity={h.critical ? "critical" : h.abnormal ? "high" : h.watch ? "medium" : "low"} />
-                  <div className="min-w-0">
-                    <div className="truncate font-medium">{h.customer.name}</div>
-                    <div className="num truncate text-xs text-mute">
-                      {h.total} machines · {h.healthy} normal · {h.abnormal + h.critical} needing attention
-                    </div>
-                  </div>
-                  <span className="num ml-auto text-xs text-mute">{h.openAlerts} alerts</span>
-                </li>
-              ))}
-            </ul>
-          </Panel>
+      <Panel className="mt-4" title="Plant coverage" meta={`${weekUpdates.length} updates in last 7 days`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <Th>Plant</Th>
+                <Th>Customer</Th>
+                <Th>Report cycle</Th>
+                <Th>Last observed</Th>
+                <Th align="right">Machines</Th>
+                <Th>Last report sent</Th>
+                <Th>Next report due</Th>
+                <Th align="right">Engineer</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.plants.map((p) => {
+                const s = plantSummary(data, p.id);
+                const stale = !s.lastObserved || s.lastObserved < shiftDate(TODAY, -7);
+                return (
+                  <Tr key={p.id}>
+                    <Td>
+                      <Link to="/plants" className="font-medium hover:text-signal">{p.name}</Link>
+                    </Td>
+                    <Td className="text-mute">{p.customer}</Td>
+                    <Td>{frequencyLabel[p.frequency]}</Td>
+                    <Td mono className={stale ? "text-sev-high" : undefined}>{fmtDate(s.lastObserved)}</Td>
+                    <Td align="right" mono>{p.machines}</Td>
+                    <Td mono>{fmtDate(s.lastReportSent)}</Td>
+                    <Td mono>{s.nextReport ? fmtDate(s.nextReport.dueDate) : "—"}</Td>
+                    <Td align="right">{engineerName(p.engineerId)}</Td>
+                  </Tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      </div>
-
-      <div className="mt-4">
-        <Panel title="Machines Not Yet Reviewed" meta="Management attention">
-          <ul className="divide-y divide-line/60">
-            {machines
-              .filter((m) => !isReviewed(m.reviewStatus))
-              .map((m) => (
-                <li key={m.id} className="flex items-center gap-3 px-4 py-2.5 text-xs">
-                  <Dot severity={m.criticality === "critical" ? "critical" : m.criticality === "high" ? "high" : "medium"} />
-                  <span className="font-sans font-medium">{machineById(m.id)!.name}</span>
-                  <span className="text-mute">
-                    {customerById(m.customerId).name} · {siteById(m.siteId).name}
-                  </span>
-                  <span className="num ml-auto text-mute">last data {m.lastDataAt}</span>
-                </li>
-              ))}
-          </ul>
-        </Panel>
-      </div>
+      </Panel>
     </AppShell>
   );
 }
