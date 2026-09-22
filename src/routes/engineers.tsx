@@ -1,15 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { AppShell } from "@/components/console/AppShell";
-import { Bar, Chip, Empty, Kpi, PageHeader, Panel, SpecRow, Td, Th, Tr } from "@/components/console/ui";
+import { Bar, Chip, Empty, Field, Kpi, PageHeader, Panel, Select, SpecRow, Td, Th, TextInput, Tr } from "@/components/console/ui";
 import {
   TODAY,
   analystsOf,
   engineerSummary,
+  engineerUsage,
   fmtDate,
   plantName,
+  removeEngineer,
   resetDemoData,
+  saveEngineer,
   shiftDate,
   useData,
+  type Engineer,
 } from "@/lib/store";
 import { Button } from "@/components/console/ui";
 
