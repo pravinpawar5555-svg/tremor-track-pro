@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.fm.cmportal",
+      "sha256_cert_fingerprints": [
+        "5E:CD:DF:57:D7:53:79:7D:F0:22:38:AD:1C:BC:FF:BF:FE:B6:5B:13:32:8F:6D:26:24:48:F8:28:71:E8:DC:B9"
+      ]
+    }
+  }
+]
