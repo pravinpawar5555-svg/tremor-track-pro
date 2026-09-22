@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import type { Condition, Criticality, DataQuality, ReviewStatus, Severity } from "@/lib/data";
-import { conditionLabel, conditionSeverity, criticalityLabel, dataQualityLabel, isReviewed, reviewStatusLabel, severityLabel } from "@/lib/data";
+import type { Frequency, ReportStatus, Severity } from "@/lib/store";
+import { frequencyLabel, reportStatusLabel } from "@/lib/store";
 
 const sevText: Record<Severity, string> = {
   advisory: "text-sev-advisory",
@@ -27,11 +27,21 @@ const sevBg: Record<Severity, string> = {
   critical: "bg-sev-critical/10",
 };
 
-export function Panel({ title, meta, children, className }: { title?: string; meta?: ReactNode; children: ReactNode; className?: string }) {
+export function Panel({
+  title,
+  meta,
+  children,
+  className,
+}: {
+  title?: string;
+  meta?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <section className={cn("panel-glass", className)}>
       {title ? (
-        <div className="flex items-center justify-between gap-3 border-b border-line/70 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/70 px-4 py-3">
           <h2 className="font-semibold tracking-tight text-balance">{title}</h2>
           {meta ? <div className="text-xs text-mute">{meta}</div> : null}
         </div>
@@ -41,7 +51,19 @@ export function Panel({ title, meta, children, className }: { title?: string; me
   );
 }
 
-export function Kpi({ label, value, unit, tone, hint }: { label: string; value: ReactNode; unit?: string; tone?: Severity; hint?: string }) {
+export function Kpi({
+  label,
+  value,
+  unit,
+  tone,
+  hint,
+}: {
+  label: string;
+  value: ReactNode;
+  unit?: string;
+  tone?: Severity;
+  hint?: string;
+}) {
   return (
     <div className="panel-glass p-3">
       <div className="label-caps">{label}</div>
@@ -54,39 +76,44 @@ export function Kpi({ label, value, unit, tone, hint }: { label: string; value: 
   );
 }
 
-export function SeverityChip({ severity, label }: { severity: Severity; label?: string }) {
+export function Chip({ severity, label }: { severity: Severity; label: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide", sevBg[severity], sevText[severity])}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide",
+        sevBg[severity],
+        sevText[severity],
+      )}
+    >
       <span className={cn("size-1.5 rounded-full", sevDot[severity])} />
-      {label ?? severityLabel[severity]}
+      {label}
     </span>
   );
 }
 
-export function Dot({ severity, className }: { severity: Severity; className?: string }) {
-  return <span className={cn("size-2.5 shrink-0 rounded-full", sevDot[severity], className)} />;
+export function StatusChip({ status }: { status: ReportStatus }) {
+  const sev: Severity = status === "sent" ? "low" : status === "prepared" ? "medium" : "advisory";
+  return <Chip severity={sev} label={reportStatusLabel[status]} />;
 }
 
-export function ConditionChip({ condition }: { condition: Condition }) {
-  return <SeverityChip severity={conditionSeverity[condition]} label={conditionLabel[condition]} />;
+export function TimingChip({ late, label }: { late: boolean; label: string }) {
+  return <Chip severity={late ? "high" : "low"} label={label} />;
 }
 
-export function CriticalityChip({ criticality }: { criticality: Criticality }) {
-  const map: Record<Criticality, Severity> = { critical: "critical", high: "high", medium: "medium", low: "advisory" };
-  return <SeverityChip severity={map[criticality]} label={criticalityLabel[criticality]} />;
+export function FrequencyChip({ frequency }: { frequency: Frequency }) {
+  const sev: Severity = frequency === "weekly" ? "low" : frequency === "monthly" ? "medium" : "advisory";
+  return <Chip severity={sev} label={frequencyLabel[frequency]} />;
 }
 
-export function ReviewStatusChip({ status }: { status: ReviewStatus }) {
-  const sev: Severity = status === "pending" ? "advisory" : status === "in-review" ? "medium" : isReviewed(status) ? "low" : "advisory";
-  const tone = status === "alert-raised" || status === "awaiting-customer" ? "high" : sev;
-  return <SeverityChip severity={tone as Severity} label={reviewStatusLabel[status]} />;
-}
-
-export function DataQualityChip({ quality }: { quality: DataQuality }) {
-  return <SeverityChip severity={quality === "valid" ? "low" : "advisory"} label={dataQualityLabel[quality]} />;
-}
-
-export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
+export function PageHeader({
+  title,
+  subtitle,
+  actions,
+}: {
+  title: string;
+  subtitle?: string;
+  actions?: ReactNode;
+}) {
   return (
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
@@ -98,15 +125,37 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   );
 }
 
-export function Th({ children, align = "left", className }: { children: ReactNode; align?: "left" | "right"; className?: string }) {
+export function Th({
+  children,
+  align = "left",
+  className,
+}: {
+  children: ReactNode;
+  align?: "left" | "right";
+  className?: string;
+}) {
   return (
-    <th className={cn("label-caps px-2 py-2 font-medium first:pl-4 last:pr-4", align === "right" && "text-right", className)}>{children}</th>
+    <th className={cn("label-caps px-2 py-2 font-medium first:pl-4 last:pr-4", align === "right" && "text-right", className)}>
+      {children}
+    </th>
   );
 }
 
-export function Td({ children, align = "left", className, mono }: { children: ReactNode; align?: "left" | "right"; className?: string; mono?: boolean }) {
+export function Td({
+  children,
+  align = "left",
+  className,
+  mono,
+}: {
+  children: ReactNode;
+  align?: "left" | "right";
+  className?: string;
+  mono?: boolean;
+}) {
   return (
-    <td className={cn("px-2 py-2 first:pl-4 last:pr-4", align === "right" && "text-right", mono && "num", className)}>{children}</td>
+    <td className={cn("px-2 py-2 first:pl-4 last:pr-4", align === "right" && "text-right", mono && "num", className)}>
+      {children}
+    </td>
   );
 }
 
@@ -120,19 +169,22 @@ export function Button({
   onClick,
   type = "button",
   className,
+  disabled,
 }: {
   children: ReactNode;
   variant?: "outline" | "solid" | "ghost";
   onClick?: () => void;
   type?: "button" | "submit";
   className?: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type={type}
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-[background-color]",
+        "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-[background-color] disabled:opacity-40",
         variant === "outline" && "text-signal ring-1 ring-signal/40 hover:bg-signal/10",
         variant === "solid" && "bg-signal text-signal-foreground ring-1 ring-signal/40 hover:bg-signal/90",
         variant === "ghost" && "text-mute hover:bg-black/5",
@@ -144,13 +196,29 @@ export function Button({
   );
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+const control =
+  "w-full rounded-md bg-panel px-2.5 py-1.5 text-sm text-ink ring-1 ring-line/80 outline-none transition-[box-shadow] focus:ring-2 focus:ring-signal/50";
+
+export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
-    <div>
-      <div className="text-xs text-mute">{label}</div>
-      <div className="mt-0.5">{children}</div>
-    </div>
+    <label className="block">
+      <span className="label-caps">{label}</span>
+      <span className="mt-1 block">{children}</span>
+      {hint ? <span className="mt-1 block text-[11px] text-mute">{hint}</span> : null}
+    </label>
   );
+}
+
+export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...props} className={cn(control, props.className)} />;
+}
+
+export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select {...props} className={cn(control, props.className)} />;
+}
+
+export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea {...props} className={cn(control, "min-h-20", props.className)} />;
 }
 
 export function SpecRow({ label, value }: { label: string; value: ReactNode }) {
@@ -168,4 +236,8 @@ export function Bar({ pct, severity = "low" }: { pct: number; severity?: Severit
       <div className={cn("h-full rounded-full", sevDot[severity])} style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
     </div>
   );
+}
+
+export function Empty({ children }: { children: ReactNode }) {
+  return <div className="px-4 py-6 text-xs text-mute">{children}</div>;
 }
