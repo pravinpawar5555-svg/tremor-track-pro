@@ -148,6 +148,15 @@ function PlantsPage() {
             <Field label="Total machines">
               <TextInput type="number" min={0} value={form.machines} onChange={(e) => setForm({ ...form, machines: e.target.value })} />
             </Field>
+            <Field label="Total assets">
+              <TextInput type="number" min={0} value={form.assets} onChange={(e) => setForm({ ...form, assets: e.target.value })} />
+            </Field>
+            <Field label="Node 6 sensors (qty)">
+              <TextInput type="number" min={0} value={form.node6} onChange={(e) => setForm({ ...form, node6: e.target.value })} />
+            </Field>
+            <Field label="Node X sensors (qty)">
+              <TextInput type="number" min={0} value={form.nodeX} onChange={(e) => setForm({ ...form, nodeX: e.target.value })} />
+            </Field>
             <Field label="Customer contact name">
               <TextInput value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} placeholder="S. Mohanty" />
             </Field>
