@@ -46,9 +46,26 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />
             <span className="num">{kpis.overdue} overdue reports</span>
           </span>
+          <Link to="/discussions" className="flex items-center gap-1.5">
+            <span className={cn("size-2 rounded-full", unread || tk.waitingOnManager ? "bg-sev-medium" : "bg-sev-low")} />
+            <span className="num">{unread} unread · {tk.waitingOnManager} tickets</span>
+          </Link>
           <span className="hidden items-center gap-1.5 lg:flex">
-            <span className="grid size-6 place-items-center rounded-full bg-base text-[10px] font-semibold text-mute ring-1 ring-line">PP</span>
-            <span>P. Pawar · Team Lead</span>
+            <span className="grid size-6 place-items-center rounded-full bg-base text-[10px] font-semibold text-mute ring-1 ring-line">
+              {me?.initials ?? "—"}
+            </span>
+            <select
+              aria-label="Signed in as"
+              value={data.currentUserId}
+              onChange={(e) => setCurrentUser(e.target.value)}
+              className="rounded-md bg-transparent text-xs text-mute outline-none"
+            >
+              {data.engineers.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name} · {e.role === "manager" ? "Manager" : "Engineer"}
+                </option>
+              ))}
+            </select>
           </span>
         </div>
       </header>
