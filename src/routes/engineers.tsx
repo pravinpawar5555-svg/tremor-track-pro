@@ -43,13 +43,123 @@ function EngineersPage() {
   const from = shiftDate(TODAY, -6);
   const days = Array.from({ length: 7 }, (_, i) => shiftDate(TODAY, -6 + i));
 
+  const blank = { id: "", name: "", role: "analyst" as Engineer["role"] };
+  const [form, setForm] = useState(blank);
+  const [note, setNote] = useState<{ ok: boolean; message: string } | null>(null);
+  const [confirmId, setConfirmId] = useState("");
+  const [moveTo, setMoveTo] = useState("");
+
+  const submit = () => {
+    const res = saveEngineer(form.id ? { id: form.id, name: form.name, role: form.role } : { name: form.name, role: form.role });
+    setNote(res);
+    if (res.ok) setForm(blank);
+  };
+
+  const startEdit = (e: Engineer) => {
+    setForm({ id: e.id, name: e.name, role: e.role });
+    setNote(null);
+  };
+
+  const confirmDelete = (id: string) => {
+    const res = removeEngineer(id, moveTo || undefined);
+    setNote(res);
+    if (res.ok) {
+      setConfirmId("");
+      setMoveTo("");
+      if (form.id === id) setForm(blank);
+    }
+  };
+
   return (
     <AppShell>
       <PageHeader
-        title="Engineer Activity"
-        subtitle="Last 7 days — daily updates submitted, work covered and report delivery"
+        title="Engineers"
+        subtitle="Manage the team and review the last 7 days of work"
         actions={<Button variant="ghost" onClick={resetDemoData}>Reset demo data</Button>}
       />
+
+      <Panel
+        title={form.id ? "Edit engineer" : "Add engineer"}
+        meta={<span className="num text-xs text-mute">{data.engineers.length} people on record</span>}
+        className="mb-4"
+      >
+        <div className="grid gap-3 p-4 sm:grid-cols-[1fr_12rem_auto]">
+          <Field label="Name">
+            <TextInput
+              value={form.name}
+              placeholder="e.g. R. Ahuja"
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submit();
+              }}
+            />
+          </Field>
+          <Field label="Role">
+            <Select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Engineer["role"] })}>
+              <option value="analyst">Engineer (fills daily update)</option>
+              <option value="manager">Team lead (monitoring only)</option>
+            </Select>
+          </Field>
+          <div className="flex items-end gap-2">
+            <Button variant="solid" onClick={submit}>{form.id ? "Save name" : "Add engineer"}</Button>
+            {form.id ? <Button variant="ghost" onClick={() => { setForm(blank); setNote(null); }}>Cancel</Button> : null}
+          </div>
+        </div>
+        {note ? (
+          <div className={`px-4 pb-3 text-xs ${note.ok ? "text-sev-low" : "text-sev-high"}`}>{note.message}</div>
+        ) : null}
+
+        <div className="overflow-x-auto border-t border-line/60">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <Th>Name</Th>
+                <Th>Role</Th>
+                <Th align="right">Plants</Th>
+                <Th align="right">Updates</Th>
+                <Th align="right">Reports</Th>
+                <Th align="right">Manage</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.engineers.map((e) => {
+                const usage = engineerUsage(data, e.id);
+                const others = data.engineers.filter((o) => o.id !== e.id);
+                return (
+                  <Tr key={e.id}>
+                    <Td>{e.name}</Td>
+                    <Td>{e.role === "analyst" ? "Engineer" : "Team lead"}</Td>
+                    <Td align="right" mono>{usage.plants}</Td>
+                    <Td align="right" mono>{usage.updates}</Td>
+                    <Td align="right" mono>{usage.reports}</Td>
+                    <Td align="right">
+                      {confirmId === e.id ? (
+                        <span className="flex flex-wrap items-center justify-end gap-2">
+                          {usage.plants + usage.updates + usage.reports > 0 ? (
+                            <Select value={moveTo} onChange={(ev) => setMoveTo(ev.target.value)}>
+                              <option value="">Move work to…</option>
+                              {others.map((o) => (
+                                <option key={o.id} value={o.id}>{o.name}</option>
+                              ))}
+                            </Select>
+                          ) : null}
+                          <Button onClick={() => confirmDelete(e.id)}>Confirm delete</Button>
+                          <Button variant="ghost" onClick={() => { setConfirmId(""); setMoveTo(""); }}>Cancel</Button>
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-end gap-2">
+                          <Button variant="ghost" onClick={() => startEdit(e)}>Edit</Button>
+                          <Button variant="ghost" onClick={() => { setConfirmId(e.id); setMoveTo(""); setNote(null); }}>Delete</Button>
+                        </span>
+                      )}
+                    </Td>
+                  </Tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
 
       <div className="grid items-start gap-4 xl:grid-cols-2">
         {team.map((a) => {
