@@ -58,6 +58,7 @@ const blank = {
 
 function PlantsPage() {
   const data = useData();
+  const team = analystsOf(data);
   const [form, setForm] = useState<typeof blank & { id?: string }>(blank);
   const [open, setOpen] = useState(false);
 

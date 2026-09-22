@@ -39,6 +39,7 @@ export const Route = createFileRoute("/")({
 
 function Dashboard() {
   const data = useData();
+  const team = analystsOf(data);
   const today = todaysUpdates(data);
   const totals = sumUpdates(today);
   const rk = reportKpis(data);

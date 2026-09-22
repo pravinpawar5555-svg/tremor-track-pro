@@ -54,6 +54,7 @@ export const Route = createFileRoute("/reports")({
 
 function ReportsPage() {
   const data = useData();
+  const team = analystsOf(data);
   const rk = reportKpis(data);
   const [type, setType] = useState<"all" | Frequency>("all");
   const [status, setStatus] = useState<"all" | ReportStatus>("all");

@@ -48,6 +48,7 @@ const empty = {
 
 function DailyPage() {
   const data = useData();
+  const team = analystsOf(data);
   const [form, setForm] = useState(empty);
   const [filterEng, setFilterEng] = useState("all");
   const [saved, setSaved] = useState(false);

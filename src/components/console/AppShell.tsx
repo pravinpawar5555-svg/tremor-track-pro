@@ -14,6 +14,7 @@ const nav = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const data = useData();
+  const team = analystsOf(data);
   const kpis = reportKpis(data);
   const submitted = team.filter((a) => data.updates.some((u) => u.engineerId === a.id && u.date === TODAY));
 

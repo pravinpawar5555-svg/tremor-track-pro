@@ -34,6 +34,7 @@ export const Route = createFileRoute("/engineers")({
 
 function EngineersPage() {
   const data = useData();
+  const team = analystsOf(data);
   const from = shiftDate(TODAY, -6);
   const days = Array.from({ length: 7 }, (_, i) => shiftDate(TODAY, -6 + i));
 
