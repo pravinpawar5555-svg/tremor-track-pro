@@ -207,7 +207,7 @@ function ReportsPage() {
         )}
         <div className="border-t border-line/60 px-4 py-2 text-[11px] text-mute">
           "Mark sent" records today's date as the delivery date; on time or late is calculated against the due date. Report cycle per plant: {" "}
-          {data.plants.map((p) => `${p.name.split(" — ")[0]} ${frequencyLabel[p.frequency]}`).join(" · ")}
+          {data.plants.map((p) => `${p.name.split(" — ")[0]} ${frequencyText(p)}`).join(" · ")}
         </div>
       </Panel>
     </AppShell>
