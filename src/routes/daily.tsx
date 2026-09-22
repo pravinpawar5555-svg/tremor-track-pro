@@ -131,11 +131,13 @@ function DailyPage() {
         </Panel>
 
         <div className="grid gap-4">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
             <Kpi label="Updates · 7 d" value={scoped.length} />
             <Kpi label="Plants · 7 d" value={new Set(scoped.map((u) => u.plantId)).size} />
             <Kpi label="Machines · 7 d" value={totals.machinesChecked} />
-            <Kpi label="Abnormal · 7 d" value={totals.abnormal} tone={totals.abnormal ? "medium" : "low"} />
+            <Kpi label="High risk · 7 d" value={totals.abnormal} tone={totals.abnormal ? "medium" : "low"} />
+            <Kpi label="Repeatative · 7 d" value={totals.repeatHighRisk} tone={totals.repeatHighRisk ? "medium" : "low"} />
+            <Kpi label="New high risk · 7 d" value={totals.newHighRisk} tone={totals.newHighRisk ? "high" : "low"} />
           </div>
 
           <Panel
