@@ -644,3 +644,171 @@ export function reportKpis(d: AppData) {
   const onTimePct = sent.length ? Math.round(((sent.length - late.length) / sent.length) * 100) : 100;
   return { sent: sent.length, late: late.length, onTimePct, pending: pending.length, overdue: overdue.length, dueThisWeek: dueThisWeek.length };
 }
+
+// ---------------------------------------------------------------- tickets & chat
+
+function nowTime() {
+  return typeof window === "undefined" ? "09:00" : new Date().toTimeString().slice(0, 5);
+}
+
+export function setCurrentUser(id: string) {
+  commit({ ...data, currentUserId: id });
+}
+
+export function currentUser(d: AppData): Engineer | undefined {
+  return d.engineers.find((e) => e.id === d.currentUserId) ?? d.engineers[0];
+}
+
+export function isManager(d: AppData, id = d.currentUserId) {
+  return d.engineers.find((e) => e.id === id)?.role === "manager";
+}
+
+function nextTicketNo() {
+  const n = data.tickets.length + 1;
+  return `FM-OBS-2026-${String(n).padStart(3, "0")}`;
+}
+
+/** Engineer raises a ticket for the manager: plant → area → machine → what is required. */
+export function createTicket(input: {
+  plantId: string;
+  area: string;
+  machine: string;
+  subject: string;
+  observation: string;
+  askFor: AskFor;
+  priority: TicketPriority;
+  raisedBy: string;
+  assignedTo?: string;
+}) {
+  if (!input.plantId) return { ok: false, message: "Select a plant." };
+  if (!input.machine.trim()) return { ok: false, message: "Enter the machine name." };
+  if (!input.subject.trim()) return { ok: false, message: "Enter a short subject." };
+  const manager = input.assignedTo || managersOf(data)[0]?.id || "";
+  const ticket: Ticket = {
+    id: uid("tk"),
+    ticketNo: nextTicketNo(),
+    plantId: input.plantId,
+    area: input.area.trim(),
+    machine: input.machine.trim(),
+    subject: input.subject.trim(),
+    observation: input.observation.trim(),
+    askFor: input.askFor,
+    priority: input.priority,
+    status: "open",
+    raisedBy: input.raisedBy,
+    raisedOn: TODAY,
+    raisedAt: nowTime(),
+    assignedTo: manager,
+  };
+  commit({ ...data, tickets: [ticket, ...data.tickets] });
+  return { ok: true, message: `Ticket ${ticket.ticketNo} raised with ${engineerName(data, manager)}.`, id: ticket.id };
+}
+
+export function sendMessage(thread: string, authorId: string, text: string) {
+  const body = text.trim();
+  if (!body) return { ok: false, message: "Type a message." };
+  const msg: ChatMessage = {
+    id: uid("ms"),
+    thread,
+    authorId,
+    text: body,
+    date: TODAY,
+    at: nowTime(),
+    readBy: [authorId],
+  };
+  const tickets = thread.startsWith("ticket:")
+    ? data.tickets.map((t) =>
+        ticketThread(t.id) === thread && t.status === "open" ? { ...t, status: "in-discussion" as TicketStatus } : t,
+      )
+    : data.tickets;
+  commit({ ...data, messages: [...data.messages, msg], tickets });
+  return { ok: true, message: "Sent." };
+}
+
+export function markThreadRead(thread: string, userId: string) {
+  const need = data.messages.some((x) => x.thread === thread && !x.readBy.includes(userId));
+  if (!need) return;
+  commit({
+    ...data,
+    messages: data.messages.map((x) =>
+      x.thread === thread && !x.readBy.includes(userId) ? { ...x, readBy: [...x.readBy, userId] } : x,
+    ),
+  });
+}
+
+/** Manager gives the observation / recommendation the engineer asked for. */
+export function respondToTicket(id: string, authorId: string, text: string) {
+  const body = text.trim();
+  if (!body) return { ok: false, message: "Enter your observation / recommendation." };
+  const msg: ChatMessage = {
+    id: uid("ms"),
+    thread: ticketThread(id),
+    authorId,
+    text: body,
+    date: TODAY,
+    at: nowTime(),
+    readBy: [authorId],
+  };
+  commit({
+    ...data,
+    messages: [...data.messages, msg],
+    tickets: data.tickets.map((t) =>
+      t.id === id ? { ...t, status: "responded" as TicketStatus, response: body, respondedOn: TODAY } : t,
+    ),
+  });
+  return { ok: true, message: "Recommendation recorded and shared in the chat." };
+}
+
+export function setTicketStatus(id: string, status: TicketStatus) {
+  commit({
+    ...data,
+    tickets: data.tickets.map((t) =>
+      t.id === id
+        ? status === "closed"
+          ? { ...t, status, closedOn: TODAY }
+          : { ...t, status, closedOn: undefined }
+        : t,
+    ),
+  });
+}
+
+export function removeTicket(id: string) {
+  commit({
+    ...data,
+    tickets: data.tickets.filter((t) => t.id !== id),
+    messages: data.messages.filter((x) => x.thread !== ticketThread(id)),
+  });
+}
+
+export function threadMessages(d: AppData, thread: string) {
+  return d.messages
+    .filter((x) => x.thread === thread)
+    .sort((a, b) => (a.date === b.date ? (a.at > b.at ? 1 : -1) : a.date > b.date ? 1 : -1));
+}
+
+export function unreadCount(d: AppData, thread: string, userId = d.currentUserId) {
+  return d.messages.filter((x) => x.thread === thread && !x.readBy.includes(userId) && x.authorId !== userId).length;
+}
+
+export function totalUnread(d: AppData, userId = d.currentUserId) {
+  return d.messages.filter((x) => !x.readBy.includes(userId) && x.authorId !== userId).length;
+}
+
+export function ticketKpis(d: AppData, userId = d.currentUserId) {
+  const open = d.tickets.filter((t) => t.status !== "closed");
+  const waitingOnManager = open.filter((t) => t.status !== "responded");
+  const mine = open.filter((t) => t.assignedTo === userId || t.raisedBy === userId);
+  const critical = open.filter((t) => t.priority === "critical" || t.priority === "high");
+  return {
+    open: open.length,
+    waitingOnManager: waitingOnManager.length,
+    mine: mine.length,
+    critical: critical.length,
+    responded: d.tickets.filter((t) => t.status === "responded").length,
+    closed: d.tickets.filter((t) => t.status === "closed").length,
+  };
+}
+
+export function plantTickets(d: AppData, plantId: string) {
+  return d.tickets.filter((t) => t.plantId === plantId);
+}
