@@ -16,7 +16,7 @@ import {
 } from "@/components/console/ui";
 import {
   TODAY,
-  analysts,
+  analystsOf,
   engineerName,
   fmtDate,
   plantSummary,
@@ -53,7 +53,7 @@ const blank = {
   machines: "",
   frequency: "weekly" as Frequency,
   contact: "",
-  engineerId: analysts[0]?.id ?? "eng-1",
+  engineerId: "",
 };
 
 function PlantsPage() {
@@ -127,7 +127,7 @@ function PlantsPage() {
             </Field>
             <Field label="Assigned engineer">
               <Select value={form.engineerId} onChange={(e) => setForm({ ...form, engineerId: e.target.value })}>
-                {analysts.map((a) => (
+                {team.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </Select>
@@ -170,7 +170,7 @@ function PlantsPage() {
                       <Td className="text-mute">{p.location || "—"}</Td>
                       <Td align="right" mono>{p.machines}</Td>
                       <Td><FrequencyChip frequency={p.frequency} /></Td>
-                      <Td>{engineerName(p.engineerId)}</Td>
+                      <Td>{engineerName(data, p.engineerId)}</Td>
                       <Td mono className={stale ? "text-sev-high" : undefined}>{fmtDate(s.lastObserved)}</Td>
                       <Td mono>{fmtDate(s.lastReportSent)}</Td>
                       <Td align="right">

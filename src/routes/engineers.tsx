@@ -3,7 +3,7 @@ import { AppShell } from "@/components/console/AppShell";
 import { Bar, Chip, Empty, Kpi, PageHeader, Panel, SpecRow, Td, Th, Tr } from "@/components/console/ui";
 import {
   TODAY,
-  analysts,
+  analystsOf,
   engineerSummary,
   fmtDate,
   plantName,
@@ -46,7 +46,7 @@ function EngineersPage() {
       />
 
       <div className="grid items-start gap-4 xl:grid-cols-2">
-        {analysts.map((a) => {
+        {team.map((a) => {
           const s = engineerSummary(data, a.id);
           const list = data.updates.filter((u) => u.engineerId === a.id && u.date >= from);
           return (

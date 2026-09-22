@@ -19,7 +19,7 @@ import {
 } from "@/components/console/ui";
 import {
   TODAY,
-  analysts,
+  analystsOf,
   engineerName,
   fmtDate,
   frequencyLabel,
@@ -63,7 +63,7 @@ function ReportsPage() {
     type: "weekly" as Frequency,
     period: "",
     dueDate: TODAY,
-    byEngineerId: analysts[0]?.id ?? "eng-1",
+    byEngineerId: "",
   });
 
   const rows = data.reports
@@ -120,7 +120,7 @@ function ReportsPage() {
             </Field>
             <Field label="Owner">
               <Select value={form.byEngineerId} onChange={(e) => setForm({ ...form, byEngineerId: e.target.value })}>
-                {analysts.map((a) => (
+                {team.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </Select>
@@ -182,7 +182,7 @@ function ReportsPage() {
                       <Td mono>{fmtDate(r.sentDate)}</Td>
                       <Td><TimingChip late={t.late} label={t.label} /></Td>
                       <Td><StatusChip status={r.status} /></Td>
-                      <Td>{engineerName(r.byEngineerId)}</Td>
+                      <Td>{engineerName(data, r.byEngineerId)}</Td>
                       <Td align="right">
                         <span className="flex justify-end gap-1">
                           {r.status !== "prepared" && r.status !== "sent" ? (

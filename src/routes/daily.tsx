@@ -5,7 +5,7 @@ import { Button, Empty, Field, Kpi, Panel, PageHeader, Select, Td, TextArea, Tex
 import {
   TODAY,
   addUpdate,
-  analysts,
+  analystsOf,
   engineerName,
   fmtDate,
   plantName,
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/daily")({
 
 const empty = {
   date: TODAY,
-  engineerId: analysts[0]?.id ?? "eng-1",
+  engineerId: "",
   plantId: "",
   machinesChecked: "",
   trend: "",
@@ -95,7 +95,7 @@ function DailyPage() {
             </Field>
             <Field label="Engineer">
               <Select value={form.engineerId} onChange={(e) => set("engineerId", e.target.value)}>
-                {analysts.map((a) => (
+                {team.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </Select>
@@ -149,7 +149,7 @@ function DailyPage() {
             meta={
               <Select className="w-40" value={filterEng} onChange={(e) => setFilterEng(e.target.value)}>
                 <option value="all">All engineers</option>
-                {analysts.map((a) => (
+                {team.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </Select>
@@ -176,7 +176,7 @@ function DailyPage() {
                     {list.map((u) => (
                       <Tr key={u.id}>
                         <Td mono>{fmtDate(u.date)}</Td>
-                        <Td>{engineerName(u.engineerId)}</Td>
+                        <Td>{engineerName(data, u.engineerId)}</Td>
                         <Td className="max-w-[14rem] truncate">{plantName(data, u.plantId)}</Td>
                         <Td align="right" mono>{u.machinesChecked}</Td>
                         <Td align="right" mono>{u.trend}</Td>
