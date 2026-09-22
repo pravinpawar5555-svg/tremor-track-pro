@@ -10,33 +10,167 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ActionsRouteImport } from './routes/actions'
+import { Route as AdministrationRouteImport } from './routes/administration'
+import { Route as AlertsRouteImport } from './routes/alerts'
+import { Route as AuditRouteImport } from './routes/audit'
+import { Route as CustomersRouteImport } from './routes/customers'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as TeamRouteImport } from './routes/team'
+import { Route as WorkQueueRouteImport } from './routes/work-queue'
+import { Route as MachinesIndexRouteImport } from './routes/machines/index'
+import { Route as MachinesMachineIdRouteImport } from './routes/machines/$machineId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ActionsRoute = ActionsRouteImport.update({
+  id: '/actions',
+  path: '/actions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdministrationRoute = AdministrationRouteImport.update({
+  id: '/administration',
+  path: '/administration',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlertsRoute = AlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditRoute = AuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomersRoute = CustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeamRoute = TeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkQueueRoute = WorkQueueRouteImport.update({
+  id: '/work-queue',
+  path: '/work-queue',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MachinesIndexRoute = MachinesIndexRouteImport.update({
+  id: '/machines/',
+  path: '/machines/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MachinesMachineIdRoute = MachinesMachineIdRouteImport.update({
+  id: '/machines/$machineId',
+  path: '/machines/$machineId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/actions': typeof ActionsRoute
+  '/administration': typeof AdministrationRoute
+  '/alerts': typeof AlertsRoute
+  '/audit': typeof AuditRoute
+  '/customers': typeof CustomersRoute
+  '/reports': typeof ReportsRoute
+  '/team': typeof TeamRoute
+  '/work-queue': typeof WorkQueueRoute
+  '/machines/$machineId': typeof MachinesMachineIdRoute
+  '/machines/': typeof MachinesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/actions': typeof ActionsRoute
+  '/administration': typeof AdministrationRoute
+  '/alerts': typeof AlertsRoute
+  '/audit': typeof AuditRoute
+  '/customers': typeof CustomersRoute
+  '/reports': typeof ReportsRoute
+  '/team': typeof TeamRoute
+  '/work-queue': typeof WorkQueueRoute
+  '/machines/$machineId': typeof MachinesMachineIdRoute
+  '/machines': typeof MachinesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/actions': typeof ActionsRoute
+  '/administration': typeof AdministrationRoute
+  '/alerts': typeof AlertsRoute
+  '/audit': typeof AuditRoute
+  '/customers': typeof CustomersRoute
+  '/reports': typeof ReportsRoute
+  '/team': typeof TeamRoute
+  '/work-queue': typeof WorkQueueRoute
+  '/machines/$machineId': typeof MachinesMachineIdRoute
+  '/machines/': typeof MachinesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/actions'
+    | '/administration'
+    | '/alerts'
+    | '/audit'
+    | '/customers'
+    | '/reports'
+    | '/team'
+    | '/work-queue'
+    | '/machines/$machineId'
+    | '/machines/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/actions'
+    | '/administration'
+    | '/alerts'
+    | '/audit'
+    | '/customers'
+    | '/reports'
+    | '/team'
+    | '/work-queue'
+    | '/machines/$machineId'
+    | '/machines'
+  id:
+    | '__root__'
+    | '/'
+    | '/actions'
+    | '/administration'
+    | '/alerts'
+    | '/audit'
+    | '/customers'
+    | '/reports'
+    | '/team'
+    | '/work-queue'
+    | '/machines/$machineId'
+    | '/machines/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActionsRoute: typeof ActionsRoute
+  AdministrationRoute: typeof AdministrationRoute
+  AlertsRoute: typeof AlertsRoute
+  AuditRoute: typeof AuditRoute
+  CustomersRoute: typeof CustomersRoute
+  ReportsRoute: typeof ReportsRoute
+  TeamRoute: typeof TeamRoute
+  WorkQueueRoute: typeof WorkQueueRoute
+  MachinesMachineIdRoute: typeof MachinesMachineIdRoute
+  MachinesIndexRoute: typeof MachinesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +182,91 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/actions': {
+      id: '/actions'
+      path: '/actions'
+      fullPath: '/actions'
+      preLoaderRoute: typeof ActionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/administration': {
+      id: '/administration'
+      path: '/administration'
+      fullPath: '/administration'
+      preLoaderRoute: typeof AdministrationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/alerts': {
+      id: '/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit': {
+      id: '/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customers': {
+      id: '/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof CustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/team': {
+      id: '/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof TeamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/work-queue': {
+      id: '/work-queue'
+      path: '/work-queue'
+      fullPath: '/work-queue'
+      preLoaderRoute: typeof WorkQueueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/machines/': {
+      id: '/machines/'
+      path: '/machines'
+      fullPath: '/machines/'
+      preLoaderRoute: typeof MachinesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/machines/$machineId': {
+      id: '/machines/$machineId'
+      path: '/machines/$machineId'
+      fullPath: '/machines/$machineId'
+      preLoaderRoute: typeof MachinesMachineIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActionsRoute: ActionsRoute,
+  AdministrationRoute: AdministrationRoute,
+  AlertsRoute: AlertsRoute,
+  AuditRoute: AuditRoute,
+  CustomersRoute: CustomersRoute,
+  ReportsRoute: ReportsRoute,
+  TeamRoute: TeamRoute,
+  WorkQueueRoute: WorkQueueRoute,
+  MachinesMachineIdRoute: MachinesMachineIdRoute,
+  MachinesIndexRoute: MachinesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
