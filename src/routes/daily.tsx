@@ -60,7 +60,7 @@ function DailyPage() {
     if (!form.plantId) return;
     addUpdate({
       date: form.date,
-      engineerId: form.engineerId,
+      engineerId: form.engineerId || team[0]?.id || "",
       plantId: form.plantId,
       machinesChecked: n(form.machinesChecked),
       trend: n(form.trend),

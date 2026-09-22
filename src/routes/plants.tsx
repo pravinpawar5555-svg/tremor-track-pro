@@ -77,7 +77,7 @@ function PlantsPage() {
       machines: Math.max(0, Number(form.machines) || 0),
       frequency: form.frequency,
       contact: form.contact.trim(),
-      engineerId: form.engineerId,
+      engineerId: form.engineerId || team[0]?.id || "",
     });
     setForm(blank);
     setOpen(false);

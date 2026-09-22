@@ -74,7 +74,7 @@ function ReportsPage() {
 
   const add = () => {
     if (!form.plantId || !form.period.trim()) return;
-    saveReport({ ...form, status: "pending" });
+    saveReport({ ...form, byEngineerId: form.byEngineerId || team[0]?.id || "", status: "pending" });
     setForm({ ...form, period: "" });
     setAdding(false);
   };
