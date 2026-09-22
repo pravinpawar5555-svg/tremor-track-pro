@@ -428,6 +428,9 @@ function load() {
         })),
         updates: parsed.updates ?? data.updates,
         reports: parsed.reports ?? data.reports,
+        tickets: parsed.tickets ?? data.tickets,
+        messages: (parsed.messages ?? data.messages).map((x) => ({ ...x, readBy: x.readBy ?? [] })),
+        currentUserId: parsed.currentUserId ?? data.currentUserId,
       };
     }
   } catch {
