@@ -74,6 +74,13 @@ function Dashboard() {
         <Kpi label="Abnormal found today" value={totals.abnormal} tone={totals.abnormal ? "medium" : "low"} />
         <Kpi label="Reports overdue" value={rk.overdue} tone={rk.overdue ? "high" : "low"} hint={`${rk.pending} pending in total`} />
         <Kpi label="Report on-time rate" value={rk.onTimePct} unit="%" tone={rk.onTimePct >= 90 ? "low" : "medium"} hint={`${rk.sent} sent · ${rk.late} late`} />
+        <Kpi
+          label="Tickets for me"
+          value={tk.waitingOnManager}
+          tone={tk.waitingOnManager ? "high" : "low"}
+          hint={`${tk.open} open · ${tk.responded} responded`}
+        />
+        <Kpi label="Unread messages" value={unread} tone={unread ? "medium" : "low"} hint="Internal discussion" />
       </div>
 
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.2fr_1fr]">
