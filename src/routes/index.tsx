@@ -117,7 +117,7 @@ function Dashboard() {
                     <Th>Engineer</Th>
                     <Th>Plant</Th>
                     <Th align="right">Machines</Th>
-                    <Th align="right">Abnormal</Th>
+                    <Th align="right">High risk</Th>
                     <Th align="right">At</Th>
                   </tr>
                 </thead>
@@ -204,7 +204,7 @@ function Dashboard() {
                   <Th align="right">Days updated</Th>
                   <Th align="right">Plants</Th>
                   <Th align="right">Machines</Th>
-                  <Th align="right">Abnormal</Th>
+                  <Th align="right">High risk</Th>
                   <Th align="right">Reports sent</Th>
                   <Th align="right">Late</Th>
                 </tr>
