@@ -120,7 +120,7 @@ function ReportsPage() {
               <TextInput type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
             </Field>
             <Field label="Owner">
-              <Select value={form.byEngineerId} onChange={(e) => setForm({ ...form, byEngineerId: e.target.value })}>
+              <Select value={form.byEngineerId || team[0]?.id || ""} onChange={(e) => setForm({ ...form, byEngineerId: e.target.value })}>
                 {team.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}

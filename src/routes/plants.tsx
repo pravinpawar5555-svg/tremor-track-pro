@@ -127,7 +127,7 @@ function PlantsPage() {
               <TextInput value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} />
             </Field>
             <Field label="Assigned engineer">
-              <Select value={form.engineerId} onChange={(e) => setForm({ ...form, engineerId: e.target.value })}>
+              <Select value={form.engineerId || team[0]?.id || ""} onChange={(e) => setForm({ ...form, engineerId: e.target.value })}>
                 {team.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}

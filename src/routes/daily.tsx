@@ -95,7 +95,7 @@ function DailyPage() {
               <TextInput type="date" value={form.date} onChange={(e) => set("date", e.target.value)} />
             </Field>
             <Field label="Engineer">
-              <Select value={form.engineerId} onChange={(e) => set("engineerId", e.target.value)}>
+              <Select value={form.engineerId || team[0]?.id || ""} onChange={(e) => set("engineerId", e.target.value)}>
                 {team.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
