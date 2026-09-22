@@ -212,6 +212,9 @@ function PlantsPage() {
                   <Th>Customer / contact</Th>
                   <Th>Location</Th>
                   <Th align="right">Machines</Th>
+                  <Th align="right">Assets</Th>
+                  <Th align="right">Node 6</Th>
+                  <Th align="right">Node X</Th>
                   <Th>Report cycle</Th>
                   <Th>Engineer</Th>
                   <Th>Last observed</Th>
