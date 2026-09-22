@@ -18,8 +18,6 @@ export const Route = createFileRoute("/actions")({
   component: ActionsPage,
 });
 
-export default function noop() {}
-
 function ActionsPage() {
   const open = actionItems.filter((a) => a.status !== "closed");
   const overdue = actionItems.filter((a) => a.status === "overdue");
