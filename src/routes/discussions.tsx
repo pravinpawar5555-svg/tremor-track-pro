@@ -158,8 +158,20 @@ function DiscussionsPage() {
         title="Discussion & Tickets"
         subtitle="Internal engineer–manager chat, plant-wise channels and machine observation tickets"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {notice ? <span className="text-xs text-signal">{notice}</span> : null}
+            <Select
+              aria-label="You are"
+              className="w-44"
+              value={data.currentUserId}
+              onChange={(e) => setCurrentUser(e.target.value)}
+            >
+              {data.engineers.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name} · {e.role === "manager" ? "Manager" : "Engineer"}
+                </option>
+              ))}
+            </Select>
             <Button variant="solid" onClick={() => setShowNew((s) => !s)}>
               {showNew ? "Close form" : "Raise ticket"}
             </Button>
