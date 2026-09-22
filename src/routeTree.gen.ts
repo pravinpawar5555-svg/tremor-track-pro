@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ActionsRouteImport } from './routes/actions'
+import { Route as AdministrationRouteImport } from './routes/administration'
 import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as CustomersRouteImport } from './routes/customers'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as WorkQueueRouteImport } from './routes/work-queue'
 import { Route as MachinesIndexRouteImport } from './routes/machines/index'
@@ -29,6 +31,11 @@ const ActionsRoute = ActionsRouteImport.update({
   path: '/actions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdministrationRoute = AdministrationRouteImport.update({
+  id: '/administration',
+  path: '/administration',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AlertsRoute = AlertsRouteImport.update({
   id: '/alerts',
   path: '/alerts',
@@ -42,6 +49,11 @@ const AuditRoute = AuditRouteImport.update({
 const CustomersRoute = CustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TeamRoute = TeamRouteImport.update({
@@ -68,9 +80,11 @@ const MachinesMachineIdRoute = MachinesMachineIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/actions': typeof ActionsRoute
+  '/administration': typeof AdministrationRoute
   '/alerts': typeof AlertsRoute
   '/audit': typeof AuditRoute
   '/customers': typeof CustomersRoute
+  '/reports': typeof ReportsRoute
   '/team': typeof TeamRoute
   '/work-queue': typeof WorkQueueRoute
   '/machines/$machineId': typeof MachinesMachineIdRoute
@@ -79,9 +93,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/actions': typeof ActionsRoute
+  '/administration': typeof AdministrationRoute
   '/alerts': typeof AlertsRoute
   '/audit': typeof AuditRoute
   '/customers': typeof CustomersRoute
+  '/reports': typeof ReportsRoute
   '/team': typeof TeamRoute
   '/work-queue': typeof WorkQueueRoute
   '/machines/$machineId': typeof MachinesMachineIdRoute
@@ -91,9 +107,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/actions': typeof ActionsRoute
+  '/administration': typeof AdministrationRoute
   '/alerts': typeof AlertsRoute
   '/audit': typeof AuditRoute
   '/customers': typeof CustomersRoute
+  '/reports': typeof ReportsRoute
   '/team': typeof TeamRoute
   '/work-queue': typeof WorkQueueRoute
   '/machines/$machineId': typeof MachinesMachineIdRoute
@@ -104,9 +122,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/actions'
+    | '/administration'
     | '/alerts'
     | '/audit'
     | '/customers'
+    | '/reports'
     | '/team'
     | '/work-queue'
     | '/machines/$machineId'
@@ -115,9 +135,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/actions'
+    | '/administration'
     | '/alerts'
     | '/audit'
     | '/customers'
+    | '/reports'
     | '/team'
     | '/work-queue'
     | '/machines/$machineId'
@@ -126,9 +148,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/actions'
+    | '/administration'
     | '/alerts'
     | '/audit'
     | '/customers'
+    | '/reports'
     | '/team'
     | '/work-queue'
     | '/machines/$machineId'
@@ -138,9 +162,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActionsRoute: typeof ActionsRoute
+  AdministrationRoute: typeof AdministrationRoute
   AlertsRoute: typeof AlertsRoute
   AuditRoute: typeof AuditRoute
   CustomersRoute: typeof CustomersRoute
+  ReportsRoute: typeof ReportsRoute
   TeamRoute: typeof TeamRoute
   WorkQueueRoute: typeof WorkQueueRoute
   MachinesMachineIdRoute: typeof MachinesMachineIdRoute
@@ -163,6 +189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/administration': {
+      id: '/administration'
+      path: '/administration'
+      fullPath: '/administration'
+      preLoaderRoute: typeof AdministrationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/alerts': {
       id: '/alerts'
       path: '/alerts'
@@ -182,6 +215,13 @@ declare module '@tanstack/react-router' {
       path: '/customers'
       fullPath: '/customers'
       preLoaderRoute: typeof CustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/team': {
@@ -218,9 +258,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActionsRoute: ActionsRoute,
+  AdministrationRoute: AdministrationRoute,
   AlertsRoute: AlertsRoute,
   AuditRoute: AuditRoute,
   CustomersRoute: CustomersRoute,
+  ReportsRoute: ReportsRoute,
   TeamRoute: TeamRoute,
   WorkQueueRoute: WorkQueueRoute,
   MachinesMachineIdRoute: MachinesMachineIdRoute,
