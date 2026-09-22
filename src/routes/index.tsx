@@ -61,7 +61,7 @@ function Dashboard() {
   const weekUpdates = data.updates.filter((u) => u.date >= week);
   const tk = ticketKpis(data);
   const unread = totalUnread(data);
-  const openTickets = data.tickets
+  const openTickets = (data.tickets ?? [])
     .filter((t) => t.status !== "closed" && t.status !== "responded")
     .sort((a, b) => (a.raisedOn < b.raisedOn ? 1 : -1));
 

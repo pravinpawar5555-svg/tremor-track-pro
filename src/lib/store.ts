@@ -781,21 +781,22 @@ export function removeTicket(id: string) {
 }
 
 export function threadMessages(d: AppData, thread: string) {
-  return d.messages
+  return (d.messages ?? [])
     .filter((x) => x.thread === thread)
     .sort((a, b) => (a.date === b.date ? (a.at > b.at ? 1 : -1) : a.date > b.date ? 1 : -1));
 }
 
 export function unreadCount(d: AppData, thread: string, userId = d.currentUserId) {
-  return d.messages.filter((x) => x.thread === thread && !x.readBy.includes(userId) && x.authorId !== userId).length;
+  return (d.messages ?? []).filter((x) => x.thread === thread && !x.readBy.includes(userId) && x.authorId !== userId).length;
 }
 
 export function totalUnread(d: AppData, userId = d.currentUserId) {
-  return d.messages.filter((x) => !x.readBy.includes(userId) && x.authorId !== userId).length;
+  return (d.messages ?? []).filter((x) => !x.readBy.includes(userId) && x.authorId !== userId).length;
 }
 
 export function ticketKpis(d: AppData, userId = d.currentUserId) {
-  const open = d.tickets.filter((t) => t.status !== "closed");
+  const all = d.tickets ?? [];
+  const open = all.filter((t) => t.status !== "closed");
   const waitingOnManager = open.filter((t) => t.status !== "responded");
   const mine = open.filter((t) => t.assignedTo === userId || t.raisedBy === userId);
   const critical = open.filter((t) => t.priority === "critical" || t.priority === "high");
@@ -804,8 +805,8 @@ export function ticketKpis(d: AppData, userId = d.currentUserId) {
     waitingOnManager: waitingOnManager.length,
     mine: mine.length,
     critical: critical.length,
-    responded: d.tickets.filter((t) => t.status === "responded").length,
-    closed: d.tickets.filter((t) => t.status === "closed").length,
+    responded: all.filter((t) => t.status === "responded").length,
+    closed: all.filter((t) => t.status === "closed").length,
   };
 }
 
