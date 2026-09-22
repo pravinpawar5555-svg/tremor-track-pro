@@ -176,7 +176,7 @@ function DiscussionsPage() {
           hint="Observation / recommendation pending"
         />
         <Kpi label="High or critical" value={tk.critical} tone={tk.critical ? "high" : "low"} />
-        <Kpi label="Unread messages" value={totalUnread(data, meId)} hint={me ? `for ${me.name}` : undefined} />
+        <Kpi label="Unread messages" value={totalUnread(data, meId)} hint={me ? `for ${me.name}` : ""} />
       </div>
 
       {showNew ? (
@@ -418,7 +418,7 @@ function DiscussionsPage() {
 
           <Panel
             title={tab === "tickets" ? "Ticket discussion" : `Plant chat · ${plantId ? plantName(data, plantId) : "—"}`}
-            meta={me ? `You are ${me.name}` : undefined}
+            meta={me ? `You are ${me.name}` : null}
           >
             {thread ? (
               <>
