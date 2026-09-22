@@ -10,11 +10,19 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as WorkQueueRouteImport } from './routes/work-queue'
+import { Route as MachinesIndexRouteImport } from './routes/machines/index'
+import { Route as MachinesMachineIdRouteImport } from './routes/machines/$machineId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlertsRoute = AlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WorkQueueRoute = WorkQueueRouteImport.update({
@@ -22,31 +30,60 @@ const WorkQueueRoute = WorkQueueRouteImport.update({
   path: '/work-queue',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MachinesIndexRoute = MachinesIndexRouteImport.update({
+  id: '/machines/',
+  path: '/machines/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MachinesMachineIdRoute = MachinesMachineIdRouteImport.update({
+  id: '/machines/$machineId',
+  path: '/machines/$machineId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/alerts': typeof AlertsRoute
   '/work-queue': typeof WorkQueueRoute
+  '/machines/$machineId': typeof MachinesMachineIdRoute
+  '/machines/': typeof MachinesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/alerts': typeof AlertsRoute
   '/work-queue': typeof WorkQueueRoute
+  '/machines/$machineId': typeof MachinesMachineIdRoute
+  '/machines': typeof MachinesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/alerts': typeof AlertsRoute
   '/work-queue': typeof WorkQueueRoute
+  '/machines/$machineId': typeof MachinesMachineIdRoute
+  '/machines/': typeof MachinesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/work-queue'
+  fullPaths:
+    '/' | '/alerts' | '/work-queue' | '/machines/$machineId' | '/machines/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/work-queue'
-  id: '__root__' | '/' | '/work-queue'
+  to: '/' | '/alerts' | '/work-queue' | '/machines/$machineId' | '/machines'
+  id:
+    | '__root__'
+    | '/'
+    | '/alerts'
+    | '/work-queue'
+    | '/machines/$machineId'
+    | '/machines/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AlertsRoute: typeof AlertsRoute
   WorkQueueRoute: typeof WorkQueueRoute
+  MachinesMachineIdRoute: typeof MachinesMachineIdRoute
+  MachinesIndexRoute: typeof MachinesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +95,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/alerts': {
+      id: '/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/work-queue': {
       id: '/work-queue'
       path: '/work-queue'
@@ -65,12 +109,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkQueueRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/machines/': {
+      id: '/machines/'
+      path: '/machines'
+      fullPath: '/machines/'
+      preLoaderRoute: typeof MachinesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/machines/$machineId': {
+      id: '/machines/$machineId'
+      path: '/machines/$machineId'
+      fullPath: '/machines/$machineId'
+      preLoaderRoute: typeof MachinesMachineIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AlertsRoute: AlertsRoute,
   WorkQueueRoute: WorkQueueRoute,
+  MachinesMachineIdRoute: MachinesMachineIdRoute,
+  MachinesIndexRoute: MachinesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
