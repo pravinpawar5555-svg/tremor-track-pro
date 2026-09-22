@@ -220,7 +220,7 @@ function seed(): AppData {
     r(14, "pl-4", "monthly", "September 2026", 12, "pending", null, "eng-2"),
   ];
 
-  return { plants, updates, reports };
+  return { engineers: defaultEngineers.map((e) => ({ ...e })), plants, updates, reports };
 }
 
 // ---------------------------------------------------------------- store
@@ -236,7 +236,15 @@ function load() {
   loaded = true;
   try {
     const raw = window.localStorage.getItem(KEY);
-    if (raw) data = JSON.parse(raw) as AppData;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<AppData>;
+      data = {
+        engineers: parsed.engineers?.length ? parsed.engineers : defaultEngineers.map((e) => ({ ...e })),
+        plants: parsed.plants ?? data.plants,
+        updates: parsed.updates ?? data.updates,
+        reports: parsed.reports ?? data.reports,
+      };
+    }
   } catch {
     /* keep seed */
   }
