@@ -120,8 +120,26 @@ function Dashboard() {
           ) : null}
         </Panel>
 
-        <Panel title="Needs my attention">
+        <Panel title="Needs my attention" meta={<Link to="/discussions" className="text-signal">Open discussion</Link>}>
           <div className="divide-y divide-line/60">
+            {openTickets.map((t) => (
+              <Link
+                key={t.id}
+                to="/discussions"
+                className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm hover:bg-black/[0.03]"
+              >
+                <div>
+                  <div className="font-medium">
+                    {t.ticketNo} · {t.subject}
+                  </div>
+                  <div className="text-xs text-mute">
+                    {plantName(data, t.plantId)} · {t.area || "—"} · {t.machine} · {askForLabel[t.askFor]} ·{" "}
+                    {engineerName(data, t.raisedBy)}
+                  </div>
+                </div>
+                <Chip severity={ticketSeverity(t.priority)} label={priorityLabel[t.priority]} />
+              </Link>
+            ))}
             {notUpdated.map((a) => (
               <div key={a.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
                 <div>
