@@ -332,6 +332,7 @@ export function savePlant(plant: Omit<Plant, "id"> & { id?: string }) {
 
 export function removePlant(id: string) {
   commit({
+    engineers: data.engineers,
     plants: data.plants.filter((p) => p.id !== id),
     updates: data.updates.filter((u) => u.plantId !== id),
     reports: data.reports.filter((r) => r.plantId !== id),
