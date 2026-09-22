@@ -68,7 +68,7 @@ export const Route = createFileRoute("/discussions")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: DiscussionsPage;
+  component: DiscussionsPage,
 });
 
 const emptyTicket = {
