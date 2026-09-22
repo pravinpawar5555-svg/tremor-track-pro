@@ -40,6 +40,8 @@ const empty = {
   plantId: "",
   machinesChecked: "",
   abnormal: "",
+  repeatHighRisk: "",
+  newHighRisk: "",
   remark: "",
 };
 
