@@ -14,6 +14,7 @@ import {
   fmtDate,
   frequencyLabel,
   frequencyText,
+  fleetTotals,
   plantName,
   plantSummary,
   reportKpis,
@@ -48,6 +49,7 @@ function Dashboard() {
   const team = analystsOf(data);
   const today = todaysUpdates(data);
   const totals = sumUpdates(today);
+  const ft = fleetTotals(data);
   const rk = reportKpis(data);
   const notUpdated = team.filter((a) => !today.some((u) => u.engineerId === a.id));
   const overdueReports = data.reports
