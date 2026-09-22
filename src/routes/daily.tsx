@@ -40,6 +40,8 @@ const empty = {
   plantId: "",
   machinesChecked: "",
   abnormal: "",
+  repeatHighRisk: "",
+  newHighRisk: "",
   remark: "",
 };
 
@@ -61,6 +63,8 @@ function DailyPage() {
       plantId: form.plantId,
       machinesChecked: n(form.machinesChecked),
       abnormal: n(form.abnormal),
+      repeatHighRisk: n(form.repeatHighRisk),
+      newHighRisk: n(form.newHighRisk),
       remark: form.remark.trim(),
     });
     setForm({ ...empty, engineerId: form.engineerId, date: form.date });
@@ -107,8 +111,14 @@ function DailyPage() {
             <Field label="Machines checked">
               <TextInput type="number" min={0} value={form.machinesChecked} onChange={(e) => set("machinesChecked", e.target.value)} placeholder="0" />
             </Field>
-            <Field label="Abnormal found">
+            <Field label="High risk found">
               <TextInput type="number" min={0} value={form.abnormal} onChange={(e) => set("abnormal", e.target.value)} placeholder="0" />
+            </Field>
+            <Field label="Repeatative high risk (qty)">
+              <TextInput type="number" min={0} value={form.repeatHighRisk} onChange={(e) => set("repeatHighRisk", e.target.value)} placeholder="0" />
+            </Field>
+            <Field label="New high risk (qty)">
+              <TextInput type="number" min={0} value={form.newHighRisk} onChange={(e) => set("newHighRisk", e.target.value)} placeholder="0" />
             </Field>
             <Field label="Remark" hint="What was observed, what was informed to the site.">
               <TextArea value={form.remark} onChange={(e) => set("remark", e.target.value)} placeholder="Short observation / action taken" />
@@ -121,11 +131,13 @@ function DailyPage() {
         </Panel>
 
         <div className="grid gap-4">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
             <Kpi label="Updates · 7 d" value={scoped.length} />
             <Kpi label="Plants · 7 d" value={new Set(scoped.map((u) => u.plantId)).size} />
             <Kpi label="Machines · 7 d" value={totals.machinesChecked} />
-            <Kpi label="Abnormal · 7 d" value={totals.abnormal} tone={totals.abnormal ? "medium" : "low"} />
+            <Kpi label="High risk · 7 d" value={totals.abnormal} tone={totals.abnormal ? "medium" : "low"} />
+            <Kpi label="Repeatative · 7 d" value={totals.repeatHighRisk} tone={totals.repeatHighRisk ? "medium" : "low"} />
+            <Kpi label="New high risk · 7 d" value={totals.newHighRisk} tone={totals.newHighRisk ? "high" : "low"} />
           </div>
 
           <Panel
@@ -148,7 +160,9 @@ function DailyPage() {
                       <Th>Engineer</Th>
                       <Th>Plant</Th>
                       <Th align="right">Machines</Th>
-                      <Th align="right">Abnormal</Th>
+                      <Th align="right">High risk</Th>
+                      <Th align="right">Repeat</Th>
+                      <Th align="right">New</Th>
                       <Th>Remark</Th>
                       <Th align="right"> </Th>
                     </tr>
@@ -161,6 +175,8 @@ function DailyPage() {
                         <Td className="max-w-[14rem] truncate">{plantName(data, u.plantId)}</Td>
                         <Td align="right" mono>{u.machinesChecked}</Td>
                         <Td align="right" mono className={u.abnormal ? "text-sev-medium" : undefined}>{u.abnormal}</Td>
+                        <Td align="right" mono>{u.repeatHighRisk ?? 0}</Td>
+                        <Td align="right" mono className={u.newHighRisk ? "text-sev-high" : undefined}>{u.newHighRisk ?? 0}</Td>
                         <Td className="max-w-[20rem] text-xs text-mute">{u.remark || "—"}</Td>
                         <Td align="right">
                           <Button variant="ghost" onClick={() => removeUpdate(u.id)}>Delete</Button>

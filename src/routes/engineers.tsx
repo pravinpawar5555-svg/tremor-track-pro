@@ -174,7 +174,7 @@ function EngineersPage() {
               <div className="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
                 <Kpi label="Days updated" value={`${s.daysUpdated}/${s.days}`} tone={s.daysUpdated >= 6 ? "low" : "medium"} />
                 <Kpi label="Machines checked" value={s.machinesChecked} hint={`${s.entries} updates`} />
-                <Kpi label="Abnormal found" value={s.abnormal} tone={s.abnormal ? "medium" : "low"} />
+                <Kpi label="High risk found" value={s.abnormal} tone={s.abnormal ? "medium" : "low"} />
                 <Kpi label="Reports late" value={s.reportsLate} tone={s.reportsLate ? "high" : "low"} hint={`${s.reportsSent} sent`} />
               </div>
               <div className="px-4 pb-3">
@@ -208,7 +208,7 @@ function EngineersPage() {
                         <Th>Date</Th>
                         <Th>Plant</Th>
                         <Th align="right">Machines</Th>
-                        <Th align="right">Abnormal</Th>
+                        <Th align="right">High risk</Th>
                       </tr>
                     </thead>
                     <tbody>

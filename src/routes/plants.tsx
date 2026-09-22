@@ -54,6 +54,9 @@ const blank = {
   customer: "",
   location: "",
   machines: "",
+  assets: "",
+  node6: "",
+  nodeX: "",
   frequencies: ["weekly"] as Frequency[],
   contact: "",
   contactPhone: "",
@@ -73,6 +76,9 @@ function PlantsPage() {
       customer: p.customer,
       location: p.location,
       machines: String(p.machines),
+      assets: String(p.assets ?? 0),
+      node6: String(p.node6 ?? 0),
+      nodeX: String(p.nodeX ?? 0),
       frequencies: plantFrequencies(p),
       contact: p.contact,
       contactPhone: p.contactPhone ?? "",
@@ -97,6 +103,9 @@ function PlantsPage() {
       customer: form.customer.trim(),
       location: form.location.trim(),
       machines: Math.max(0, Number(form.machines) || 0),
+      assets: Math.max(0, Number(form.assets) || 0),
+      node6: Math.max(0, Number(form.node6) || 0),
+      nodeX: Math.max(0, Number(form.nodeX) || 0),
       frequencies: allFrequencies.filter((f) => form.frequencies.includes(f)),
       contact: form.contact.trim(),
       contactPhone: form.contactPhone.trim(),
@@ -138,6 +147,15 @@ function PlantsPage() {
             </Field>
             <Field label="Total machines">
               <TextInput type="number" min={0} value={form.machines} onChange={(e) => setForm({ ...form, machines: e.target.value })} />
+            </Field>
+            <Field label="Total assets">
+              <TextInput type="number" min={0} value={form.assets} onChange={(e) => setForm({ ...form, assets: e.target.value })} />
+            </Field>
+            <Field label="Node 6 sensors (qty)">
+              <TextInput type="number" min={0} value={form.node6} onChange={(e) => setForm({ ...form, node6: e.target.value })} />
+            </Field>
+            <Field label="Node X sensors (qty)">
+              <TextInput type="number" min={0} value={form.nodeX} onChange={(e) => setForm({ ...form, nodeX: e.target.value })} />
             </Field>
             <Field label="Customer contact name">
               <TextInput value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} placeholder="S. Mohanty" />
@@ -194,6 +212,9 @@ function PlantsPage() {
                   <Th>Customer / contact</Th>
                   <Th>Location</Th>
                   <Th align="right">Machines</Th>
+                  <Th align="right">Assets</Th>
+                  <Th align="right">Node 6</Th>
+                  <Th align="right">Node X</Th>
                   <Th>Report cycle</Th>
                   <Th>Engineer</Th>
                   <Th>Last observed</Th>
@@ -216,6 +237,9 @@ function PlantsPage() {
                       </Td>
                       <Td className="text-mute">{p.location || "—"}</Td>
                       <Td align="right" mono>{p.machines}</Td>
+                      <Td align="right" mono>{p.assets ?? 0}</Td>
+                      <Td align="right" mono>{p.node6 ?? 0}</Td>
+                      <Td align="right" mono>{p.nodeX ?? 0}</Td>
                       <Td>
                         <span className="flex flex-wrap gap-1">
                           {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : "—"}

@@ -14,6 +14,7 @@ import {
   fmtDate,
   frequencyLabel,
   frequencyText,
+  fleetTotals,
   plantName,
   plantSummary,
   reportKpis,
@@ -48,6 +49,7 @@ function Dashboard() {
   const team = analystsOf(data);
   const today = todaysUpdates(data);
   const totals = sumUpdates(today);
+  const ft = fleetTotals(data);
   const rk = reportKpis(data);
   const notUpdated = team.filter((a) => !today.some((u) => u.engineerId === a.id));
   const overdueReports = data.reports
@@ -81,7 +83,12 @@ function Dashboard() {
         />
         <Kpi label="Plants observed today" value={new Set(today.map((u) => u.plantId)).size} hint={`of ${data.plants.length} plants`} />
         <Kpi label="Machines checked today" value={totals.machinesChecked} hint={`${today.length} updates submitted`} />
-        <Kpi label="Abnormal found today" value={totals.abnormal} tone={totals.abnormal ? "medium" : "low"} />
+        <Kpi
+          label="High risk found today"
+          value={totals.abnormal}
+          tone={totals.abnormal ? "medium" : "low"}
+          hint={`${totals.repeatHighRisk} repeat · ${totals.newHighRisk} new`}
+        />
         <Kpi label="Reports overdue" value={rk.overdue} tone={rk.overdue ? "high" : "low"} hint={`${rk.pending} pending in total`} />
         <Kpi label="Report on-time rate" value={rk.onTimePct} unit="%" tone={rk.onTimePct >= 90 ? "low" : "medium"} hint={`${rk.sent} sent · ${rk.late} late`} />
         <Kpi
@@ -91,6 +98,13 @@ function Dashboard() {
           hint={`${tk.open} open · ${tk.responded} responded`}
         />
         <Kpi label="Unread messages" value={unread} tone={unread ? "medium" : "low"} hint="Internal discussion" />
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Kpi label="Total machines" value={ft.machines} hint={`${data.plants.length} plants`} />
+        <Kpi label="Total assets" value={ft.assets} hint="Under monitoring" />
+        <Kpi label="Node 6 sensors" value={ft.node6} hint="Installed qty" />
+        <Kpi label="Node X sensors" value={ft.nodeX} hint="Installed qty" />
       </div>
 
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.2fr_1fr]">
@@ -103,7 +117,7 @@ function Dashboard() {
                     <Th>Engineer</Th>
                     <Th>Plant</Th>
                     <Th align="right">Machines</Th>
-                    <Th align="right">Abnormal</Th>
+                    <Th align="right">High risk</Th>
                     <Th align="right">At</Th>
                   </tr>
                 </thead>
@@ -190,7 +204,7 @@ function Dashboard() {
                   <Th align="right">Days updated</Th>
                   <Th align="right">Plants</Th>
                   <Th align="right">Machines</Th>
-                  <Th align="right">Abnormal</Th>
+                  <Th align="right">High risk</Th>
                   <Th align="right">Reports sent</Th>
                   <Th align="right">Late</Th>
                 </tr>

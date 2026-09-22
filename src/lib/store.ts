@@ -19,6 +19,12 @@ export interface Plant {
   customer: string;
   location: string;
   machines: number;
+  /** Total assets covered under monitoring at this plant. */
+  assets: number;
+  /** Installed Node 6 sensor quantity. */
+  node6: number;
+  /** Installed Node X sensor quantity. */
+  nodeX: number;
   /** One or more report cycles agreed with the customer. */
   frequencies: Frequency[];
   contact: string;
@@ -32,7 +38,12 @@ export interface DailyUpdate {
   engineerId: string;
   plantId: string;
   machinesChecked: number;
+  /** High risk found (count). */
   abnormal: number;
+  /** Of the high risk found, how many are repeat cases. */
+  repeatHighRisk: number;
+  /** Of the high risk found, how many are new. */
+  newHighRisk: number;
   remark: string;
   submittedAt: string; // HH:MM
 }
@@ -231,12 +242,12 @@ export function reportTiming(r: ReportRow, today = TODAY): { late: boolean; days
 
 function seed(): AppData {
   const plants: Plant[] = [
-    { id: "pl-1", name: "Tata Steel — Kalinganagar CPP", customer: "Tata Steel", location: "Jajpur, Odisha", machines: 42, frequencies: ["weekly", "monthly"], contact: "S. Mohanty", contactPhone: "+91 98200 11223", engineerId: "eng-1" },
-    { id: "pl-2", name: "Reliance — Jamnagar Utilities", customer: "Reliance Industries", location: "Jamnagar, Gujarat", machines: 36, frequencies: ["weekly"], contact: "A. Trivedi", contactPhone: "+91 99040 55117", engineerId: "eng-2" },
-    { id: "pl-3", name: "UltraTech — Awarpur Line 2", customer: "UltraTech Cement", location: "Chandrapur, MH", machines: 28, frequencies: ["monthly", "on-demand"], contact: "R. Kulkarni", contactPhone: "+91 98220 47761", engineerId: "eng-1" },
-    { id: "pl-4", name: "Hindalco — Renukoot Smelter", customer: "Hindalco", location: "Sonbhadra, UP", machines: 24, frequencies: ["monthly"], contact: "V. Singh", contactPhone: "+91 94150 30982", engineerId: "eng-2" },
-    { id: "pl-5", name: "Grasim — Nagda Pulp", customer: "Grasim Industries", location: "Nagda, MP", machines: 18, frequencies: ["weekly"], contact: "D. Jain", contactPhone: "+91 94250 66104", engineerId: "eng-1" },
-    { id: "pl-6", name: "Deepak Fertilisers — Taloja", customer: "Deepak Fertilisers", location: "Taloja, MH", machines: 15, frequencies: ["on-demand"], contact: "N. Shetty", contactPhone: "+91 98330 27745", engineerId: "eng-2" },
+    { id: "pl-1", name: "Tata Steel — Kalinganagar CPP", customer: "Tata Steel", location: "Jajpur, Odisha", machines: 42, assets: 48, node6: 26, nodeX: 12, frequencies: ["weekly", "monthly"], contact: "S. Mohanty", contactPhone: "+91 98200 11223", engineerId: "eng-1" },
+    { id: "pl-2", name: "Reliance — Jamnagar Utilities", customer: "Reliance Industries", location: "Jamnagar, Gujarat", machines: 36, assets: 40, node6: 22, nodeX: 9, frequencies: ["weekly"], contact: "A. Trivedi", contactPhone: "+91 99040 55117", engineerId: "eng-2" },
+    { id: "pl-3", name: "UltraTech — Awarpur Line 2", customer: "UltraTech Cement", location: "Chandrapur, MH", machines: 28, assets: 31, node6: 18, nodeX: 6, frequencies: ["monthly", "on-demand"], contact: "R. Kulkarni", contactPhone: "+91 98220 47761", engineerId: "eng-1" },
+    { id: "pl-4", name: "Hindalco — Renukoot Smelter", customer: "Hindalco", location: "Sonbhadra, UP", machines: 24, assets: 27, node6: 14, nodeX: 5, frequencies: ["monthly"], contact: "V. Singh", contactPhone: "+91 94150 30982", engineerId: "eng-2" },
+    { id: "pl-5", name: "Grasim — Nagda Pulp", customer: "Grasim Industries", location: "Nagda, MP", machines: 18, assets: 20, node6: 11, nodeX: 4, frequencies: ["weekly"], contact: "D. Jain", contactPhone: "+91 94250 66104", engineerId: "eng-1" },
+    { id: "pl-6", name: "Deepak Fertilisers — Taloja", customer: "Deepak Fertilisers", location: "Taloja, MH", machines: 15, assets: 16, node6: 9, nodeX: 3, frequencies: ["on-demand"], contact: "N. Shetty", contactPhone: "+91 98330 27745", engineerId: "eng-2" },
   ];
 
   const u = (
@@ -248,6 +259,8 @@ function seed(): AppData {
     abnormal: number,
     remark: string,
     submittedAt: string,
+    repeatHighRisk = 0,
+    newHighRisk = abnormal,
   ): DailyUpdate => ({
     id: `up-${n}`,
     date: shiftDate(TODAY, dayOffset),
@@ -255,20 +268,22 @@ function seed(): AppData {
     plantId,
     machinesChecked,
     abnormal,
+    repeatHighRisk,
+    newHighRisk,
     remark,
     submittedAt,
   });
 
   const updates: DailyUpdate[] = [
-    u(1, 0, "eng-1", "pl-1", 14, 2, "Boiler feed pump 2A observed rising, informed site.", "09:10"),
+    u(1, 0, "eng-1", "pl-1", 14, 2, "Boiler feed pump 2A observed rising, informed site.", "09:10", 1, 1),
     u(2, 0, "eng-1", "pl-5", 8, 0, "All within limits.", "11:40"),
-    u(3, -1, "eng-1", "pl-3", 12, 1, "Raw mill fan bearing under watch, steady this week.", "09:25"),
-    u(4, -1, "eng-2", "pl-2", 16, 1, "Cooling tower fan 4 above alert, to be re-checked.", "09:05"),
+    u(3, -1, "eng-1", "pl-3", 12, 1, "Raw mill fan bearing under watch, steady this week.", "09:25", 1, 0),
+    u(4, -1, "eng-2", "pl-2", 16, 1, "Cooling tower fan 4 above alert, to be re-checked.", "09:05", 0, 1),
     u(5, -2, "eng-2", "pl-4", 10, 0, "Normal. Two machines were not running.", "09:35"),
-    u(6, -2, "eng-1", "pl-1", 13, 1, "Observation continued on BFP 2A.", "09:15"),
+    u(6, -2, "eng-1", "pl-1", 13, 1, "Observation continued on BFP 2A.", "09:15", 1, 0),
     u(7, -3, "eng-2", "pl-2", 15, 0, "Normal across compressors.", "09:20"),
-    u(8, -3, "eng-1", "pl-5", 9, 1, "Pulp pump 3 to be re-checked.", "10:05"),
-    u(9, -4, "eng-2", "pl-6", 7, 2, "On-demand study after site complaint — two machines abnormal.", "14:10"),
+    u(8, -3, "eng-1", "pl-5", 9, 1, "Pulp pump 3 to be re-checked.", "10:05", 0, 1),
+    u(9, -4, "eng-2", "pl-6", 7, 2, "On-demand study after site complaint — two high risk machines.", "14:10", 0, 2),
     u(10, -4, "eng-1", "pl-3", 11, 0, "Normal.", "09:30"),
   ];
 
@@ -425,8 +440,15 @@ function load() {
           ...p,
           frequencies: plantFrequencies(p),
           contactPhone: p.contactPhone ?? "",
+          assets: p.assets ?? p.machines ?? 0,
+          node6: p.node6 ?? 0,
+          nodeX: p.nodeX ?? 0,
         })),
-        updates: parsed.updates ?? data.updates,
+        updates: (parsed.updates ?? data.updates).map((x) => ({
+          ...x,
+          repeatHighRisk: x.repeatHighRisk ?? 0,
+          newHighRisk: x.newHighRisk ?? x.abnormal ?? 0,
+        })),
         reports: parsed.reports ?? data.reports,
         tickets: parsed.tickets ?? data.tickets,
         messages: (parsed.messages ?? data.messages).map((x) => ({ ...x, readBy: x.readBy ?? [] })),
@@ -590,8 +612,23 @@ export function sumUpdates(list: DailyUpdate[]) {
     (a, u) => ({
       machinesChecked: a.machinesChecked + u.machinesChecked,
       abnormal: a.abnormal + u.abnormal,
+      repeatHighRisk: a.repeatHighRisk + (u.repeatHighRisk ?? 0),
+      newHighRisk: a.newHighRisk + (u.newHighRisk ?? 0),
     }),
-    { machinesChecked: 0, abnormal: 0 },
+    { machinesChecked: 0, abnormal: 0, repeatHighRisk: 0, newHighRisk: 0 },
+  );
+}
+
+/** Installed base across all plants — machines, assets and sensor quantities. */
+export function fleetTotals(d: AppData) {
+  return d.plants.reduce(
+    (a, p) => ({
+      machines: a.machines + (p.machines ?? 0),
+      assets: a.assets + (p.assets ?? 0),
+      node6: a.node6 + (p.node6 ?? 0),
+      nodeX: a.nodeX + (p.nodeX ?? 0),
+    }),
+    { machines: 0, assets: 0, node6: 0, nodeX: 0 },
   );
 }
 
