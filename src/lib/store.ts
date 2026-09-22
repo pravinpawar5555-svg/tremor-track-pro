@@ -310,7 +310,98 @@ function seed(): AppData {
     r(14, "pl-4", "monthly", "September 2026", 12, "pending", null, "eng-2"),
   ];
 
-  return { engineers: defaultEngineers.map((e) => ({ ...e })), plants, updates, reports };
+  const tickets: Ticket[] = [
+    {
+      id: "tk-1",
+      ticketNo: "FM-OBS-2026-001",
+      plantId: "pl-1",
+      area: "Boiler feed area",
+      machine: "Boiler feed pump 2A",
+      subject: "Rising vibration on NDE bearing",
+      observation:
+        "Overall velocity has risen over three weeks. Indication of possible bearing distress — requires verification. Site wants a view before the weekly report.",
+      askFor: "both",
+      priority: "high",
+      status: "open",
+      raisedBy: "eng-1",
+      raisedOn: TODAY,
+      raisedAt: "09:20",
+      assignedTo: "mgr-1",
+    },
+    {
+      id: "tk-2",
+      ticketNo: "FM-OBS-2026-002",
+      plantId: "pl-2",
+      area: "Cooling tower",
+      machine: "CT fan 4",
+      subject: "Above alert after gearbox oil change",
+      observation:
+        "Suspected looseness at fan hub. Need your recommendation on whether to advise the customer to stop the fan or continue under watch.",
+      askFor: "recommendation",
+      priority: "medium",
+      status: "in-discussion",
+      raisedBy: "eng-2",
+      raisedOn: shiftDate(TODAY, -1),
+      raisedAt: "09:45",
+      assignedTo: "mgr-1",
+    },
+    {
+      id: "tk-3",
+      ticketNo: "FM-OBS-2026-003",
+      plantId: "pl-6",
+      area: "Ammonia compressor house",
+      machine: "Compressor 1 — motor DE",
+      subject: "On-demand study finding",
+      observation: "Two machines abnormal in the on-demand study. Observation needed before the report goes to the customer.",
+      askFor: "observation",
+      priority: "high",
+      status: "responded",
+      raisedBy: "eng-2",
+      raisedOn: shiftDate(TODAY, -4),
+      raisedAt: "15:05",
+      assignedTo: "mgr-1",
+      response:
+        "Treat as indication of misalignment; ask site for shim records and re-measure after correction. Do not declare a fault in the report.",
+      respondedOn: shiftDate(TODAY, -3),
+    },
+  ];
+
+  const m = (
+    n: number,
+    thread: string,
+    authorId: string,
+    text: string,
+    dayOffset: number,
+    at: string,
+  ): ChatMessage => ({
+    id: `ms-${n}`,
+    thread,
+    authorId,
+    text,
+    date: shiftDate(TODAY, dayOffset),
+    at,
+    readBy: [authorId],
+  });
+
+  const messages: ChatMessage[] = [
+    m(1, "ticket:tk-1", "eng-1", "Trend and last reading attached in the weekly folder. Please advise wording for the customer.", 0, "09:22"),
+    m(2, "ticket:tk-2", "eng-2", "Site is asking for a decision today.", -1, "09:50"),
+    m(3, "ticket:tk-2", "mgr-1", "Keep it under watch for now, re-measure tomorrow morning and update me here.", -1, "11:15"),
+    m(4, "ticket:tk-3", "mgr-1", "Responded above. Share the draft before sending to the customer.", -3, "10:05"),
+    m(5, "plant:pl-1", "eng-1", "Weekly report for 14–20 Sep sent to Mr. Mohanty.", -1, "17:30"),
+    m(6, "plant:pl-1", "mgr-1", "Noted. Keep BFP 2A wording as 'under observation'.", -1, "18:02"),
+    m(7, "plant:pl-2", "eng-2", "Customer visit planned next week, will cover CT fans.", -2, "12:20"),
+  ];
+
+  return {
+    engineers: defaultEngineers.map((e) => ({ ...e })),
+    plants,
+    updates,
+    reports,
+    tickets,
+    messages,
+    currentUserId: "mgr-1",
+  };
 }
 
 // ---------------------------------------------------------------- store
