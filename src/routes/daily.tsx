@@ -63,6 +63,8 @@ function DailyPage() {
       plantId: form.plantId,
       machinesChecked: n(form.machinesChecked),
       abnormal: n(form.abnormal),
+      repeatHighRisk: n(form.repeatHighRisk),
+      newHighRisk: n(form.newHighRisk),
       remark: form.remark.trim(),
     });
     setForm({ ...empty, engineerId: form.engineerId, date: form.date });
