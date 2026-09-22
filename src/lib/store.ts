@@ -282,6 +282,47 @@ export function useData(): AppData {
 
 const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 
+export function saveEngineer(input: { id?: string; name: string; role: Engineer["role"] }) {
+  const name = input.name.trim();
+  if (!name) return { ok: false, message: "Enter a name." };
+  const clash = data.engineers.some((e) => e.id !== input.id && e.name.toLowerCase() === name.toLowerCase());
+  if (clash) return { ok: false, message: "An engineer with this name already exists." };
+  const engineers = input.id
+    ? data.engineers.map((e) => (e.id === input.id ? { ...e, name, role: input.role, initials: initialsOf(name) } : e))
+    : [...data.engineers, { id: uid("eng"), name, role: input.role, initials: initialsOf(name) }];
+  commit({ ...data, engineers });
+  return { ok: true, message: input.id ? "Name updated." : "Engineer added." };
+}
+
+/** Work already recorded against an engineer, to warn before deletion. */
+export function engineerUsage(d: AppData, id: string) {
+  return {
+    updates: d.updates.filter((u) => u.engineerId === id).length,
+    plants: d.plants.filter((p) => p.engineerId === id).length,
+    reports: d.reports.filter((r) => r.byEngineerId === id).length,
+  };
+}
+
+/** Remove an engineer. Their plants/reports must first be reassigned to `reassignTo`. */
+export function removeEngineer(id: string, reassignTo?: string) {
+  const engineers = data.engineers.filter((e) => e.id !== id);
+  if (!engineers.some((e) => e.role === "analyst")) {
+    return { ok: false, message: "Keep at least one engineer in the team." };
+  }
+  const usage = engineerUsage(data, id);
+  if ((usage.plants || usage.reports || usage.updates) && !reassignTo) {
+    return { ok: false, message: "Choose an engineer to move this work to first." };
+  }
+  const to = reassignTo ?? "";
+  commit({
+    engineers,
+    plants: data.plants.map((p) => (p.engineerId === id ? { ...p, engineerId: to } : p)),
+    updates: data.updates.map((u) => (u.engineerId === id ? { ...u, engineerId: to } : u)),
+    reports: data.reports.map((r) => (r.byEngineerId === id ? { ...r, byEngineerId: to } : r)),
+  });
+  return { ok: true, message: "Engineer removed and their work reassigned." };
+}
+
 export function savePlant(plant: Omit<Plant, "id"> & { id?: string }) {
   const plants = plant.id
     ? data.plants.map((p) => (p.id === plant.id ? ({ ...p, ...plant } as Plant) : p))
