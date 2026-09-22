@@ -16,7 +16,7 @@ import {
 } from "@/components/console/ui";
 import {
   TODAY,
-  analysts,
+  analystsOf,
   engineerName,
   fmtDate,
   plantSummary,
@@ -53,11 +53,12 @@ const blank = {
   machines: "",
   frequency: "weekly" as Frequency,
   contact: "",
-  engineerId: analysts[0]?.id ?? "eng-1",
+  engineerId: "",
 };
 
 function PlantsPage() {
   const data = useData();
+  const team = analystsOf(data);
   const [form, setForm] = useState<typeof blank & { id?: string }>(blank);
   const [open, setOpen] = useState(false);
 
@@ -76,7 +77,7 @@ function PlantsPage() {
       machines: Math.max(0, Number(form.machines) || 0),
       frequency: form.frequency,
       contact: form.contact.trim(),
-      engineerId: form.engineerId,
+      engineerId: form.engineerId || team[0]?.id || "",
     });
     setForm(blank);
     setOpen(false);
@@ -126,8 +127,8 @@ function PlantsPage() {
               <TextInput value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} />
             </Field>
             <Field label="Assigned engineer">
-              <Select value={form.engineerId} onChange={(e) => setForm({ ...form, engineerId: e.target.value })}>
-                {analysts.map((a) => (
+              <Select value={form.engineerId || team[0]?.id || ""} onChange={(e) => setForm({ ...form, engineerId: e.target.value })}>
+                {team.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </Select>
@@ -170,7 +171,7 @@ function PlantsPage() {
                       <Td className="text-mute">{p.location || "—"}</Td>
                       <Td align="right" mono>{p.machines}</Td>
                       <Td><FrequencyChip frequency={p.frequency} /></Td>
-                      <Td>{engineerName(p.engineerId)}</Td>
+                      <Td>{engineerName(data, p.engineerId)}</Td>
                       <Td mono className={stale ? "text-sev-high" : undefined}>{fmtDate(s.lastObserved)}</Td>
                       <Td mono>{fmtDate(s.lastReportSent)}</Td>
                       <Td align="right">

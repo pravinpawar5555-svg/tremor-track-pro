@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { TODAY, analysts, fmtDate, reportKpis, useData } from "@/lib/store";
+import { TODAY, analystsOf, fmtDate, reportKpis, useData } from "@/lib/store";
 
 const nav = [
   { to: "/", label: "Dashboard" },
@@ -14,8 +14,9 @@ const nav = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const data = useData();
+  const team = analystsOf(data);
   const kpis = reportKpis(data);
-  const submitted = analysts.filter((a) => data.updates.some((u) => u.engineerId === a.id && u.date === TODAY));
+  const submitted = team.filter((a) => data.updates.some((u) => u.engineerId === a.id && u.date === TODAY));
 
   return (
     <div className="min-h-screen bg-base text-ink">
@@ -60,7 +61,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="panel-inset mt-6 p-3">
             <div className="label-caps">Today's updates</div>
-            {analysts.map((a) => {
+            {team.map((a) => {
               const done = submitted.some((s) => s.id === a.id);
               return (
                 <div key={a.id} className="mt-2 flex items-center justify-between gap-2 text-xs">
@@ -76,7 +77,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="panel-inset mx-4 mt-3 flex items-center justify-between gap-2 p-2.5 text-xs md:hidden">
             <span className="label-caps">Today's updates</span>
             <span className="flex items-center gap-2">
-              {analysts.map((a) => {
+              {team.map((a) => {
                 const done = submitted.some((s) => s.id === a.id);
                 return (
                   <span

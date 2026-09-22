@@ -51,6 +51,7 @@ export interface ReportRow {
 }
 
 export interface AppData {
+  engineers: Engineer[];
   plants: Plant[];
   updates: DailyUpdate[];
   reports: ReportRow[];
@@ -60,13 +61,26 @@ export interface AppData {
 
 export const TODAY = "2026-09-22";
 
-export const engineers: Engineer[] = [
+export const defaultEngineers: Engineer[] = [
   { id: "eng-1", name: "R. Ahuja", initials: "RA", role: "analyst" },
   { id: "eng-2", name: "M. Desai", initials: "MD", role: "analyst" },
   { id: "mgr-1", name: "P. Pawar", initials: "PP", role: "manager" },
 ];
 
-export const analysts = engineers.filter((e) => e.role === "analyst");
+export function initialsOf(name: string) {
+  const parts = name.replace(/[^A-Za-z .]/g, "").split(/[ .]+/).filter(Boolean);
+  const first = parts[0]?.[0] ?? "?";
+  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
+  return (first + last).toUpperCase();
+}
+
+export function analystsOf(d: AppData) {
+  return d.engineers.filter((e) => e.role === "analyst");
+}
+
+export function managersOf(d: AppData) {
+  return d.engineers.filter((e) => e.role === "manager");
+}
 
 export const frequencyLabel: Record<Frequency, string> = {
   weekly: "Weekly",
@@ -80,8 +94,8 @@ export const reportStatusLabel: Record<ReportStatus, string> = {
   sent: "Sent",
 };
 
-export function engineerName(id: string) {
-  return engineers.find((e) => e.id === id)?.name ?? "—";
+export function engineerName(d: AppData, id: string) {
+  return d.engineers.find((e) => e.id === id)?.name ?? "—";
 }
 
 // ---------------------------------------------------------------- dates
@@ -206,7 +220,7 @@ function seed(): AppData {
     r(14, "pl-4", "monthly", "September 2026", 12, "pending", null, "eng-2"),
   ];
 
-  return { plants, updates, reports };
+  return { engineers: defaultEngineers.map((e) => ({ ...e })), plants, updates, reports };
 }
 
 // ---------------------------------------------------------------- store
@@ -222,7 +236,15 @@ function load() {
   loaded = true;
   try {
     const raw = window.localStorage.getItem(KEY);
-    if (raw) data = JSON.parse(raw) as AppData;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<AppData>;
+      data = {
+        engineers: parsed.engineers?.length ? parsed.engineers : defaultEngineers.map((e) => ({ ...e })),
+        plants: parsed.plants ?? data.plants,
+        updates: parsed.updates ?? data.updates,
+        reports: parsed.reports ?? data.reports,
+      };
+    }
   } catch {
     /* keep seed */
   }
@@ -260,6 +282,47 @@ export function useData(): AppData {
 
 const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 
+export function saveEngineer(input: { id?: string; name: string; role: Engineer["role"] }) {
+  const name = input.name.trim();
+  if (!name) return { ok: false, message: "Enter a name." };
+  const clash = data.engineers.some((e) => e.id !== input.id && e.name.toLowerCase() === name.toLowerCase());
+  if (clash) return { ok: false, message: "An engineer with this name already exists." };
+  const engineers = input.id
+    ? data.engineers.map((e) => (e.id === input.id ? { ...e, name, role: input.role, initials: initialsOf(name) } : e))
+    : [...data.engineers, { id: uid("eng"), name, role: input.role, initials: initialsOf(name) }];
+  commit({ ...data, engineers });
+  return { ok: true, message: input.id ? "Name updated." : "Engineer added." };
+}
+
+/** Work already recorded against an engineer, to warn before deletion. */
+export function engineerUsage(d: AppData, id: string) {
+  return {
+    updates: d.updates.filter((u) => u.engineerId === id).length,
+    plants: d.plants.filter((p) => p.engineerId === id).length,
+    reports: d.reports.filter((r) => r.byEngineerId === id).length,
+  };
+}
+
+/** Remove an engineer. Their plants/reports must first be reassigned to `reassignTo`. */
+export function removeEngineer(id: string, reassignTo?: string) {
+  const engineers = data.engineers.filter((e) => e.id !== id);
+  if (!engineers.some((e) => e.role === "analyst")) {
+    return { ok: false, message: "Keep at least one engineer in the team." };
+  }
+  const usage = engineerUsage(data, id);
+  if ((usage.plants || usage.reports || usage.updates) && !reassignTo) {
+    return { ok: false, message: "Choose an engineer to move this work to first." };
+  }
+  const to = reassignTo ?? "";
+  commit({
+    engineers,
+    plants: data.plants.map((p) => (p.engineerId === id ? { ...p, engineerId: to } : p)),
+    updates: data.updates.map((u) => (u.engineerId === id ? { ...u, engineerId: to } : u)),
+    reports: data.reports.map((r) => (r.byEngineerId === id ? { ...r, byEngineerId: to } : r)),
+  });
+  return { ok: true, message: "Engineer removed and their work reassigned." };
+}
+
 export function savePlant(plant: Omit<Plant, "id"> & { id?: string }) {
   const plants = plant.id
     ? data.plants.map((p) => (p.id === plant.id ? ({ ...p, ...plant } as Plant) : p))
@@ -269,6 +332,7 @@ export function savePlant(plant: Omit<Plant, "id"> & { id?: string }) {
 
 export function removePlant(id: string) {
   commit({
+    engineers: data.engineers,
     plants: data.plants.filter((p) => p.id !== id),
     updates: data.updates.filter((u) => u.plantId !== id),
     reports: data.reports.filter((r) => r.plantId !== id),

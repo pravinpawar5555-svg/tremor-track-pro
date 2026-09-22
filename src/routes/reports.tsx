@@ -19,7 +19,7 @@ import {
 } from "@/components/console/ui";
 import {
   TODAY,
-  analysts,
+  analystsOf,
   engineerName,
   fmtDate,
   frequencyLabel,
@@ -54,6 +54,7 @@ export const Route = createFileRoute("/reports")({
 
 function ReportsPage() {
   const data = useData();
+  const team = analystsOf(data);
   const rk = reportKpis(data);
   const [type, setType] = useState<"all" | Frequency>("all");
   const [status, setStatus] = useState<"all" | ReportStatus>("all");
@@ -63,7 +64,7 @@ function ReportsPage() {
     type: "weekly" as Frequency,
     period: "",
     dueDate: TODAY,
-    byEngineerId: analysts[0]?.id ?? "eng-1",
+    byEngineerId: "",
   });
 
   const rows = data.reports
@@ -73,7 +74,7 @@ function ReportsPage() {
 
   const add = () => {
     if (!form.plantId || !form.period.trim()) return;
-    saveReport({ ...form, status: "pending" });
+    saveReport({ ...form, byEngineerId: form.byEngineerId || team[0]?.id || "", status: "pending" });
     setForm({ ...form, period: "" });
     setAdding(false);
   };
@@ -119,8 +120,8 @@ function ReportsPage() {
               <TextInput type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
             </Field>
             <Field label="Owner">
-              <Select value={form.byEngineerId} onChange={(e) => setForm({ ...form, byEngineerId: e.target.value })}>
-                {analysts.map((a) => (
+              <Select value={form.byEngineerId || team[0]?.id || ""} onChange={(e) => setForm({ ...form, byEngineerId: e.target.value })}>
+                {team.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </Select>
@@ -182,7 +183,7 @@ function ReportsPage() {
                       <Td mono>{fmtDate(r.sentDate)}</Td>
                       <Td><TimingChip late={t.late} label={t.label} /></Td>
                       <Td><StatusChip status={r.status} /></Td>
-                      <Td>{engineerName(r.byEngineerId)}</Td>
+                      <Td>{engineerName(data, r.byEngineerId)}</Td>
                       <Td align="right">
                         <span className="flex justify-end gap-1">
                           {r.status !== "prepared" && r.status !== "sent" ? (

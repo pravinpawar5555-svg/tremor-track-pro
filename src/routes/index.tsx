@@ -3,7 +3,7 @@ import { AppShell } from "@/components/console/AppShell";
 import { Bar, Chip, Empty, Kpi, Panel, PageHeader, StatusChip, Td, Th, TimingChip, Tr } from "@/components/console/ui";
 import {
   TODAY,
-  analysts,
+  analystsOf,
   engineerName,
   engineerSummary,
   fmtDate,
@@ -39,10 +39,11 @@ export const Route = createFileRoute("/")({
 
 function Dashboard() {
   const data = useData();
+  const team = analystsOf(data);
   const today = todaysUpdates(data);
   const totals = sumUpdates(today);
   const rk = reportKpis(data);
-  const notUpdated = analysts.filter((a) => !today.some((u) => u.engineerId === a.id));
+  const notUpdated = team.filter((a) => !today.some((u) => u.engineerId === a.id));
   const overdueReports = data.reports
     .filter((r) => r.status !== "sent" && reportTiming(r).late)
     .sort((a, b) => (a.dueDate > b.dueDate ? 1 : -1));
@@ -63,7 +64,7 @@ function Dashboard() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
         <Kpi
           label="Today's updates"
-          value={`${today.length ? new Set(today.map((u) => u.engineerId)).size : 0}/${analysts.length}`}
+          value={`${today.length ? new Set(today.map((u) => u.engineerId)).size : 0}/${team.length}`}
           tone={notUpdated.length ? "high" : "low"}
           hint={notUpdated.length ? `${notUpdated.map((a) => a.name).join(", ")} pending` : "Both engineers updated"}
         />
@@ -94,7 +95,7 @@ function Dashboard() {
                 <tbody>
                   {today.map((u) => (
                     <Tr key={u.id}>
-                      <Td>{engineerName(u.engineerId)}</Td>
+                      <Td>{engineerName(data, u.engineerId)}</Td>
                       <Td className="max-w-[16rem] truncate">{plantName(data, u.plantId)}</Td>
                       <Td align="right" mono>{u.machinesChecked}</Td>
                       <Td align="right" mono>{u.trend}</Td>
@@ -137,7 +138,7 @@ function Dashboard() {
                       {frequencyLabel[r.type]} report not sent — {plantName(data, r.plantId)}
                     </div>
                     <div className="text-xs text-mute">
-                      {r.period} · due {fmtDate(r.dueDate)} · {engineerName(r.byEngineerId)}
+                      {r.period} · due {fmtDate(r.dueDate)} · {engineerName(data, r.byEngineerId)}
                     </div>
                   </div>
                   <TimingChip late={t.late} label={t.label} />
@@ -165,7 +166,7 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {analysts.map((a) => {
+                {team.map((a) => {
                   const s = engineerSummary(data, a.id);
                   return (
                     <Tr key={a.id}>
@@ -209,7 +210,7 @@ function Dashboard() {
                     <Td>{frequencyLabel[r.type]}</Td>
                     <Td mono>{fmtDate(r.dueDate)}</Td>
                     <Td><StatusChip status={r.status} /></Td>
-                    <Td align="right">{engineerName(r.byEngineerId)}</Td>
+                    <Td align="right">{engineerName(data, r.byEngineerId)}</Td>
                   </Tr>
                 ))}
               </tbody>
@@ -249,7 +250,7 @@ function Dashboard() {
                     <Td align="right" mono>{p.machines}</Td>
                     <Td mono>{fmtDate(s.lastReportSent)}</Td>
                     <Td mono>{s.nextReport ? fmtDate(s.nextReport.dueDate) : "—"}</Td>
-                    <Td align="right">{engineerName(p.engineerId)}</Td>
+                    <Td align="right">{engineerName(data, p.engineerId)}</Td>
                   </Tr>
                 );
               })}
