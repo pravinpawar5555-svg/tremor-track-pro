@@ -81,7 +81,7 @@ function Dashboard() {
         <Kpi label="Overdue actions" value={k.overdueActions} tone="high" hint={`${k.pendingActions} actions open`} />
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-5">
+      <div className="mt-4 grid items-start gap-4 lg:grid-cols-5">
         <Panel title="Engineer Accountability" meta="Today" className="lg:col-span-3">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -163,7 +163,7 @@ function Dashboard() {
         </Panel>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-5">
+      <div className="mt-4 grid items-start gap-4 lg:grid-cols-5">
         <Panel title="Today’s Work Queue" meta={`${k.reviewed} reviewed · ${k.pending} pending`} className="lg:col-span-3">
           <div className="overflow-x-auto">
             <table className="w-full text-left">

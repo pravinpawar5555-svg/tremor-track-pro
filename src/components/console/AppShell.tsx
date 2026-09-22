@@ -68,11 +68,11 @@ export function AppShell({ children, crumbs }: { children: ReactNode; crumbs?: C
           </div>
           <div className="panel-inset mt-6 p-3">
             <div className="label-caps">Data quality</div>
-            <div className="mt-2 flex items-baseline justify-between text-xs">
+            <div className="mt-2 flex items-baseline justify-between gap-2 text-xs">
               <span className="text-mute">Sensors reporting</span>
               <span className="num">182 / 186</span>
             </div>
-            <div className="mt-1 flex items-baseline justify-between text-xs">
+            <div className="mt-1 flex items-baseline justify-between gap-2 text-xs">
               <span className="text-mute">Invalid / offline</span>
               <span className="num text-sev-medium">4</span>
             </div>
