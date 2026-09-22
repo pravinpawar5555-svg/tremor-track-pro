@@ -95,7 +95,7 @@ function MachinesPage() {
                     <CriticalityChip criticality={m.criticality} />
                   </Td>
                   <Td align="right">{m.operatingRpm || "—"}</Td>
-                  <Td align="right" className={m.velocityRms > m.alertLimit ? "text-sev-high" : undefined}>
+                  <Td align="right" className={m.velocityRms > m.alertLimit ? "text-sev-high" : ""}>
                     {m.velocityRms ? m.velocityRms.toFixed(1) : "—"}
                   </Td>
                   <Td>

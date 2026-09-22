@@ -24,7 +24,7 @@ const FILTERS: (Severity | "all")[] = ["all", "critical", "high", "medium", "low
 
 function AlertsPage() {
   const [filter, setFilter] = useState<Severity | "all">("all");
-  const [openId, setOpenId] = useState<string>(alerts[0].id);
+  const [openId, setOpenId] = useState<string>(alerts[0]?.id ?? "");
 
   const rows = alerts.filter((a) => filter === "all" || a.severity === filter);
   const open = alerts.find((a) => a.id === openId) ?? rows[0];

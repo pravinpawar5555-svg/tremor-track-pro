@@ -23,7 +23,7 @@ export const Route = createFileRoute("/reports")({
 const STAGES = ["draft", "review", "approved", "sent"] as const;
 
 function ReportsPage() {
-  const [customerId, setCustomerId] = useState(customers[0].id);
+  const [customerId, setCustomerId] = useState(customers[0]?.id ?? "");
   const [period, setPeriod] = useState<"weekly" | "monthly">("weekly");
 
   const customer = customerById(customerId);

@@ -39,7 +39,7 @@ export function SpectrumChart({ machine }: { machine: Machine }) {
   const [cursor, setCursor] = useState<{ f: number; a: number } | null>(null);
   const series = spectrumSeries(machine);
   const max = Math.max(0.5, ...series.map((p) => p.a));
-  const fMax = series[series.length - 1].f;
+  const fMax = series[series.length - 1]?.f ?? 1000;
   const x = (f: number) => (f / fMax) * W;
   const y = (a: number) => H - (a / max) * (H - 20) - 8;
   const pts = series.map((p) => ({ x: x(p.f), y: y(p.a) }));
@@ -72,7 +72,7 @@ export function SpectrumChart({ machine }: { machine: Machine }) {
           const box = e.currentTarget.getBoundingClientRect();
           const ratio = (e.clientX - box.left) / box.width;
           const idx = Math.min(series.length - 1, Math.max(0, Math.round(ratio * (series.length - 1))));
-          setCursor(series[idx]);
+          setCursor(series[idx] ?? null);
         }}
       >
         <line x1="0" y1={H - 8} x2={W} y2={H - 8} stroke="var(--line)" strokeWidth="1" />

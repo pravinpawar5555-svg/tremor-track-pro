@@ -709,22 +709,28 @@ const reviewedStatuses: ReviewStatus[] = ["reviewed-normal", "reviewed-observati
 
 // Portfolio counts are scaled to reflect the full monitored fleet while the
 // demo dataset carries a representative sample of machines.
-const FLEET_SCALE = { assigned: [42, 38], reviewed: [35, 31], reports: [10, 1] };
+const FLEET_SCALE: Record<"assigned" | "reviewed" | "reports", number[]> = {
+  assigned: [42, 38],
+  reviewed: [35, 31],
+  reports: [10, 1],
+};
 
 export function analystStats(): AnalystStats[] {
   return engineers
     .filter((e) => e.role === "analyst")
     .map((e, i) => {
       const mine = machines.filter((m) => m.analystId === e.id);
+      const assigned = FLEET_SCALE.assigned[i] ?? 0;
+      const reviewed = FLEET_SCALE.reviewed[i] ?? 0;
       return {
         engineer: e,
-        assigned: FLEET_SCALE.assigned[i],
-        reviewed: FLEET_SCALE.reviewed[i],
-        pending: FLEET_SCALE.assigned[i] - FLEET_SCALE.reviewed[i],
+        assigned,
+        reviewed,
+        pending: assigned - reviewed,
         abnormalities: mine.filter((m) => m.condition === "abnormal" || m.condition === "critical").length + (i === 0 ? 2 : 1),
         alertsRaised: alerts.filter((a) => a.analystId === e.id && a.raisedAt.includes("22 Sep")).length + 1,
         followUps: actionItems.filter((a) => a.owner.includes(e.name)).length + (i === 0 ? 3 : 2),
-        reports: FLEET_SCALE.reports[i],
+        reports: FLEET_SCALE.reports[i] ?? 0,
         avgReviewMin: i === 0 ? 6.4 : 7.1,
       };
     });

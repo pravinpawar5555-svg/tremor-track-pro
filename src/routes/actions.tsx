@@ -66,7 +66,7 @@ function ActionsPage() {
                     <Td>
                       <SeverityChip
                         severity={a.status === "overdue" ? "high" : a.status === "closed" ? "low" : a.status === "in-progress" ? "medium" : "advisory"}
-                        label={a.status === "in-progress" ? "In progress" : a.status[0].toUpperCase() + a.status.slice(1)}
+                        label={a.status === "in-progress" ? "In progress" : a.status.slice(0, 1).toUpperCase() + a.status.slice(1)}
                       />
                     </Td>
                     <Td align="right" className="text-xs">
