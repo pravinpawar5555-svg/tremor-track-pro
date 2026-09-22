@@ -39,7 +39,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={cn("panel-glass", className)}>
+    <section className={cn("panel-glass min-w-0", className)}>
       {title ? (
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/70 px-4 py-3">
           <h2 className="font-semibold tracking-tight text-balance">{title}</h2>
