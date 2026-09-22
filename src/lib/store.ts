@@ -526,11 +526,14 @@ export function savePlant(plant: Omit<Plant, "id"> & { id?: string }) {
 }
 
 export function removePlant(id: string) {
+  const dropped = data.tickets.filter((t) => t.plantId === id).map((t) => ticketThread(t.id));
   commit({
-    engineers: data.engineers,
+    ...data,
     plants: data.plants.filter((p) => p.id !== id),
     updates: data.updates.filter((u) => u.plantId !== id),
     reports: data.reports.filter((r) => r.plantId !== id),
+    tickets: data.tickets.filter((t) => t.plantId !== id),
+    messages: data.messages.filter((x) => x.thread !== plantThread(id) && !dropped.includes(x.thread)),
   });
 }
 
