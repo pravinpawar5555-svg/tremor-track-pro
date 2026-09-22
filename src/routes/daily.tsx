@@ -111,8 +111,14 @@ function DailyPage() {
             <Field label="Machines checked">
               <TextInput type="number" min={0} value={form.machinesChecked} onChange={(e) => set("machinesChecked", e.target.value)} placeholder="0" />
             </Field>
-            <Field label="Abnormal found">
+            <Field label="High risk found">
               <TextInput type="number" min={0} value={form.abnormal} onChange={(e) => set("abnormal", e.target.value)} placeholder="0" />
+            </Field>
+            <Field label="Repeatative high risk (qty)">
+              <TextInput type="number" min={0} value={form.repeatHighRisk} onChange={(e) => set("repeatHighRisk", e.target.value)} placeholder="0" />
+            </Field>
+            <Field label="New high risk (qty)">
+              <TextInput type="number" min={0} value={form.newHighRisk} onChange={(e) => set("newHighRisk", e.target.value)} placeholder="0" />
             </Field>
             <Field label="Remark" hint="What was observed, what was informed to the site.">
               <TextArea value={form.remark} onChange={(e) => set("remark", e.target.value)} placeholder="Short observation / action taken" />
