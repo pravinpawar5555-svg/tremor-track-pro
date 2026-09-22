@@ -160,7 +160,9 @@ function DailyPage() {
                       <Th>Engineer</Th>
                       <Th>Plant</Th>
                       <Th align="right">Machines</Th>
-                      <Th align="right">Abnormal</Th>
+                      <Th align="right">High risk</Th>
+                      <Th align="right">Repeat</Th>
+                      <Th align="right">New</Th>
                       <Th>Remark</Th>
                       <Th align="right"> </Th>
                     </tr>
