@@ -51,6 +51,7 @@ export interface ReportRow {
 }
 
 export interface AppData {
+  engineers: Engineer[];
   plants: Plant[];
   updates: DailyUpdate[];
   reports: ReportRow[];
