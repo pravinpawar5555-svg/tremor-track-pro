@@ -8,6 +8,7 @@ import {
   engineerSummary,
   fmtDate,
   frequencyLabel,
+  frequencyText,
   plantName,
   plantSummary,
   reportKpis,
@@ -69,7 +70,7 @@ function Dashboard() {
           hint={notUpdated.length ? `${notUpdated.map((a) => a.name).join(", ")} pending` : "Both engineers updated"}
         />
         <Kpi label="Plants observed today" value={new Set(today.map((u) => u.plantId)).size} hint={`of ${data.plants.length} plants`} />
-        <Kpi label="Machines checked today" value={totals.machinesChecked} hint={`Trend ${totals.trend} · KPI ${totals.kpi} · FFT ${totals.fft}`} />
+        <Kpi label="Machines checked today" value={totals.machinesChecked} hint={`${today.length} updates submitted`} />
         <Kpi label="Abnormal found today" value={totals.abnormal} tone={totals.abnormal ? "medium" : "low"} />
         <Kpi label="Reports overdue" value={rk.overdue} tone={rk.overdue ? "high" : "low"} hint={`${rk.pending} pending in total`} />
         <Kpi label="Report on-time rate" value={rk.onTimePct} unit="%" tone={rk.onTimePct >= 90 ? "low" : "medium"} hint={`${rk.sent} sent · ${rk.late} late`} />
@@ -85,9 +86,6 @@ function Dashboard() {
                     <Th>Engineer</Th>
                     <Th>Plant</Th>
                     <Th align="right">Machines</Th>
-                    <Th align="right">Trend</Th>
-                    <Th align="right">KPI</Th>
-                    <Th align="right">FFT</Th>
                     <Th align="right">Abnormal</Th>
                     <Th align="right">At</Th>
                   </tr>
@@ -98,9 +96,6 @@ function Dashboard() {
                       <Td>{engineerName(data, u.engineerId)}</Td>
                       <Td className="max-w-[16rem] truncate">{plantName(data, u.plantId)}</Td>
                       <Td align="right" mono>{u.machinesChecked}</Td>
-                      <Td align="right" mono>{u.trend}</Td>
-                      <Td align="right" mono>{u.kpi}</Td>
-                      <Td align="right" mono>{u.fft}</Td>
                       <Td align="right" mono className={u.abnormal ? "text-sev-medium" : undefined}>{u.abnormal}</Td>
                       <Td align="right" mono>{u.submittedAt}</Td>
                     </Tr>
@@ -245,7 +240,7 @@ function Dashboard() {
                       <Link to="/plants" className="font-medium hover:text-signal">{p.name}</Link>
                     </Td>
                     <Td className="text-mute">{p.customer}</Td>
-                    <Td>{frequencyLabel[p.frequency]}</Td>
+                    <Td>{frequencyText(p)}</Td>
                     <Td mono className={stale ? "text-sev-high" : undefined}>{fmtDate(s.lastObserved)}</Td>
                     <Td align="right" mono>{p.machines}</Td>
                     <Td mono>{fmtDate(s.lastReportSent)}</Td>

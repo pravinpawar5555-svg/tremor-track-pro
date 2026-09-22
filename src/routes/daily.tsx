@@ -22,12 +22,12 @@ export const Route = createFileRoute("/daily")({
       {
         name: "description",
         content:
-          "Engineers log each morning which plant they observed and how many machines were checked by trend, KPI value and FFT.",
+          "Engineers log each morning which plant they observed, how many machines were checked and any abnormality found.",
       },
       { property: "og:title", content: "Daily Work Update — Forbes Marshall CM Portal" },
       {
         property: "og:description",
-        content: "Morning log of plant observed, machines checked by trend/KPI/FFT, abnormalities found and remarks.",
+        content: "Morning log of plant observed, machines checked, abnormalities found and remarks.",
       },
     ],
   }),
@@ -39,9 +39,6 @@ const empty = {
   engineerId: "",
   plantId: "",
   machinesChecked: "",
-  trend: "",
-  kpi: "",
-  fft: "",
   abnormal: "",
   remark: "",
 };
@@ -63,9 +60,6 @@ function DailyPage() {
       engineerId: form.engineerId || team[0]?.id || "",
       plantId: form.plantId,
       machinesChecked: n(form.machinesChecked),
-      trend: n(form.trend),
-      kpi: n(form.kpi),
-      fft: n(form.fft),
       abnormal: n(form.abnormal),
       remark: form.remark.trim(),
     });
@@ -79,7 +73,8 @@ function DailyPage() {
     .sort((a, b) => (a.date === b.date ? (a.submittedAt < b.submittedAt ? 1 : -1) : a.date < b.date ? 1 : -1));
 
   const week = shiftDate(TODAY, -6);
-  const totals = sumUpdates(list.filter((u) => u.date >= week));
+  const scoped = list.filter((u) => u.date >= week);
+  const totals = sumUpdates(scoped);
 
   return (
     <AppShell>
@@ -112,17 +107,6 @@ function DailyPage() {
             <Field label="Machines checked">
               <TextInput type="number" min={0} value={form.machinesChecked} onChange={(e) => set("machinesChecked", e.target.value)} placeholder="0" />
             </Field>
-            <div className="grid grid-cols-3 gap-2">
-              <Field label="Trend">
-                <TextInput type="number" min={0} value={form.trend} onChange={(e) => set("trend", e.target.value)} placeholder="0" />
-              </Field>
-              <Field label="KPI value">
-                <TextInput type="number" min={0} value={form.kpi} onChange={(e) => set("kpi", e.target.value)} placeholder="0" />
-              </Field>
-              <Field label="FFT">
-                <TextInput type="number" min={0} value={form.fft} onChange={(e) => set("fft", e.target.value)} placeholder="0" />
-              </Field>
-            </div>
             <Field label="Abnormal found">
               <TextInput type="number" min={0} value={form.abnormal} onChange={(e) => set("abnormal", e.target.value)} placeholder="0" />
             </Field>
@@ -137,11 +121,10 @@ function DailyPage() {
         </Panel>
 
         <div className="grid gap-4">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Kpi label="Updates · 7 d" value={scoped.length} />
+            <Kpi label="Plants · 7 d" value={new Set(scoped.map((u) => u.plantId)).size} />
             <Kpi label="Machines · 7 d" value={totals.machinesChecked} />
-            <Kpi label="Trend · 7 d" value={totals.trend} />
-            <Kpi label="KPI · 7 d" value={totals.kpi} />
-            <Kpi label="FFT · 7 d" value={totals.fft} />
             <Kpi label="Abnormal · 7 d" value={totals.abnormal} tone={totals.abnormal ? "medium" : "low"} />
           </div>
 
@@ -165,9 +148,6 @@ function DailyPage() {
                       <Th>Engineer</Th>
                       <Th>Plant</Th>
                       <Th align="right">Machines</Th>
-                      <Th align="right">Trend</Th>
-                      <Th align="right">KPI</Th>
-                      <Th align="right">FFT</Th>
                       <Th align="right">Abnormal</Th>
                       <Th>Remark</Th>
                       <Th align="right"> </Th>
@@ -180,9 +160,6 @@ function DailyPage() {
                         <Td>{engineerName(data, u.engineerId)}</Td>
                         <Td className="max-w-[14rem] truncate">{plantName(data, u.plantId)}</Td>
                         <Td align="right" mono>{u.machinesChecked}</Td>
-                        <Td align="right" mono>{u.trend}</Td>
-                        <Td align="right" mono>{u.kpi}</Td>
-                        <Td align="right" mono>{u.fft}</Td>
                         <Td align="right" mono className={u.abnormal ? "text-sev-medium" : undefined}>{u.abnormal}</Td>
                         <Td className="max-w-[20rem] text-xs text-mute">{u.remark || "—"}</Td>
                         <Td align="right">
