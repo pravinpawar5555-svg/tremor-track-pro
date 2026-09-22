@@ -237,6 +237,9 @@ function PlantsPage() {
                       </Td>
                       <Td className="text-mute">{p.location || "—"}</Td>
                       <Td align="right" mono>{p.machines}</Td>
+                      <Td align="right" mono>{p.assets ?? 0}</Td>
+                      <Td align="right" mono>{p.node6 ?? 0}</Td>
+                      <Td align="right" mono>{p.nodeX ?? 0}</Td>
                       <Td>
                         <span className="flex flex-wrap gap-1">
                           {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : "—"}
