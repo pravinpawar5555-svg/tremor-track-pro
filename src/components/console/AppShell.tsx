@@ -140,8 +140,17 @@ export function AppShell({ children }: { children: ReactNode }) {
                 active ? "bg-signal/10 font-semibold text-signal" : "text-mute",
               )}
             >
-              <span className={cn("size-1.5 rounded-full", active ? "bg-signal" : "bg-line")} />
-              {item.label.replace("Daily Work Update", "Daily").replace("Dashboard", "Home")}
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  item.to === "/discussions" && unread ? "bg-sev-high" : active ? "bg-signal" : "bg-line",
+                )}
+              />
+              {item.label
+                .replace("Daily Work Update", "Daily")
+                .replace("Dashboard", "Home")
+                .replace("Discussion & Tickets", "Chat")
+                .replace("Engineers", "Team")}
             </Link>
           );
         })}
