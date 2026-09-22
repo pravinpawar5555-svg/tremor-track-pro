@@ -73,18 +73,47 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
 
         <main className="min-w-0 flex-1">
-          <div className="px-4 py-4 md:px-6">{children}</div>
-          <div className="px-4 pb-8 md:px-6">
-            <nav className="flex flex-wrap gap-2 md:hidden">
-              {nav.map((item) => (
-                <Link key={item.to} to={item.to} className="panel-inset px-2.5 py-1.5 text-xs text-mute">
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+          <div className="panel-inset mx-4 mt-3 flex items-center justify-between gap-2 p-2.5 text-xs md:hidden">
+            <span className="label-caps">Today's updates</span>
+            <span className="flex items-center gap-2">
+              {analysts.map((a) => {
+                const done = submitted.some((s) => s.id === a.id);
+                return (
+                  <span
+                    key={a.id}
+                    className={cn(
+                      "num rounded-full px-2 py-0.5 ring-1",
+                      done ? "text-sev-low ring-sev-low/40" : "text-sev-high ring-sev-high/40",
+                    )}
+                  >
+                    {a.name.split(" ").slice(-1)[0]} {done ? "✓" : "—"}
+                  </span>
+                );
+              })}
+            </span>
           </div>
+          <div className="px-4 py-4 pb-28 md:px-6 md:pb-4">{children}</div>
         </main>
       </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 gap-1 border-t border-line/60 bg-panel/90 px-1 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-md md:hidden">
+        {nav.map((item) => {
+          const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={cn(
+                "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-md px-1 text-center text-[10px] leading-tight",
+                active ? "bg-signal/10 font-semibold text-signal" : "text-mute",
+              )}
+            >
+              <span className={cn("size-1.5 rounded-full", active ? "bg-signal" : "bg-line")} />
+              {item.label.replace("Daily Work Update", "Daily").replace("Dashboard", "Home")}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
