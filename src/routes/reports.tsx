@@ -22,7 +22,7 @@ import {
   analystsOf,
   engineerName,
   fmtDate,
-  frequencyLabel,
+  frequencyText,
   plantName,
   reportKpis,
   reportTiming,
