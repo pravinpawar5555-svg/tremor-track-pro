@@ -173,7 +173,7 @@ function EngineersPage() {
             >
               <div className="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
                 <Kpi label="Days updated" value={`${s.daysUpdated}/${s.days}`} tone={s.daysUpdated >= 6 ? "low" : "medium"} />
-                <Kpi label="Machines checked" value={s.machinesChecked} hint={`Trend ${s.trend} · KPI ${s.kpi} · FFT ${s.fft}`} />
+                <Kpi label="Machines checked" value={s.machinesChecked} hint={`${s.entries} updates`} />
                 <Kpi label="Abnormal found" value={s.abnormal} tone={s.abnormal ? "medium" : "low"} />
                 <Kpi label="Reports late" value={s.reportsLate} tone={s.reportsLate ? "high" : "low"} hint={`${s.reportsSent} sent`} />
               </div>
@@ -208,7 +208,6 @@ function EngineersPage() {
                         <Th>Date</Th>
                         <Th>Plant</Th>
                         <Th align="right">Machines</Th>
-                        <Th align="right">FFT</Th>
                         <Th align="right">Abnormal</Th>
                       </tr>
                     </thead>
@@ -220,7 +219,6 @@ function EngineersPage() {
                             <Td mono>{fmtDate(u.date)}</Td>
                             <Td className="max-w-[12rem] truncate">{plantName(data, u.plantId)}</Td>
                             <Td align="right" mono>{u.machinesChecked}</Td>
-                            <Td align="right" mono>{u.fft}</Td>
                             <Td align="right" mono className={u.abnormal ? "text-sev-medium" : undefined}>{u.abnormal}</Td>
                           </Tr>
                         ))}
