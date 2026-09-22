@@ -19,6 +19,12 @@ export interface Plant {
   customer: string;
   location: string;
   machines: number;
+  /** Total assets covered under monitoring at this plant. */
+  assets: number;
+  /** Installed Node 6 sensor quantity. */
+  node6: number;
+  /** Installed Node X sensor quantity. */
+  nodeX: number;
   /** One or more report cycles agreed with the customer. */
   frequencies: Frequency[];
   contact: string;
@@ -32,7 +38,12 @@ export interface DailyUpdate {
   engineerId: string;
   plantId: string;
   machinesChecked: number;
+  /** High risk found (count). */
   abnormal: number;
+  /** Of the high risk found, how many are repeat cases. */
+  repeatHighRisk: number;
+  /** Of the high risk found, how many are new. */
+  newHighRisk: number;
   remark: string;
   submittedAt: string; // HH:MM
 }
