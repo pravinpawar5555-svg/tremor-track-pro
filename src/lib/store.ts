@@ -61,13 +61,26 @@ export interface AppData {
 
 export const TODAY = "2026-09-22";
 
-export const engineers: Engineer[] = [
+export const defaultEngineers: Engineer[] = [
   { id: "eng-1", name: "R. Ahuja", initials: "RA", role: "analyst" },
   { id: "eng-2", name: "M. Desai", initials: "MD", role: "analyst" },
   { id: "mgr-1", name: "P. Pawar", initials: "PP", role: "manager" },
 ];
 
-export const analysts = engineers.filter((e) => e.role === "analyst");
+export function initialsOf(name: string) {
+  const parts = name.replace(/[^A-Za-z .]/g, "").split(/[ .]+/).filter(Boolean);
+  const first = parts[0]?.[0] ?? "?";
+  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
+  return (first + last).toUpperCase();
+}
+
+export function analystsOf(d: AppData) {
+  return d.engineers.filter((e) => e.role === "analyst");
+}
+
+export function managersOf(d: AppData) {
+  return d.engineers.filter((e) => e.role === "manager");
+}
 
 export const frequencyLabel: Record<Frequency, string> = {
   weekly: "Weekly",
