@@ -11,6 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DailyRouteImport } from './routes/daily'
+import { Route as EngineersRouteImport } from './routes/engineers'
+import { Route as PlantsRouteImport } from './routes/plants'
+import { Route as ReportsRouteImport } from './routes/reports'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +25,58 @@ const DailyRoute = DailyRouteImport.update({
   path: '/daily',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EngineersRoute = EngineersRouteImport.update({
+  id: '/engineers',
+  path: '/engineers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlantsRoute = PlantsRouteImport.update({
+  id: '/plants',
+  path: '/plants',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/daily': typeof DailyRoute
+  '/engineers': typeof EngineersRoute
+  '/plants': typeof PlantsRoute
+  '/reports': typeof ReportsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/daily': typeof DailyRoute
+  '/engineers': typeof EngineersRoute
+  '/plants': typeof PlantsRoute
+  '/reports': typeof ReportsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/daily': typeof DailyRoute
+  '/engineers': typeof EngineersRoute
+  '/plants': typeof PlantsRoute
+  '/reports': typeof ReportsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/daily'
+  fullPaths: '/' | '/daily' | '/engineers' | '/plants' | '/reports'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/daily'
-  id: '__root__' | '/' | '/daily'
+  to: '/' | '/daily' | '/engineers' | '/plants' | '/reports'
+  id: '__root__' | '/' | '/daily' | '/engineers' | '/plants' | '/reports'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DailyRoute: typeof DailyRoute
+  EngineersRoute: typeof EngineersRoute
+  PlantsRoute: typeof PlantsRoute
+  ReportsRoute: typeof ReportsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +95,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DailyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/engineers': {
+      id: '/engineers'
+      path: '/engineers'
+      fullPath: '/engineers'
+      preLoaderRoute: typeof EngineersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plants': {
+      id: '/plants'
+      path: '/plants'
+      fullPath: '/plants'
+      preLoaderRoute: typeof PlantsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DailyRoute: DailyRoute,
+  EngineersRoute: EngineersRoute,
+  PlantsRoute: PlantsRoute,
+  ReportsRoute: ReportsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
