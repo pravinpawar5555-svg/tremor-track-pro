@@ -49,11 +49,93 @@ export interface ReportRow {
   byEngineerId: string;
 }
 
+/** What the engineer needs back from the manager. */
+export type AskFor = "observation" | "recommendation" | "both";
+
+export type TicketStatus = "open" | "in-discussion" | "responded" | "closed";
+
+export type TicketPriority = "low" | "medium" | "high" | "critical";
+
+export interface Ticket {
+  id: string;
+  ticketNo: string;
+  plantId: string;
+  area: string;
+  machine: string;
+  subject: string;
+  observation: string;
+  askFor: AskFor;
+  priority: TicketPriority;
+  status: TicketStatus;
+  raisedBy: string;
+  raisedOn: string; // yyyy-mm-dd
+  raisedAt: string; // HH:MM
+  assignedTo: string; // manager
+  response?: string | undefined;
+  respondedOn?: string | undefined;
+  closedOn?: string | undefined;
+}
+
+/** A chat message. `thread` is `ticket:<id>` for a ticket or `plant:<id>` for a plant channel. */
+export interface ChatMessage {
+  id: string;
+  thread: string;
+  authorId: string;
+  text: string;
+  date: string; // yyyy-mm-dd
+  at: string; // HH:MM
+  readBy: string[];
+}
+
 export interface AppData {
   engineers: Engineer[];
   plants: Plant[];
   updates: DailyUpdate[];
   reports: ReportRow[];
+  tickets: Ticket[];
+  messages: ChatMessage[];
+  /** Who is using the portal right now (no auth yet). */
+  currentUserId: string;
+}
+
+export const askForLabel: Record<AskFor, string> = {
+  observation: "Observation required",
+  recommendation: "Recommendation required",
+  both: "Observation + recommendation required",
+};
+
+export const ticketStatusLabel: Record<TicketStatus, string> = {
+  open: "Open",
+  "in-discussion": "In discussion",
+  responded: "Responded",
+  closed: "Closed",
+};
+
+export const priorityLabel: Record<TicketPriority, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  critical: "Critical",
+};
+
+export const allAskFor: AskFor[] = ["observation", "recommendation", "both"];
+export const allPriorities: TicketPriority[] = ["low", "medium", "high", "critical"];
+export const allTicketStatuses: TicketStatus[] = ["open", "in-discussion", "responded", "closed"];
+
+export function ticketSeverity(p: TicketPriority): Severity {
+  return p === "critical" ? "critical" : p === "high" ? "high" : p === "medium" ? "medium" : "low";
+}
+
+export function ticketStatusSeverity(s: TicketStatus): Severity {
+  return s === "open" ? "high" : s === "in-discussion" ? "medium" : s === "responded" ? "low" : "advisory";
+}
+
+export function plantThread(plantId: string) {
+  return `plant:${plantId}`;
+}
+
+export function ticketThread(ticketId: string) {
+  return `ticket:${ticketId}`;
 }
 
 // ---------------------------------------------------------------- constants
