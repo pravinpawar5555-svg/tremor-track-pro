@@ -16,9 +16,12 @@ import {
 } from "@/components/console/ui";
 import {
   TODAY,
+  allFrequencies,
   analystsOf,
   engineerName,
   fmtDate,
+  frequencyLabel,
+  plantFrequencies,
   plantSummary,
   removePlant,
   savePlant,
@@ -34,12 +37,12 @@ export const Route = createFileRoute("/plants")({
       { title: "Plants — Forbes Marshall CM Portal" },
       {
         name: "description",
-        content: "Plant master: customer, location, machine count, report cycle, contact person and assigned engineer.",
+        content: "Plant master: customer, location, machine count, report cycles, contact person with phone number and assigned engineer.",
       },
       { property: "og:title", content: "Plants — Forbes Marshall CM Portal" },
       {
         property: "og:description",
-        content: "Set up each plant once with its report cycle and assigned engineer, then track observation and report history.",
+        content: "Set up each plant once with its report cycles and assigned engineer, then track observation and report history.",
       },
     ],
   }),
@@ -51,8 +54,9 @@ const blank = {
   customer: "",
   location: "",
   machines: "",
-  frequency: "weekly" as Frequency,
+  frequencies: ["weekly"] as Frequency[],
   contact: "",
+  contactPhone: "",
   engineerId: "",
 };
 
@@ -63,20 +67,39 @@ function PlantsPage() {
   const [open, setOpen] = useState(false);
 
   const edit = (p: Plant) => {
-    setForm({ ...p, machines: String(p.machines) });
+    setForm({
+      id: p.id,
+      name: p.name,
+      customer: p.customer,
+      location: p.location,
+      machines: String(p.machines),
+      frequencies: plantFrequencies(p),
+      contact: p.contact,
+      contactPhone: p.contactPhone ?? "",
+      engineerId: p.engineerId,
+    });
     setOpen(true);
   };
 
+  const toggleFreq = (f: Frequency) =>
+    setForm((prev) => ({
+      ...prev,
+      frequencies: prev.frequencies.includes(f) ? prev.frequencies.filter((x) => x !== f) : [...prev.frequencies, f],
+    }));
+
+  const canSave = !!form.name.trim() && form.frequencies.length > 0;
+
   const save = () => {
-    if (!form.name.trim()) return;
+    if (!canSave) return;
     savePlant({
       ...(form.id ? { id: form.id } : {}),
       name: form.name.trim(),
       customer: form.customer.trim(),
       location: form.location.trim(),
       machines: Math.max(0, Number(form.machines) || 0),
-      frequency: form.frequency,
+      frequencies: allFrequencies.filter((f) => form.frequencies.includes(f)),
       contact: form.contact.trim(),
+      contactPhone: form.contactPhone.trim(),
       engineerId: form.engineerId || team[0]?.id || "",
     });
     setForm(blank);
@@ -87,7 +110,7 @@ function PlantsPage() {
     <AppShell>
       <PageHeader
         title="Plants"
-        subtitle="Add each plant once — customer, machine count, report cycle and assigned engineer"
+        subtitle="Add each plant once — customer, machine count, report cycles, contact details and assigned engineer"
         actions={
           <Button
             variant={open ? "ghost" : "solid"}
@@ -116,15 +139,16 @@ function PlantsPage() {
             <Field label="Total machines">
               <TextInput type="number" min={0} value={form.machines} onChange={(e) => setForm({ ...form, machines: e.target.value })} />
             </Field>
-            <Field label="Report cycle">
-              <Select value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value as Frequency })}>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="on-demand">On demand</option>
-              </Select>
+            <Field label="Customer contact name">
+              <TextInput value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} placeholder="S. Mohanty" />
             </Field>
-            <Field label="Customer contact">
-              <TextInput value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} />
+            <Field label="Customer contact number">
+              <TextInput
+                type="tel"
+                value={form.contactPhone}
+                onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
+                placeholder="+91 98200 11223"
+              />
             </Field>
             <Field label="Assigned engineer">
               <Select value={form.engineerId || team[0]?.id || ""} onChange={(e) => setForm({ ...form, engineerId: e.target.value })}>
@@ -133,8 +157,28 @@ function PlantsPage() {
                 ))}
               </Select>
             </Field>
-            <div className="flex items-end">
-              <Button variant="solid" onClick={save} disabled={!form.name.trim()}>{form.id ? "Save changes" : "Add plant"}</Button>
+            <div className="sm:col-span-2 xl:col-span-4">
+              <Field label="Report cycle" hint="Choose every cycle agreed with this customer.">
+                <span className="flex flex-wrap gap-2">
+                  {allFrequencies.map((f) => {
+                    const on = form.frequencies.includes(f);
+                    return (
+                      <label
+                        key={f}
+                        className={`inline-flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-xs ring-1 transition-[background-color] ${
+                          on ? "bg-signal/10 text-signal ring-signal/40" : "text-mute ring-line/80 hover:bg-black/5"
+                        }`}
+                      >
+                        <input type="checkbox" className="accent-signal" checked={on} onChange={() => toggleFreq(f)} />
+                        {frequencyLabel[f]}
+                      </label>
+                    );
+                  })}
+                </span>
+              </Field>
+            </div>
+            <div className="flex items-end sm:col-span-2 xl:col-span-4">
+              <Button variant="solid" onClick={save} disabled={!canSave}>{form.id ? "Save changes" : "Add plant"}</Button>
             </div>
           </div>
         </Panel>
@@ -161,16 +205,22 @@ function PlantsPage() {
                 {data.plants.map((p) => {
                   const s = plantSummary(data, p.id);
                   const stale = !s.lastObserved || s.lastObserved < shiftDate(TODAY, -7);
+                  const cycles = plantFrequencies(p);
                   return (
                     <Tr key={p.id}>
                       <Td className="font-medium">{p.name}</Td>
                       <Td>
                         <div>{p.customer || "—"}</div>
                         <div className="text-xs text-mute">{p.contact || "—"}</div>
+                        <div className="num text-xs text-mute">{p.contactPhone || "—"}</div>
                       </Td>
                       <Td className="text-mute">{p.location || "—"}</Td>
                       <Td align="right" mono>{p.machines}</Td>
-                      <Td><FrequencyChip frequency={p.frequency} /></Td>
+                      <Td>
+                        <span className="flex flex-wrap gap-1">
+                          {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : "—"}
+                        </span>
+                      </Td>
                       <Td>{engineerName(data, p.engineerId)}</Td>
                       <Td mono className={stale ? "text-sev-high" : undefined}>{fmtDate(s.lastObserved)}</Td>
                       <Td mono>{fmtDate(s.lastReportSent)}</Td>
