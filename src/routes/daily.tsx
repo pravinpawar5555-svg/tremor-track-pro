@@ -175,6 +175,8 @@ function DailyPage() {
                         <Td className="max-w-[14rem] truncate">{plantName(data, u.plantId)}</Td>
                         <Td align="right" mono>{u.machinesChecked}</Td>
                         <Td align="right" mono className={u.abnormal ? "text-sev-medium" : undefined}>{u.abnormal}</Td>
+                        <Td align="right" mono>{u.repeatHighRisk ?? 0}</Td>
+                        <Td align="right" mono className={u.newHighRisk ? "text-sev-high" : undefined}>{u.newHighRisk ?? 0}</Td>
                         <Td className="max-w-[20rem] text-xs text-mute">{u.remark || "—"}</Td>
                         <Td align="right">
                           <Button variant="ghost" onClick={() => removeUpdate(u.id)}>Delete</Button>
