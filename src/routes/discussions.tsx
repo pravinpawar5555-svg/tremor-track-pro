@@ -34,6 +34,7 @@ import {
   priorityLabel,
   removeTicket,
   respondToTicket,
+  setCurrentUser,
   sendMessage,
   setTicketStatus,
   threadMessages,
