@@ -136,7 +136,7 @@ function DailyPage() {
         </Panel>
 
         <div className="grid gap-4">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-5">
             <Kpi label="Machines · 7 d" value={totals.machinesChecked} />
             <Kpi label="Trend · 7 d" value={totals.trend} />
             <Kpi label="KPI · 7 d" value={totals.kpi} />
