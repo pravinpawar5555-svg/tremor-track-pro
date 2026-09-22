@@ -1,11 +1,22 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { TODAY, analystsOf, fmtDate, reportKpis, useData } from "@/lib/store";
+import {
+  TODAY,
+  analystsOf,
+  currentUser,
+  fmtDate,
+  reportKpis,
+  setCurrentUser,
+  ticketKpis,
+  totalUnread,
+  useData,
+} from "@/lib/store";
 
 const nav = [
   { to: "/", label: "Dashboard" },
   { to: "/daily", label: "Daily Work Update" },
+  { to: "/discussions", label: "Discussion & Tickets" },
   { to: "/reports", label: "Reports" },
   { to: "/plants", label: "Plants" },
   { to: "/engineers", label: "Engineers" },
@@ -16,6 +27,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const data = useData();
   const team = analystsOf(data);
   const kpis = reportKpis(data);
+  const me = currentUser(data);
+  const unread = totalUnread(data);
+  const tk = ticketKpis(data);
   const submitted = team.filter((a) => data.updates.some((u) => u.engineerId === a.id && u.date === TODAY));
 
   return (
