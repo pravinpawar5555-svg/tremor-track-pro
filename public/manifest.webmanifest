@@ -1,0 +1,18 @@
+{
+  "name": "Forbes Marshall Condition Monitoring Work Portal",
+  "short_name": "FM CM Portal",
+  "description": "Daily work updates, report tracking and team monitoring for the Forbes Marshall condition monitoring team.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#eef1f6",
+  "theme_color": "#0a9396",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
