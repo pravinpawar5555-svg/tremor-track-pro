@@ -62,7 +62,7 @@ function Dashboard() {
         subtitle={`${fmtDate(TODAY)} · daily work updates, plant coverage and customer report delivery`}
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-8">
         <Kpi
           label="Today's updates"
           value={`${today.length ? new Set(today.map((u) => u.engineerId)).size : 0}/${team.length}`}
