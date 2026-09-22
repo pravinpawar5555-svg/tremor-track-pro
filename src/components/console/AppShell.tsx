@@ -1,11 +1,22 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { TODAY, analystsOf, fmtDate, reportKpis, useData } from "@/lib/store";
+import {
+  TODAY,
+  analystsOf,
+  currentUser,
+  fmtDate,
+  reportKpis,
+  setCurrentUser,
+  ticketKpis,
+  totalUnread,
+  useData,
+} from "@/lib/store";
 
 const nav = [
   { to: "/", label: "Dashboard" },
   { to: "/daily", label: "Daily Work Update" },
+  { to: "/discussions", label: "Discussion & Tickets" },
   { to: "/reports", label: "Reports" },
   { to: "/plants", label: "Plants" },
   { to: "/engineers", label: "Engineers" },
@@ -16,6 +27,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const data = useData();
   const team = analystsOf(data);
   const kpis = reportKpis(data);
+  const me = currentUser(data);
+  const unread = totalUnread(data);
+  const tk = ticketKpis(data);
   const submitted = team.filter((a) => data.updates.some((u) => u.engineerId === a.id && u.date === TODAY));
 
   return (
@@ -32,9 +46,26 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />
             <span className="num">{kpis.overdue} overdue reports</span>
           </span>
+          <Link to="/discussions" className="flex items-center gap-1.5">
+            <span className={cn("size-2 rounded-full", unread || tk.waitingOnManager ? "bg-sev-medium" : "bg-sev-low")} />
+            <span className="num">{unread} unread · {tk.waitingOnManager} tickets</span>
+          </Link>
           <span className="hidden items-center gap-1.5 lg:flex">
-            <span className="grid size-6 place-items-center rounded-full bg-base text-[10px] font-semibold text-mute ring-1 ring-line">PP</span>
-            <span>P. Pawar · Team Lead</span>
+            <span className="grid size-6 place-items-center rounded-full bg-base text-[10px] font-semibold text-mute ring-1 ring-line">
+              {me?.initials ?? "—"}
+            </span>
+            <select
+              aria-label="Signed in as"
+              value={data.currentUserId}
+              onChange={(e) => setCurrentUser(e.target.value)}
+              className="rounded-md bg-transparent text-xs text-mute outline-none"
+            >
+              {data.engineers.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name} · {e.role === "manager" ? "Manager" : "Engineer"}
+                </option>
+              ))}
+            </select>
           </span>
         </div>
       </header>
@@ -97,7 +128,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 gap-1 border-t border-line/60 bg-panel/90 px-1 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-md md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 gap-0.5 border-t border-line/60 bg-panel/90 px-1 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-md md:hidden">
         {nav.map((item) => {
           const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
           return (
@@ -109,8 +140,17 @@ export function AppShell({ children }: { children: ReactNode }) {
                 active ? "bg-signal/10 font-semibold text-signal" : "text-mute",
               )}
             >
-              <span className={cn("size-1.5 rounded-full", active ? "bg-signal" : "bg-line")} />
-              {item.label.replace("Daily Work Update", "Daily").replace("Dashboard", "Home")}
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  item.to === "/discussions" && unread ? "bg-sev-high" : active ? "bg-signal" : "bg-line",
+                )}
+              />
+              {item.label
+                .replace("Daily Work Update", "Daily")
+                .replace("Dashboard", "Home")
+                .replace("Discussion & Tickets", "Chat")
+                .replace("Engineers", "Team")}
             </Link>
           );
         })}

@@ -4,6 +4,11 @@ import { Bar, Chip, Empty, Kpi, Panel, PageHeader, StatusChip, Td, Th, TimingChi
 import {
   TODAY,
   analystsOf,
+  askForLabel,
+  priorityLabel,
+  ticketKpis,
+  ticketSeverity,
+  totalUnread,
   engineerName,
   engineerSummary,
   fmtDate,
@@ -54,6 +59,11 @@ function Dashboard() {
     .slice(0, 6);
   const week = shiftDate(TODAY, -6);
   const weekUpdates = data.updates.filter((u) => u.date >= week);
+  const tk = ticketKpis(data);
+  const unread = totalUnread(data);
+  const openTickets = (data.tickets ?? [])
+    .filter((t) => t.status !== "closed" && t.status !== "responded")
+    .sort((a, b) => (a.raisedOn < b.raisedOn ? 1 : -1));
 
   return (
     <AppShell>
@@ -62,7 +72,7 @@ function Dashboard() {
         subtitle={`${fmtDate(TODAY)} · daily work updates, plant coverage and customer report delivery`}
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-8">
         <Kpi
           label="Today's updates"
           value={`${today.length ? new Set(today.map((u) => u.engineerId)).size : 0}/${team.length}`}
@@ -74,6 +84,13 @@ function Dashboard() {
         <Kpi label="Abnormal found today" value={totals.abnormal} tone={totals.abnormal ? "medium" : "low"} />
         <Kpi label="Reports overdue" value={rk.overdue} tone={rk.overdue ? "high" : "low"} hint={`${rk.pending} pending in total`} />
         <Kpi label="Report on-time rate" value={rk.onTimePct} unit="%" tone={rk.onTimePct >= 90 ? "low" : "medium"} hint={`${rk.sent} sent · ${rk.late} late`} />
+        <Kpi
+          label="Tickets for me"
+          value={tk.waitingOnManager}
+          tone={tk.waitingOnManager ? "high" : "low"}
+          hint={`${tk.open} open · ${tk.responded} responded`}
+        />
+        <Kpi label="Unread messages" value={unread} tone={unread ? "medium" : "low"} hint="Internal discussion" />
       </div>
 
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.2fr_1fr]">
@@ -113,8 +130,26 @@ function Dashboard() {
           ) : null}
         </Panel>
 
-        <Panel title="Needs my attention">
+        <Panel title="Needs my attention" meta={<Link to="/discussions" className="text-signal">Open discussion</Link>}>
           <div className="divide-y divide-line/60">
+            {openTickets.map((t) => (
+              <Link
+                key={t.id}
+                to="/discussions"
+                className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm hover:bg-black/[0.03]"
+              >
+                <div>
+                  <div className="font-medium">
+                    {t.ticketNo} · {t.subject}
+                  </div>
+                  <div className="text-xs text-mute">
+                    {plantName(data, t.plantId)} · {t.area || "—"} · {t.machine} · {askForLabel[t.askFor]} ·{" "}
+                    {engineerName(data, t.raisedBy)}
+                  </div>
+                </div>
+                <Chip severity={ticketSeverity(t.priority)} label={priorityLabel[t.priority]} />
+              </Link>
+            ))}
             {notUpdated.map((a) => (
               <div key={a.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
                 <div>

@@ -49,11 +49,93 @@ export interface ReportRow {
   byEngineerId: string;
 }
 
+/** What the engineer needs back from the manager. */
+export type AskFor = "observation" | "recommendation" | "both";
+
+export type TicketStatus = "open" | "in-discussion" | "responded" | "closed";
+
+export type TicketPriority = "low" | "medium" | "high" | "critical";
+
+export interface Ticket {
+  id: string;
+  ticketNo: string;
+  plantId: string;
+  area: string;
+  machine: string;
+  subject: string;
+  observation: string;
+  askFor: AskFor;
+  priority: TicketPriority;
+  status: TicketStatus;
+  raisedBy: string;
+  raisedOn: string; // yyyy-mm-dd
+  raisedAt: string; // HH:MM
+  assignedTo: string; // manager
+  response?: string | undefined;
+  respondedOn?: string | undefined;
+  closedOn?: string | undefined;
+}
+
+/** A chat message. `thread` is `ticket:<id>` for a ticket or `plant:<id>` for a plant channel. */
+export interface ChatMessage {
+  id: string;
+  thread: string;
+  authorId: string;
+  text: string;
+  date: string; // yyyy-mm-dd
+  at: string; // HH:MM
+  readBy: string[];
+}
+
 export interface AppData {
   engineers: Engineer[];
   plants: Plant[];
   updates: DailyUpdate[];
   reports: ReportRow[];
+  tickets: Ticket[];
+  messages: ChatMessage[];
+  /** Who is using the portal right now (no auth yet). */
+  currentUserId: string;
+}
+
+export const askForLabel: Record<AskFor, string> = {
+  observation: "Observation required",
+  recommendation: "Recommendation required",
+  both: "Observation + recommendation required",
+};
+
+export const ticketStatusLabel: Record<TicketStatus, string> = {
+  open: "Open",
+  "in-discussion": "In discussion",
+  responded: "Responded",
+  closed: "Closed",
+};
+
+export const priorityLabel: Record<TicketPriority, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  critical: "Critical",
+};
+
+export const allAskFor: AskFor[] = ["observation", "recommendation", "both"];
+export const allPriorities: TicketPriority[] = ["low", "medium", "high", "critical"];
+export const allTicketStatuses: TicketStatus[] = ["open", "in-discussion", "responded", "closed"];
+
+export function ticketSeverity(p: TicketPriority): Severity {
+  return p === "critical" ? "critical" : p === "high" ? "high" : p === "medium" ? "medium" : "low";
+}
+
+export function ticketStatusSeverity(s: TicketStatus): Severity {
+  return s === "open" ? "high" : s === "in-discussion" ? "medium" : s === "responded" ? "low" : "advisory";
+}
+
+export function plantThread(plantId: string) {
+  return `plant:${plantId}`;
+}
+
+export function ticketThread(ticketId: string) {
+  return `ticket:${ticketId}`;
 }
 
 // ---------------------------------------------------------------- constants
@@ -228,7 +310,98 @@ function seed(): AppData {
     r(14, "pl-4", "monthly", "September 2026", 12, "pending", null, "eng-2"),
   ];
 
-  return { engineers: defaultEngineers.map((e) => ({ ...e })), plants, updates, reports };
+  const tickets: Ticket[] = [
+    {
+      id: "tk-1",
+      ticketNo: "FM-OBS-2026-001",
+      plantId: "pl-1",
+      area: "Boiler feed area",
+      machine: "Boiler feed pump 2A",
+      subject: "Rising vibration on NDE bearing",
+      observation:
+        "Overall velocity has risen over three weeks. Indication of possible bearing distress — requires verification. Site wants a view before the weekly report.",
+      askFor: "both",
+      priority: "high",
+      status: "open",
+      raisedBy: "eng-1",
+      raisedOn: TODAY,
+      raisedAt: "09:20",
+      assignedTo: "mgr-1",
+    },
+    {
+      id: "tk-2",
+      ticketNo: "FM-OBS-2026-002",
+      plantId: "pl-2",
+      area: "Cooling tower",
+      machine: "CT fan 4",
+      subject: "Above alert after gearbox oil change",
+      observation:
+        "Suspected looseness at fan hub. Need your recommendation on whether to advise the customer to stop the fan or continue under watch.",
+      askFor: "recommendation",
+      priority: "medium",
+      status: "in-discussion",
+      raisedBy: "eng-2",
+      raisedOn: shiftDate(TODAY, -1),
+      raisedAt: "09:45",
+      assignedTo: "mgr-1",
+    },
+    {
+      id: "tk-3",
+      ticketNo: "FM-OBS-2026-003",
+      plantId: "pl-6",
+      area: "Ammonia compressor house",
+      machine: "Compressor 1 — motor DE",
+      subject: "On-demand study finding",
+      observation: "Two machines abnormal in the on-demand study. Observation needed before the report goes to the customer.",
+      askFor: "observation",
+      priority: "high",
+      status: "responded",
+      raisedBy: "eng-2",
+      raisedOn: shiftDate(TODAY, -4),
+      raisedAt: "15:05",
+      assignedTo: "mgr-1",
+      response:
+        "Treat as indication of misalignment; ask site for shim records and re-measure after correction. Do not declare a fault in the report.",
+      respondedOn: shiftDate(TODAY, -3),
+    },
+  ];
+
+  const m = (
+    n: number,
+    thread: string,
+    authorId: string,
+    text: string,
+    dayOffset: number,
+    at: string,
+  ): ChatMessage => ({
+    id: `ms-${n}`,
+    thread,
+    authorId,
+    text,
+    date: shiftDate(TODAY, dayOffset),
+    at,
+    readBy: [authorId],
+  });
+
+  const messages: ChatMessage[] = [
+    m(1, "ticket:tk-1", "eng-1", "Trend and last reading attached in the weekly folder. Please advise wording for the customer.", 0, "09:22"),
+    m(2, "ticket:tk-2", "eng-2", "Site is asking for a decision today.", -1, "09:50"),
+    m(3, "ticket:tk-2", "mgr-1", "Keep it under watch for now, re-measure tomorrow morning and update me here.", -1, "11:15"),
+    m(4, "ticket:tk-3", "mgr-1", "Responded above. Share the draft before sending to the customer.", -3, "10:05"),
+    m(5, "plant:pl-1", "eng-1", "Weekly report for 14–20 Sep sent to Mr. Mohanty.", -1, "17:30"),
+    m(6, "plant:pl-1", "mgr-1", "Noted. Keep BFP 2A wording as 'under observation'.", -1, "18:02"),
+    m(7, "plant:pl-2", "eng-2", "Customer visit planned next week, will cover CT fans.", -2, "12:20"),
+  ];
+
+  return {
+    engineers: defaultEngineers.map((e) => ({ ...e })),
+    plants,
+    updates,
+    reports,
+    tickets,
+    messages,
+    currentUserId: "mgr-1",
+  };
 }
 
 // ---------------------------------------------------------------- store
@@ -255,6 +428,9 @@ function load() {
         })),
         updates: parsed.updates ?? data.updates,
         reports: parsed.reports ?? data.reports,
+        tickets: parsed.tickets ?? data.tickets,
+        messages: (parsed.messages ?? data.messages).map((x) => ({ ...x, readBy: x.readBy ?? [] })),
+        currentUserId: parsed.currentUserId ?? data.currentUserId,
       };
     }
   } catch {
@@ -327,10 +503,17 @@ export function removeEngineer(id: string, reassignTo?: string) {
   }
   const to = reassignTo ?? "";
   commit({
+    ...data,
     engineers,
+    currentUserId: data.currentUserId === id ? engineers[0]?.id ?? "" : data.currentUserId,
     plants: data.plants.map((p) => (p.engineerId === id ? { ...p, engineerId: to } : p)),
     updates: data.updates.map((u) => (u.engineerId === id ? { ...u, engineerId: to } : u)),
     reports: data.reports.map((r) => (r.byEngineerId === id ? { ...r, byEngineerId: to } : r)),
+    tickets: data.tickets.map((t) => ({
+      ...t,
+      raisedBy: t.raisedBy === id ? to : t.raisedBy,
+      assignedTo: t.assignedTo === id ? to : t.assignedTo,
+    })),
   });
   return { ok: true, message: "Engineer removed and their work reassigned." };
 }
@@ -343,11 +526,14 @@ export function savePlant(plant: Omit<Plant, "id"> & { id?: string }) {
 }
 
 export function removePlant(id: string) {
+  const dropped = data.tickets.filter((t) => t.plantId === id).map((t) => ticketThread(t.id));
   commit({
-    engineers: data.engineers,
+    ...data,
     plants: data.plants.filter((p) => p.id !== id),
     updates: data.updates.filter((u) => u.plantId !== id),
     reports: data.reports.filter((r) => r.plantId !== id),
+    tickets: data.tickets.filter((t) => t.plantId !== id),
+    messages: data.messages.filter((x) => x.thread !== plantThread(id) && !dropped.includes(x.thread)),
   });
 }
 
@@ -457,4 +643,173 @@ export function reportKpis(d: AppData) {
   const dueThisWeek = pending.filter((r) => daysBetween(TODAY, r.dueDate) <= 7);
   const onTimePct = sent.length ? Math.round(((sent.length - late.length) / sent.length) * 100) : 100;
   return { sent: sent.length, late: late.length, onTimePct, pending: pending.length, overdue: overdue.length, dueThisWeek: dueThisWeek.length };
+}
+
+// ---------------------------------------------------------------- tickets & chat
+
+function nowTime() {
+  return typeof window === "undefined" ? "09:00" : new Date().toTimeString().slice(0, 5);
+}
+
+export function setCurrentUser(id: string) {
+  commit({ ...data, currentUserId: id });
+}
+
+export function currentUser(d: AppData): Engineer | undefined {
+  return d.engineers.find((e) => e.id === d.currentUserId) ?? d.engineers[0];
+}
+
+export function isManager(d: AppData, id = d.currentUserId) {
+  return d.engineers.find((e) => e.id === id)?.role === "manager";
+}
+
+function nextTicketNo() {
+  const n = data.tickets.length + 1;
+  return `FM-OBS-2026-${String(n).padStart(3, "0")}`;
+}
+
+/** Engineer raises a ticket for the manager: plant → area → machine → what is required. */
+export function createTicket(input: {
+  plantId: string;
+  area: string;
+  machine: string;
+  subject: string;
+  observation: string;
+  askFor: AskFor;
+  priority: TicketPriority;
+  raisedBy: string;
+  assignedTo?: string;
+}) {
+  if (!input.plantId) return { ok: false, message: "Select a plant." };
+  if (!input.machine.trim()) return { ok: false, message: "Enter the machine name." };
+  if (!input.subject.trim()) return { ok: false, message: "Enter a short subject." };
+  const manager = input.assignedTo || managersOf(data)[0]?.id || "";
+  const ticket: Ticket = {
+    id: uid("tk"),
+    ticketNo: nextTicketNo(),
+    plantId: input.plantId,
+    area: input.area.trim(),
+    machine: input.machine.trim(),
+    subject: input.subject.trim(),
+    observation: input.observation.trim(),
+    askFor: input.askFor,
+    priority: input.priority,
+    status: "open",
+    raisedBy: input.raisedBy,
+    raisedOn: TODAY,
+    raisedAt: nowTime(),
+    assignedTo: manager,
+  };
+  commit({ ...data, tickets: [ticket, ...data.tickets] });
+  return { ok: true, message: `Ticket ${ticket.ticketNo} raised with ${engineerName(data, manager)}.`, id: ticket.id };
+}
+
+export function sendMessage(thread: string, authorId: string, text: string) {
+  const body = text.trim();
+  if (!body) return { ok: false, message: "Type a message." };
+  const msg: ChatMessage = {
+    id: uid("ms"),
+    thread,
+    authorId,
+    text: body,
+    date: TODAY,
+    at: nowTime(),
+    readBy: [authorId],
+  };
+  const tickets = thread.startsWith("ticket:")
+    ? data.tickets.map((t) =>
+        ticketThread(t.id) === thread && t.status === "open" ? { ...t, status: "in-discussion" as TicketStatus } : t,
+      )
+    : data.tickets;
+  commit({ ...data, messages: [...data.messages, msg], tickets });
+  return { ok: true, message: "Sent." };
+}
+
+export function markThreadRead(thread: string, userId: string) {
+  const need = data.messages.some((x) => x.thread === thread && !x.readBy.includes(userId));
+  if (!need) return;
+  commit({
+    ...data,
+    messages: data.messages.map((x) =>
+      x.thread === thread && !x.readBy.includes(userId) ? { ...x, readBy: [...x.readBy, userId] } : x,
+    ),
+  });
+}
+
+/** Manager gives the observation / recommendation the engineer asked for. */
+export function respondToTicket(id: string, authorId: string, text: string) {
+  const body = text.trim();
+  if (!body) return { ok: false, message: "Enter your observation / recommendation." };
+  const msg: ChatMessage = {
+    id: uid("ms"),
+    thread: ticketThread(id),
+    authorId,
+    text: body,
+    date: TODAY,
+    at: nowTime(),
+    readBy: [authorId],
+  };
+  commit({
+    ...data,
+    messages: [...data.messages, msg],
+    tickets: data.tickets.map((t) =>
+      t.id === id ? { ...t, status: "responded" as TicketStatus, response: body, respondedOn: TODAY } : t,
+    ),
+  });
+  return { ok: true, message: "Recommendation recorded and shared in the chat." };
+}
+
+export function setTicketStatus(id: string, status: TicketStatus) {
+  commit({
+    ...data,
+    tickets: data.tickets.map((t) =>
+      t.id === id
+        ? status === "closed"
+          ? { ...t, status, closedOn: TODAY }
+          : { ...t, status, closedOn: undefined }
+        : t,
+    ),
+  });
+}
+
+export function removeTicket(id: string) {
+  commit({
+    ...data,
+    tickets: data.tickets.filter((t) => t.id !== id),
+    messages: data.messages.filter((x) => x.thread !== ticketThread(id)),
+  });
+}
+
+export function threadMessages(d: AppData, thread: string) {
+  return (d.messages ?? [])
+    .filter((x) => x.thread === thread)
+    .sort((a, b) => (a.date === b.date ? (a.at > b.at ? 1 : -1) : a.date > b.date ? 1 : -1));
+}
+
+export function unreadCount(d: AppData, thread: string, userId = d.currentUserId) {
+  return (d.messages ?? []).filter((x) => x.thread === thread && !x.readBy.includes(userId) && x.authorId !== userId).length;
+}
+
+export function totalUnread(d: AppData, userId = d.currentUserId) {
+  return (d.messages ?? []).filter((x) => !x.readBy.includes(userId) && x.authorId !== userId).length;
+}
+
+export function ticketKpis(d: AppData, userId = d.currentUserId) {
+  const all = d.tickets ?? [];
+  const open = all.filter((t) => t.status !== "closed");
+  const waitingOnManager = open.filter((t) => t.status !== "responded");
+  const mine = open.filter((t) => t.assignedTo === userId || t.raisedBy === userId);
+  const critical = open.filter((t) => t.priority === "critical" || t.priority === "high");
+  return {
+    open: open.length,
+    waitingOnManager: waitingOnManager.length,
+    mine: mine.length,
+    critical: critical.length,
+    responded: all.filter((t) => t.status === "responded").length,
+    closed: all.filter((t) => t.status === "closed").length,
+  };
+}
+
+export function plantTickets(d: AppData, plantId: string) {
+  return d.tickets.filter((t) => t.plantId === plantId);
 }
