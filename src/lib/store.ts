@@ -612,8 +612,23 @@ export function sumUpdates(list: DailyUpdate[]) {
     (a, u) => ({
       machinesChecked: a.machinesChecked + u.machinesChecked,
       abnormal: a.abnormal + u.abnormal,
+      repeatHighRisk: a.repeatHighRisk + (u.repeatHighRisk ?? 0),
+      newHighRisk: a.newHighRisk + (u.newHighRisk ?? 0),
     }),
-    { machinesChecked: 0, abnormal: 0 },
+    { machinesChecked: 0, abnormal: 0, repeatHighRisk: 0, newHighRisk: 0 },
+  );
+}
+
+/** Installed base across all plants — machines, assets and sensor quantities. */
+export function fleetTotals(d: AppData) {
+  return d.plants.reduce(
+    (a, p) => ({
+      machines: a.machines + (p.machines ?? 0),
+      assets: a.assets + (p.assets ?? 0),
+      node6: a.node6 + (p.node6 ?? 0),
+      nodeX: a.nodeX + (p.nodeX ?? 0),
+    }),
+    { machines: 0, assets: 0, node6: 0, nodeX: 0 },
   );
 }
 
