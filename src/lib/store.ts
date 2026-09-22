@@ -503,10 +503,17 @@ export function removeEngineer(id: string, reassignTo?: string) {
   }
   const to = reassignTo ?? "";
   commit({
+    ...data,
     engineers,
+    currentUserId: data.currentUserId === id ? engineers[0]?.id ?? "" : data.currentUserId,
     plants: data.plants.map((p) => (p.engineerId === id ? { ...p, engineerId: to } : p)),
     updates: data.updates.map((u) => (u.engineerId === id ? { ...u, engineerId: to } : u)),
     reports: data.reports.map((r) => (r.byEngineerId === id ? { ...r, byEngineerId: to } : r)),
+    tickets: data.tickets.map((t) => ({
+      ...t,
+      raisedBy: t.raisedBy === id ? to : t.raisedBy,
+      assignedTo: t.assignedTo === id ? to : t.assignedTo,
+    })),
   });
   return { ok: true, message: "Engineer removed and their work reassigned." };
 }
