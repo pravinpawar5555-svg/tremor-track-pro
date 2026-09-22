@@ -149,7 +149,7 @@ export function Td({
 }: {
   children: ReactNode;
   align?: "left" | "right";
-  className?: string;
+  className?: string | undefined;
   mono?: boolean;
 }) {
   return (

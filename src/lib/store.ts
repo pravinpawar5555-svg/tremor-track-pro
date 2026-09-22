@@ -46,7 +46,7 @@ export interface ReportRow {
   period: string;
   dueDate: string;
   status: ReportStatus;
-  sentDate?: string;
+  sentDate?: string | undefined;
   byEngineerId: string;
 }
 
