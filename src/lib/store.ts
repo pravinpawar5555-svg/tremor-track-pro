@@ -419,66 +419,233 @@ function seed(): AppData {
   };
 }
 
-// ---------------------------------------------------------------- store
+// ---------------------------------------------------------------- store (cloud-backed)
 
-const KEY = "fm-cm-portal-v1";
+import { supabase } from "@/integrations/supabase/client";
 
-let data: AppData = seed();
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const db = supabase as any;
+
+const emptyData: AppData = {
+  engineers: [],
+  plants: [],
+  updates: [],
+  reports: [],
+  tickets: [],
+  messages: [],
+  currentUserId: "mgr-1",
+};
+
+let data: AppData = emptyData;
 let loaded = false;
 const listeners = new Set<() => void>();
 
-function load() {
-  if (loaded || typeof window === "undefined") return;
-  loaded = true;
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<AppData>;
-      data = {
-        engineers: parsed.engineers?.length ? parsed.engineers : defaultEngineers.map((e) => ({ ...e })),
-        plants: (parsed.plants ?? data.plants).map((p) => ({
-          ...p,
-          frequencies: plantFrequencies(p),
-          contactPhone: p.contactPhone ?? "",
-          assets: p.assets ?? p.machines ?? 0,
-          node6: p.node6 ?? 0,
-          nodeX: p.nodeX ?? 0,
-        })),
-        updates: (parsed.updates ?? data.updates).map((x) => ({
-          ...x,
-          repeatHighRisk: x.repeatHighRisk ?? 0,
-          newHighRisk: x.newHighRisk ?? x.abnormal ?? 0,
-        })),
-        reports: parsed.reports ?? data.reports,
-        tickets: parsed.tickets ?? data.tickets,
-        messages: (parsed.messages ?? data.messages).map((x) => ({ ...x, readBy: x.readBy ?? [] })),
-        currentUserId: parsed.currentUserId ?? data.currentUserId,
-      };
-    }
-  } catch {
-    /* keep seed */
-  }
+// ---- row mappers (cloud columns <-> app shapes)
+
+const rowToEngineer = (r: any): Engineer => ({
+  id: r.id,
+  name: r.name,
+  initials: r.initials || initialsOf(r.name),
+  role: r.role === "manager" ? "manager" : "analyst",
+});
+const engineerToRow = (e: Engineer) => ({ id: e.id, name: e.name, initials: e.initials, role: e.role });
+
+const rowToPlant = (r: any): Plant => ({
+  id: r.id,
+  name: r.name,
+  customer: r.customer ?? "",
+  location: r.location ?? "",
+  machines: r.machines ?? 0,
+  assets: r.assets ?? 0,
+  node6: r.node6 ?? 0,
+  nodeX: r.node_x ?? 0,
+  frequencies: (r.frequencies ?? []) as Frequency[],
+  contact: r.contact ?? "",
+  contactPhone: r.contact_phone ?? "",
+  engineerId: r.engineer_id ?? "",
+});
+const plantToRow = (p: Plant) => ({
+  id: p.id,
+  name: p.name,
+  customer: p.customer,
+  location: p.location,
+  machines: p.machines,
+  assets: p.assets,
+  node6: p.node6,
+  node_x: p.nodeX,
+  frequencies: plantFrequencies(p),
+  contact: p.contact,
+  contact_phone: p.contactPhone,
+  engineer_id: p.engineerId,
+});
+
+const rowToUpdate = (r: any): DailyUpdate => ({
+  id: r.id,
+  date: r.date,
+  engineerId: r.engineer_id ?? "",
+  plantId: r.plant_id ?? "",
+  machinesChecked: r.machines_checked ?? 0,
+  abnormal: r.abnormal ?? 0,
+  repeatHighRisk: r.repeat_high_risk ?? 0,
+  newHighRisk: r.new_high_risk ?? 0,
+  remark: r.remark ?? "",
+  submittedAt: r.submitted_at ?? "",
+});
+const updateToRow = (u: DailyUpdate) => ({
+  id: u.id,
+  date: u.date,
+  engineer_id: u.engineerId,
+  plant_id: u.plantId,
+  machines_checked: u.machinesChecked,
+  abnormal: u.abnormal,
+  repeat_high_risk: u.repeatHighRisk ?? 0,
+  new_high_risk: u.newHighRisk ?? 0,
+  remark: u.remark,
+  submitted_at: u.submittedAt,
+});
+
+const rowToReport = (r: any): ReportRow =>
+  ({
+    id: r.id,
+    docNo: r.doc_no ?? "",
+    plantId: r.plant_id ?? "",
+    type: r.type,
+    period: r.period ?? "",
+    dueDate: r.due_date,
+    status: r.status,
+    byEngineerId: r.by_engineer_id ?? "",
+    ...(r.sent_date ? { sentDate: r.sent_date } : {}),
+  }) as ReportRow;
+const reportToRow = (r: ReportRow) => ({
+  id: r.id,
+  doc_no: r.docNo,
+  plant_id: r.plantId,
+  type: r.type,
+  period: r.period,
+  due_date: r.dueDate,
+  status: r.status,
+  sent_date: r.sentDate ?? null,
+  by_engineer_id: r.byEngineerId,
+});
+
+const rowToTicket = (r: any): Ticket =>
+  ({
+    id: r.id,
+    ticketNo: r.ticket_no ?? "",
+    plantId: r.plant_id ?? "",
+    area: r.area ?? "",
+    machine: r.machine ?? "",
+    subject: r.subject ?? "",
+    observation: r.observation ?? "",
+    askFor: r.ask_for,
+    priority: r.priority,
+    status: r.status,
+    raisedBy: r.raised_by ?? "",
+    raisedOn: r.raised_on,
+    raisedAt: r.raised_at ?? "",
+    assignedTo: r.assigned_to ?? "",
+    ...(r.response ? { response: r.response } : {}),
+    ...(r.responded_on ? { respondedOn: r.responded_on } : {}),
+    ...(r.closed_on ? { closedOn: r.closed_on } : {}),
+  }) as Ticket;
+const ticketToRow = (t: Ticket) => ({
+  id: t.id,
+  ticket_no: t.ticketNo,
+  plant_id: t.plantId,
+  area: t.area,
+  machine: t.machine,
+  subject: t.subject,
+  observation: t.observation,
+  ask_for: t.askFor,
+  priority: t.priority,
+  status: t.status,
+  raised_by: t.raisedBy,
+  raised_on: t.raisedOn,
+  raised_at: t.raisedAt,
+  assigned_to: t.assignedTo,
+  response: t.response ?? null,
+  responded_on: t.respondedOn ?? null,
+  closed_on: t.closedOn ?? null,
+});
+
+const rowToMessage = (r: any): ChatMessage => ({
+  id: r.id,
+  thread: r.thread,
+  authorId: r.author_id ?? "",
+  text: r.text ?? "",
+  date: r.date,
+  at: r.at ?? "",
+  readBy: r.read_by ?? [],
+});
+const messageToRow = (m: ChatMessage) => ({
+  id: m.id,
+  thread: m.thread,
+  author_id: m.authorId,
+  text: m.text,
+  date: m.date,
+  at: m.at,
+  read_by: m.readBy ?? [],
+});
+
+// ---- load / sync
+
+async function loadFromCloud() {
+  const [e, p, u, r, t, m] = await Promise.all([
+    db.from("engineers").select("*"),
+    db.from("plants").select("*"),
+    db.from("daily_updates").select("*"),
+    db.from("reports").select("*"),
+    db.from("tickets").select("*"),
+    db.from("messages").select("*"),
+  ]);
+  data = {
+    engineers: (e.data ?? []).map(rowToEngineer),
+    plants: (p.data ?? []).map(rowToPlant).sort((a: Plant, b: Plant) => a.id.localeCompare(b.id)),
+    updates: (u.data ?? [])
+      .map(rowToUpdate)
+      .sort((a: DailyUpdate, b: DailyUpdate) => (a.date === b.date ? (a.id < b.id ? 1 : -1) : a.date < b.date ? 1 : -1)),
+    reports: (r.data ?? []).map(rowToReport),
+    tickets: (t.data ?? [])
+      .map(rowToTicket)
+      .sort((a: Ticket, b: Ticket) => (a.raisedOn === b.raisedOn ? 0 : a.raisedOn < b.raisedOn ? 1 : -1)),
+    messages: (m.data ?? []).map(rowToMessage),
+    currentUserId: data.currentUserId,
+  };
+  listeners.forEach((l) => l());
 }
 
-function persist() {
+function pushDiff<T extends { id: string }>(table: string, prev: T[], next: T[], toRow: (x: T) => unknown) {
+  const before = new Map(prev.map((x) => [x.id, JSON.stringify(x)]));
+  const ups = next.filter((x) => before.get(x.id) !== JSON.stringify(x)).map(toRow);
+  const keep = new Set(next.map((x) => x.id));
+  const dels = prev.filter((x) => !keep.has(x.id)).map((x) => x.id);
+  if (ups.length) void db.from(table).upsert(ups);
+  if (dels.length) void db.from(table).delete().in("id", dels);
+}
+
+function syncToCloud(prev: AppData, next: AppData) {
   if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(data));
-  } catch {
-    /* ignore */
-  }
+  pushDiff("engineers", prev.engineers, next.engineers, engineerToRow);
+  pushDiff("plants", prev.plants, next.plants, plantToRow);
+  pushDiff("daily_updates", prev.updates, next.updates, updateToRow);
+  pushDiff("reports", prev.reports, next.reports, reportToRow);
+  pushDiff("tickets", prev.tickets, next.tickets, ticketToRow);
+  pushDiff("messages", prev.messages, next.messages, messageToRow);
 }
 
 function commit(next: AppData) {
+  const prev = data;
   data = next;
-  persist();
+  syncToCloud(prev, next);
   listeners.forEach((l) => l());
 }
 
 function subscribe(cb: () => void) {
-  load();
   listeners.add(cb);
-  cb();
+  if (!loaded && typeof window !== "undefined") {
+    loaded = true;
+    void loadFromCloud();
+  }
   return () => listeners.delete(cb);
 }
 
@@ -488,6 +655,11 @@ export function useData(): AppData {
     () => data,
     () => data,
   );
+}
+
+/** Pull the latest cloud data again (after another user's change). */
+export function refreshData() {
+  return loadFromCloud();
 }
 
 const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
