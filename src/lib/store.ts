@@ -619,8 +619,21 @@ function pushDiff<T extends { id: string }>(table: string, prev: T[], next: T[],
   const ups = next.filter((x) => before.get(x.id) !== JSON.stringify(x)).map(toRow);
   const keep = new Set(next.map((x) => x.id));
   const dels = prev.filter((x) => !keep.has(x.id)).map((x) => x.id);
-  if (ups.length) void db.from(table).upsert(ups);
-  if (dels.length) void db.from(table).delete().in("id", dels);
+  if (ups.length) {
+    db.from(table)
+      .upsert(ups)
+      .then((res: { error?: unknown }) => {
+        if (res?.error) console.error(`cloud save failed (${table})`, res.error);
+      });
+  }
+  if (dels.length) {
+    db.from(table)
+      .delete()
+      .in("id", dels)
+      .then((res: { error?: unknown }) => {
+        if (res?.error) console.error(`cloud delete failed (${table})`, res.error);
+      });
+  }
 }
 
 function syncToCloud(prev: AppData, next: AppData) {
