@@ -14,7 +14,255 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_updates: {
+        Row: {
+          abnormal: number
+          created_at: string
+          date: string
+          engineer_id: string
+          id: string
+          machines_checked: number
+          new_high_risk: number
+          plant_id: string
+          remark: string
+          repeat_high_risk: number
+          submitted_at: string
+        }
+        Insert: {
+          abnormal?: number
+          created_at?: string
+          date: string
+          engineer_id?: string
+          id: string
+          machines_checked?: number
+          new_high_risk?: number
+          plant_id?: string
+          remark?: string
+          repeat_high_risk?: number
+          submitted_at?: string
+        }
+        Update: {
+          abnormal?: number
+          created_at?: string
+          date?: string
+          engineer_id?: string
+          id?: string
+          machines_checked?: number
+          new_high_risk?: number
+          plant_id?: string
+          remark?: string
+          repeat_high_risk?: number
+          submitted_at?: string
+        }
+        Relationships: []
+      }
+      engineers: {
+        Row: {
+          created_at: string
+          id: string
+          initials: string
+          name: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          initials?: string
+          name: string
+          role?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          initials?: string
+          name?: string
+          role?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          at: string
+          author_id: string
+          created_at: string
+          date: string
+          id: string
+          read_by: string[]
+          text: string
+          thread: string
+        }
+        Insert: {
+          at?: string
+          author_id?: string
+          created_at?: string
+          date: string
+          id: string
+          read_by?: string[]
+          text?: string
+          thread: string
+        }
+        Update: {
+          at?: string
+          author_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          read_by?: string[]
+          text?: string
+          thread?: string
+        }
+        Relationships: []
+      }
+      plants: {
+        Row: {
+          assets: number
+          contact: string
+          contact_phone: string
+          created_at: string
+          customer: string
+          engineer_id: string
+          frequencies: string[]
+          id: string
+          location: string
+          machines: number
+          name: string
+          node_x: number
+          node6: number
+        }
+        Insert: {
+          assets?: number
+          contact?: string
+          contact_phone?: string
+          created_at?: string
+          customer?: string
+          engineer_id?: string
+          frequencies?: string[]
+          id: string
+          location?: string
+          machines?: number
+          name: string
+          node_x?: number
+          node6?: number
+        }
+        Update: {
+          assets?: number
+          contact?: string
+          contact_phone?: string
+          created_at?: string
+          customer?: string
+          engineer_id?: string
+          frequencies?: string[]
+          id?: string
+          location?: string
+          machines?: number
+          name?: string
+          node_x?: number
+          node6?: number
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          by_engineer_id: string
+          created_at: string
+          doc_no: string
+          due_date: string
+          id: string
+          period: string
+          plant_id: string
+          sent_date: string | null
+          status: string
+          type: string
+        }
+        Insert: {
+          by_engineer_id?: string
+          created_at?: string
+          doc_no?: string
+          due_date: string
+          id: string
+          period?: string
+          plant_id?: string
+          sent_date?: string | null
+          status?: string
+          type?: string
+        }
+        Update: {
+          by_engineer_id?: string
+          created_at?: string
+          doc_no?: string
+          due_date?: string
+          id?: string
+          period?: string
+          plant_id?: string
+          sent_date?: string | null
+          status?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      tickets: {
+        Row: {
+          area: string
+          ask_for: string
+          assigned_to: string
+          closed_on: string | null
+          created_at: string
+          id: string
+          machine: string
+          observation: string
+          plant_id: string
+          priority: string
+          raised_at: string
+          raised_by: string
+          raised_on: string
+          responded_on: string | null
+          response: string | null
+          status: string
+          subject: string
+          ticket_no: string
+        }
+        Insert: {
+          area?: string
+          ask_for?: string
+          assigned_to?: string
+          closed_on?: string | null
+          created_at?: string
+          id: string
+          machine?: string
+          observation?: string
+          plant_id?: string
+          priority?: string
+          raised_at?: string
+          raised_by?: string
+          raised_on: string
+          responded_on?: string | null
+          response?: string | null
+          status?: string
+          subject?: string
+          ticket_no?: string
+        }
+        Update: {
+          area?: string
+          ask_for?: string
+          assigned_to?: string
+          closed_on?: string | null
+          created_at?: string
+          id?: string
+          machine?: string
+          observation?: string
+          plant_id?: string
+          priority?: string
+          raised_at?: string
+          raised_by?: string
+          raised_on?: string
+          responded_on?: string | null
+          response?: string | null
+          status?: string
+          subject?: string
+          ticket_no?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
