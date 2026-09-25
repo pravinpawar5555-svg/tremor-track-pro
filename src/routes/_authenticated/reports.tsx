@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/console/AppShell";
+import { RecurringReports } from "@/components/console/RecurringReports";
 import {
   Button,
   Empty,
@@ -84,7 +85,11 @@ function ReportsPage() {
       <PageHeader
         title="Report Delivery Tracker"
         subtitle="On-demand, weekly and monthly reports — was it sent to the customer on time?"
-        actions={<Button variant={adding ? "ghost" : "solid"} onClick={() => setAdding((a) => !a)}>{adding ? "Cancel" : "Schedule report"}</Button>}
+        actions={
+          data.role === "manager" ? (
+            <Button variant={adding ? "ghost" : "solid"} onClick={() => setAdding((a) => !a)}>{adding ? "Cancel" : "Create report"}</Button>
+          ) : null
+        }
       />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -94,6 +99,8 @@ function ReportsPage() {
         <Kpi label="Overdue" value={rk.overdue} tone={rk.overdue ? "high" : "low"} />
         <Kpi label="Due in 7 days" value={rk.dueThisWeek} />
       </div>
+
+      {data.role === "manager" ? <RecurringReports /> : null}
 
       {adding ? (
         <Panel className="mt-4" title="Schedule a report">
