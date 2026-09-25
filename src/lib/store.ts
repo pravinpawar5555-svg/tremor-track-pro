@@ -105,8 +105,43 @@ export interface AppData {
   reports: ReportRow[];
   tickets: Ticket[];
   messages: ChatMessage[];
-  /** Who is using the portal right now (no auth yet). */
+  tasks: Task[];
+  recurring: RecurringReport[];
+  profiles: Profile[];
+  /** Engineer id linked to the signed-in account. */
   currentUserId: string;
+  /** Signed-in account role. */
+  role: "manager" | "engineer";
+}
+
+export interface Task {
+  id: string;
+  engineerId: string;
+  title: string;
+  taskDate: string;
+  originalDate: string;
+  status: "pending" | "completed";
+  completedAt: string | null;
+  assignedBy: string;
+}
+
+export interface RecurringReport {
+  id: string;
+  plantId: string;
+  type: "weekly" | "monthly";
+  nextDue: string;
+  engineerId: string;
+  active: boolean;
+}
+
+export interface Profile {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  status: "pending" | "approved" | "rejected";
+  engineerId: string;
+  createdAt: string;
 }
 
 export const askForLabel: Record<AskFor, string> = {
@@ -151,7 +186,10 @@ export function ticketThread(ticketId: string) {
 
 // ---------------------------------------------------------------- constants
 
-export const TODAY = "2026-09-22";
+function localIso(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+export const TODAY = localIso();
 
 export const defaultEngineers: Engineer[] = [
   { id: "eng-1", name: "R. Ahuja", initials: "RA", role: "analyst" },
@@ -415,7 +453,11 @@ function seed(): AppData {
     reports,
     tickets,
     messages,
+    tasks: [],
+    recurring: [],
+    profiles: [],
     currentUserId: "mgr-1",
+    role: "manager",
   };
 }
 
@@ -433,7 +475,11 @@ const emptyData: AppData = {
   reports: [],
   tickets: [],
   messages: [],
-  currentUserId: "mgr-1",
+  tasks: [],
+  recurring: [],
+  profiles: [],
+  currentUserId: "",
+  role: "engineer",
 };
 
 let data: AppData = emptyData;
@@ -587,16 +633,149 @@ const messageToRow = (m: ChatMessage) => ({
   read_by: m.readBy ?? [],
 });
 
+const rowToTask = (r: any): Task => ({
+  id: r.id,
+  engineerId: r.engineer_id,
+  title: r.title,
+  taskDate: r.task_date,
+  originalDate: r.original_date,
+  status: r.status === "completed" ? "completed" : "pending",
+  completedAt: r.completed_at ?? null,
+  assignedBy: r.assigned_by ?? "",
+});
+const taskToRow = (t: Task) => ({
+  id: t.id,
+  engineer_id: t.engineerId,
+  title: t.title,
+  task_date: t.taskDate,
+  original_date: t.originalDate,
+  status: t.status,
+  completed_at: t.completedAt,
+  assigned_by: t.assignedBy,
+});
+const rowToRecurring = (r: any): RecurringReport => ({
+  id: r.id,
+  plantId: r.plant_id,
+  type: r.type === "monthly" ? "monthly" : "weekly",
+  nextDue: r.next_due,
+  engineerId: r.engineer_id ?? "",
+  active: !!r.active,
+});
+const recurringToRow = (r: RecurringReport) => ({
+  id: r.id,
+  plant_id: r.plantId,
+  type: r.type,
+  next_due: r.nextDue,
+  engineer_id: r.engineerId,
+  active: r.active,
+});
+const rowToProfile = (r: any): Profile => ({
+  id: r.id,
+  fullName: r.full_name ?? "",
+  email: r.email ?? "",
+  phone: r.phone ?? "",
+  status: r.status,
+  engineerId: r.engineer_id ?? "",
+  createdAt: r.created_at ?? "",
+});
+
+// ---- session
+
+let session: { engineerId: string; role: "manager" | "engineer" } | null = null;
+
+/** Called by the sign-in gate once the account is known to be approved. */
+export function startSession(engineerId: string, role: "manager" | "engineer") {
+  if (session && session.engineerId === engineerId && session.role === role) return;
+  session = { engineerId, role };
+  data = { ...emptyData, currentUserId: engineerId, role };
+  loaded = true;
+  void loadFromCloud();
+}
+
+export function endSession() {
+  session = null;
+  loaded = false;
+  data = emptyData;
+  listeners.forEach((l) => l());
+}
+
 // ---- load / sync
 
+function addMonths(iso: string, n: number) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y!, m! - 1 + n, 1));
+  const last = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate();
+  dt.setUTCDate(Math.min(d!, last));
+  return dt.toISOString().slice(0, 10);
+}
+
+export function nextDueAfter(type: RecurringReport["type"], iso: string) {
+  return type === "weekly" ? shiftDate(iso, 7) : addMonths(iso, 1);
+}
+
+function periodFor(type: RecurringReport["type"], due: string) {
+  if (type === "weekly") return `${fmtDate(shiftDate(due, -7))} – ${fmtDate(shiftDate(due, -1))}`;
+  const prev = addMonths(due, -1);
+  return `${MONTHS[Number(prev.slice(5, 7)) - 1]} ${prev.slice(0, 4)}`;
+}
+
+/** Carry unfinished tasks forward and generate reports from recurring schedules. */
+function housekeeping() {
+  if (!session) return;
+  let next = data;
+  const stale = next.tasks.filter(
+    (t) => t.status === "pending" && t.taskDate < TODAY && (session!.role === "manager" || t.engineerId === session!.engineerId),
+  );
+  if (stale.length) {
+    const ids = new Set(stale.map((t) => t.id));
+    next = { ...next, tasks: next.tasks.map((t) => (ids.has(t.id) ? { ...t, taskDate: TODAY } : t)) };
+  }
+  if (session.role === "manager") {
+    const horizon = shiftDate(TODAY, 7);
+    const reports = [...next.reports];
+    let changed = false;
+    const recurring = next.recurring.map((rr) => {
+      if (!rr.active) return rr;
+      let due = rr.nextDue;
+      let guard = 0;
+      while (due <= horizon && guard++ < 60) {
+        const exists = reports.some((r) => r.plantId === rr.plantId && r.type === rr.type && r.dueDate === due);
+        if (!exists) {
+          reports.push({
+            id: uid("rp"),
+            docNo: `FM-VM-${due.slice(0, 4)}-${String(300 + reports.length).padStart(4, "0")}`,
+            plantId: rr.plantId,
+            type: rr.type,
+            period: periodFor(rr.type, due),
+            dueDate: due,
+            status: "pending",
+            byEngineerId: rr.engineerId,
+          } as ReportRow);
+        }
+        due = nextDueAfter(rr.type, due);
+      }
+      if (due !== rr.nextDue) {
+        changed = true;
+        return { ...rr, nextDue: due };
+      }
+      return rr;
+    });
+    if (changed) next = { ...next, reports, recurring };
+  }
+  if (next !== data) commit(next);
+}
+
 async function loadFromCloud() {
-  const [e, p, u, r, t, m] = await Promise.all([
+  const [e, p, u, r, t, m, tk, rc, pr] = await Promise.all([
     db.from("engineers").select("*"),
     db.from("plants").select("*"),
     db.from("daily_updates").select("*"),
     db.from("reports").select("*"),
     db.from("tickets").select("*"),
     db.from("messages").select("*"),
+    db.from("tasks").select("*").order("created_at"),
+    db.from("recurring_reports").select("*").order("created_at"),
+    db.from("profiles").select("*").order("created_at", { ascending: false }),
   ]);
   data = {
     engineers: (e.data ?? []).map(rowToEngineer),
@@ -609,9 +788,14 @@ async function loadFromCloud() {
       .map(rowToTicket)
       .sort((a: Ticket, b: Ticket) => (a.raisedOn === b.raisedOn ? 0 : a.raisedOn < b.raisedOn ? 1 : -1)),
     messages: (m.data ?? []).map(rowToMessage),
+    tasks: (tk.data ?? []).map(rowToTask),
+    recurring: (rc.data ?? []).map(rowToRecurring),
+    profiles: (pr.data ?? []).map(rowToProfile),
     currentUserId: data.currentUserId,
+    role: data.role,
   };
   listeners.forEach((l) => l());
+  housekeeping();
 }
 
 function pushDiff<T extends { id: string }>(table: string, prev: T[], next: T[], toRow: (x: T) => unknown) {
@@ -644,6 +828,8 @@ function syncToCloud(prev: AppData, next: AppData) {
   pushDiff("reports", prev.reports, next.reports, reportToRow);
   pushDiff("tickets", prev.tickets, next.tickets, ticketToRow);
   pushDiff("messages", prev.messages, next.messages, messageToRow);
+  pushDiff("tasks", prev.tasks, next.tasks, taskToRow);
+  if (next.role === "manager") pushDiff("recurring_reports", prev.recurring, next.recurring, recurringToRow);
 }
 
 function commit(next: AppData) {
@@ -655,10 +841,6 @@ function commit(next: AppData) {
 
 function subscribe(cb: () => void) {
   listeners.add(cb);
-  if (!loaded && typeof window !== "undefined") {
-    loaded = true;
-    void loadFromCloud();
-  }
   return () => listeners.delete(cb);
 }
 
@@ -675,7 +857,78 @@ export function refreshData() {
   return loadFromCloud();
 }
 
-const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
+const uid = (p: string) =>
+  p === "tk" || p === "rr" || p === "task"
+    ? crypto.randomUUID()
+    : `${p}-${Math.random().toString(36).slice(2, 9)}`;
+
+// ---------------------------------------------------------------- daily tasks
+
+export function addTask(title: string, engineerId: string, taskDate = TODAY) {
+  const t = title.trim();
+  if (!t || !engineerId) return;
+  const task: Task = {
+    id: uid("task"),
+    engineerId,
+    title: t,
+    taskDate,
+    originalDate: taskDate,
+    status: "pending",
+    completedAt: null,
+    assignedBy: data.currentUserId === engineerId ? "" : data.currentUserId,
+  };
+  commit({ ...data, tasks: [...data.tasks, task] });
+}
+
+export function toggleTask(id: string) {
+  commit({
+    ...data,
+    tasks: data.tasks.map((t) =>
+      t.id === id
+        ? t.status === "completed"
+          ? { ...t, status: "pending", completedAt: null }
+          : { ...t, status: "completed", completedAt: new Date().toISOString() }
+        : t,
+    ),
+  });
+}
+
+export function removeTask(id: string) {
+  commit({ ...data, tasks: data.tasks.filter((t) => t.id !== id) });
+}
+
+export function tasksFor(d: AppData, engineerId: string, date = TODAY) {
+  return d.tasks.filter((t) => t.engineerId === engineerId && t.taskDate === date);
+}
+
+export function taskStats(d: AppData, engineerId: string, date = TODAY) {
+  const list = tasksFor(d, engineerId, date);
+  const done = list.filter((t) => t.status === "completed").length;
+  const carried = list.filter((t) => t.originalDate < t.taskDate && t.status === "pending").length;
+  return { total: list.length, done, pending: list.length - done, carried };
+}
+
+// ---------------------------------------------------------------- recurring reports
+
+export function saveRecurring(input: Omit<RecurringReport, "id"> & { id?: string }) {
+  const row: RecurringReport = { ...input, id: input.id ?? uid("rr") };
+  const recurring = input.id ? data.recurring.map((r) => (r.id === input.id ? row : r)) : [...data.recurring, row];
+  commit({ ...data, recurring });
+  housekeeping();
+}
+
+export function removeRecurring(id: string) {
+  commit({ ...data, recurring: data.recurring.filter((r) => r.id !== id) });
+}
+
+// ---------------------------------------------------------------- approvals
+
+export async function reviewUser(userId: string, approve: boolean) {
+  const { error } = await db.rpc("review_user", { _user_id: userId, _approve: approve });
+  if (error) return { ok: false, message: error.message as string };
+  await loadFromCloud();
+  return { ok: true, message: approve ? "Approved." : "Rejected." };
+}
 
 export function saveEngineer(input: { id?: string; name: string; role: Engineer["role"] }) {
   const name = input.name.trim();
@@ -819,22 +1072,22 @@ export function fleetTotals(d: AppData) {
 
 export function engineerSummary(d: AppData, engineerId: string, days = 7) {
   const from = shiftDate(TODAY, -(days - 1));
-  const list = d.updates.filter((u) => u.engineerId === engineerId && u.date >= from);
-  const totals = sumUpdates(list);
+  const list = d.tasks.filter((t) => t.engineerId === engineerId && t.originalDate >= from);
+  const done = list.filter((t) => t.status === "completed").length;
   const reports = d.reports.filter((r) => r.byEngineerId === engineerId);
   const sent = reports.filter((r) => r.status === "sent");
   const late = sent.filter((r) => reportTiming(r).late);
   const pending = reports.filter((r) => r.status !== "sent");
   const overdue = pending.filter((r) => reportTiming(r).late);
-  const submittedToday = d.updates.some((u) => u.engineerId === engineerId && u.date === TODAY);
-  const daysUpdated = new Set(list.map((u) => u.date)).size;
+  const activeDays = new Set(list.map((t) => t.originalDate));
   return {
-    ...totals,
-    plantsCovered: new Set(list.map((u) => u.plantId)).size,
-    entries: list.length,
-    daysUpdated,
+    tasks: list.length,
+    done,
+    pending: list.length - done,
+    activeDays: activeDays.size,
+    activeOn: (iso: string) => activeDays.has(iso),
     days,
-    submittedToday,
+    activeToday: d.tasks.some((t) => t.engineerId === engineerId && t.taskDate === TODAY),
     reportsSent: sent.length,
     reportsLate: late.length,
     reportsPending: pending.length,
@@ -873,15 +1126,13 @@ function nowTime() {
   return typeof window === "undefined" ? "09:00" : new Date().toTimeString().slice(0, 5);
 }
 
-export function setCurrentUser(id: string) {
-  commit({ ...data, currentUserId: id });
-}
 
 export function currentUser(d: AppData): Engineer | undefined {
-  return d.engineers.find((e) => e.id === d.currentUserId) ?? d.engineers[0];
+  return d.engineers.find((e) => e.id === d.currentUserId);
 }
 
 export function isManager(d: AppData, id = d.currentUserId) {
+  if (id === d.currentUserId) return d.role === "manager";
   return d.engineers.find((e) => e.id === id)?.role === "manager";
 }
 

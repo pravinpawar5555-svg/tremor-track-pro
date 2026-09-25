@@ -9,148 +9,206 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as DailyRouteImport } from './routes/daily'
-import { Route as DiscussionsRouteImport } from './routes/discussions'
-import { Route as EngineersRouteImport } from './routes/engineers'
-import { Route as PlantsRouteImport } from './routes/plants'
-import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedDiscussionsRouteImport } from './routes/_authenticated/discussions'
+import { Route as AuthenticatedEngineersRouteImport } from './routes/_authenticated/engineers'
+import { Route as AuthenticatedPlantsRouteImport } from './routes/_authenticated/plants'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const DailyRoute = DailyRouteImport.update({
-  id: '/daily',
-  path: '/daily',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DiscussionsRoute = DiscussionsRouteImport.update({
-  id: '/discussions',
-  path: '/discussions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EngineersRoute = EngineersRouteImport.update({
+const AuthenticatedDiscussionsRoute =
+  AuthenticatedDiscussionsRouteImport.update({
+    id: '/discussions',
+    path: '/discussions',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEngineersRoute = AuthenticatedEngineersRouteImport.update({
   id: '/engineers',
   path: '/engineers',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const PlantsRoute = PlantsRouteImport.update({
+const AuthenticatedPlantsRoute = AuthenticatedPlantsRouteImport.update({
   id: '/plants',
   path: '/plants',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ReportsRoute = ReportsRouteImport.update({
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/daily': typeof DailyRoute
-  '/discussions': typeof DiscussionsRoute
-  '/engineers': typeof EngineersRoute
-  '/plants': typeof PlantsRoute
-  '/reports': typeof ReportsRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auth': typeof AuthRoute
+  '/discussions': typeof AuthenticatedDiscussionsRoute
+  '/engineers': typeof AuthenticatedEngineersRoute
+  '/plants': typeof AuthenticatedPlantsRoute
+  '/reports': typeof AuthenticatedReportsRoute
+  '/tasks': typeof AuthenticatedTasksRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/daily': typeof DailyRoute
-  '/discussions': typeof DiscussionsRoute
-  '/engineers': typeof EngineersRoute
-  '/plants': typeof PlantsRoute
-  '/reports': typeof ReportsRoute
+  '/auth': typeof AuthRoute
+  '/discussions': typeof AuthenticatedDiscussionsRoute
+  '/engineers': typeof AuthenticatedEngineersRoute
+  '/plants': typeof AuthenticatedPlantsRoute
+  '/reports': typeof AuthenticatedReportsRoute
+  '/tasks': typeof AuthenticatedTasksRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/daily': typeof DailyRoute
-  '/discussions': typeof DiscussionsRoute
-  '/engineers': typeof EngineersRoute
-  '/plants': typeof PlantsRoute
-  '/reports': typeof ReportsRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/discussions': typeof AuthenticatedDiscussionsRoute
+  '/_authenticated/engineers': typeof AuthenticatedEngineersRoute
+  '/_authenticated/plants': typeof AuthenticatedPlantsRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/tasks': typeof AuthenticatedTasksRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/daily' | '/discussions' | '/engineers' | '/plants' | '/reports'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/daily' | '/discussions' | '/engineers' | '/plants' | '/reports'
-  id:
-    | '__root__'
     | '/'
-    | '/daily'
+    | '/auth'
     | '/discussions'
     | '/engineers'
     | '/plants'
     | '/reports'
+    | '/tasks'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/auth'
+    | '/discussions'
+    | '/engineers'
+    | '/plants'
+    | '/reports'
+    | '/tasks'
+    | '/'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/discussions'
+    | '/_authenticated/engineers'
+    | '/_authenticated/plants'
+    | '/_authenticated/reports'
+    | '/_authenticated/tasks'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  DailyRoute: typeof DailyRoute
-  DiscussionsRoute: typeof DiscussionsRoute
-  EngineersRoute: typeof EngineersRoute
-  PlantsRoute: typeof PlantsRoute
-  ReportsRoute: typeof ReportsRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/daily': {
-      id: '/daily'
-      path: '/daily'
-      fullPath: '/daily'
-      preLoaderRoute: typeof DailyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/discussions': {
-      id: '/discussions'
+    '/_authenticated/discussions': {
+      id: '/_authenticated/discussions'
       path: '/discussions'
       fullPath: '/discussions'
-      preLoaderRoute: typeof DiscussionsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedDiscussionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/engineers': {
-      id: '/engineers'
+    '/_authenticated/engineers': {
+      id: '/_authenticated/engineers'
       path: '/engineers'
       fullPath: '/engineers'
-      preLoaderRoute: typeof EngineersRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedEngineersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/plants': {
-      id: '/plants'
+    '/_authenticated/plants': {
+      id: '/_authenticated/plants'
       path: '/plants'
       fullPath: '/plants'
-      preLoaderRoute: typeof PlantsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedPlantsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/reports': {
-      id: '/reports'
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
       path: '/reports'
       fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tasks': {
+      id: '/_authenticated/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AuthenticatedTasksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDiscussionsRoute: typeof AuthenticatedDiscussionsRoute
+  AuthenticatedEngineersRoute: typeof AuthenticatedEngineersRoute
+  AuthenticatedPlantsRoute: typeof AuthenticatedPlantsRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDiscussionsRoute: AuthenticatedDiscussionsRoute,
+  AuthenticatedEngineersRoute: AuthenticatedEngineersRoute,
+  AuthenticatedPlantsRoute: AuthenticatedPlantsRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedTasksRoute: AuthenticatedTasksRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  DailyRoute: DailyRoute,
-  DiscussionsRoute: DiscussionsRoute,
-  EngineersRoute: EngineersRoute,
-  PlantsRoute: PlantsRoute,
-  ReportsRoute: ReportsRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

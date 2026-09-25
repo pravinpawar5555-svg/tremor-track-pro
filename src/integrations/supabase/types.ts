@@ -161,6 +161,66 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          engineer_id: string
+          full_name: string
+          id: string
+          phone: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string
+          engineer_id?: string
+          full_name?: string
+          id: string
+          phone?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          engineer_id?: string
+          full_name?: string
+          id?: string
+          phone?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      recurring_reports: {
+        Row: {
+          active: boolean
+          created_at: string
+          engineer_id: string
+          id: string
+          next_due: string
+          plant_id: string
+          type: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          engineer_id?: string
+          id?: string
+          next_due: string
+          plant_id: string
+          type?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          engineer_id?: string
+          id?: string
+          next_due?: string
+          plant_id?: string
+          type?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           by_engineer_id: string
@@ -197,6 +257,42 @@ export type Database = {
           sent_date?: string | null
           status?: string
           type?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          assigned_by: string
+          completed_at: string | null
+          created_at: string
+          engineer_id: string
+          id: string
+          original_date: string
+          status: string
+          task_date: string
+          title: string
+        }
+        Insert: {
+          assigned_by?: string
+          completed_at?: string | null
+          created_at?: string
+          engineer_id: string
+          id?: string
+          original_date?: string
+          status?: string
+          task_date?: string
+          title: string
+        }
+        Update: {
+          assigned_by?: string
+          completed_at?: string | null
+          created_at?: string
+          engineer_id?: string
+          id?: string
+          original_date?: string
+          status?: string
+          task_date?: string
+          title?: string
         }
         Relationships: []
       }
@@ -263,15 +359,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_approved: { Args: { _user_id: string }; Returns: boolean }
+      review_user: {
+        Args: { _approve: boolean; _user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "manager" | "engineer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -398,6 +523,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["manager", "engineer"],
+    },
   },
 } as const

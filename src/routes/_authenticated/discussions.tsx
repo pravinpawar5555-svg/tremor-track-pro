@@ -34,7 +34,6 @@ import {
   priorityLabel,
   removeTicket,
   respondToTicket,
-  setCurrentUser,
   sendMessage,
   setTicketStatus,
   threadMessages,
@@ -51,7 +50,7 @@ import {
   type TicketStatus,
 } from "@/lib/store";
 
-export const Route = createFileRoute("/discussions")({
+export const Route = createFileRoute("/_authenticated/discussions")({
   head: () => ({
     meta: [
       { title: "Discussion & Tickets — Forbes Marshall CM Portal" },
@@ -161,18 +160,6 @@ function DiscussionsPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {notice ? <span className="text-xs text-signal">{notice}</span> : null}
-            <Select
-              aria-label="You are"
-              className="w-44"
-              value={data.currentUserId}
-              onChange={(e) => setCurrentUser(e.target.value)}
-            >
-              {data.engineers.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name} · {e.role === "manager" ? "Manager" : "Engineer"}
-                </option>
-              ))}
-            </Select>
             <Button variant="solid" onClick={() => setShowNew((s) => !s)}>
               {showNew ? "Close form" : "Raise ticket"}
             </Button>

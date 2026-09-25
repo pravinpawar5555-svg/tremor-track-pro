@@ -10,27 +10,27 @@ import {
   fmtDate,
   plantName,
   removeEngineer,
-  resetDemoData,
   saveEngineer,
   shiftDate,
   useData,
   type Engineer,
 } from "@/lib/store";
 import { Button } from "@/components/console/ui";
+import { reviewUser } from "@/lib/store";
 
-export const Route = createFileRoute("/engineers")({
+export const Route = createFileRoute("/_authenticated/engineers")({
   head: () => ({
     meta: [
       { title: "Engineer Activity — Forbes Marshall CM Portal" },
       {
         name: "description",
         content:
-          "Engineer-wise record of daily updates submitted, plants covered, machines checked, abnormalities found and reports sent on time.",
+          "Engineer-wise record of daily tasks completed and reports sent on time.",
       },
       { property: "og:title", content: "Engineer Activity — Forbes Marshall CM Portal" },
       {
         property: "og:description",
-        content: "Accountability view per engineer: daily updates, coverage and report delivery performance.",
+        content: "Accountability view per engineer: daily tasks and report delivery performance.",
       },
     ],
   }),
@@ -70,13 +70,69 @@ function EngineersPage() {
     }
   };
 
+  const pendingUsers = data.profiles.filter((p) => p.status === "pending");
+  const review = async (id: string, approve: boolean) => {
+    const res = await reviewUser(id, approve);
+    setNote(res);
+  };
+
+  if (data.role !== "manager") {
+    return (
+      <AppShell>
+        <Empty>Only the manager can manage engineers and approve accounts.</Empty>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <PageHeader
         title="Engineers"
         subtitle="Manage the team and review the last 7 days of work"
-        actions={<Button variant="ghost" onClick={resetDemoData}>Reset demo data</Button>}
       />
+
+      <Panel title="Account approvals" meta={`${pendingUsers.length} waiting`} className="mb-4">
+        {data.profiles.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <Th>Name</Th>
+                  <Th>Email</Th>
+                  <Th>Mobile</Th>
+                  <Th>Status</Th>
+                  <Th align="right">Action</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...pendingUsers, ...data.profiles.filter((p) => p.status !== "pending")].map((p) => (
+                  <Tr key={p.id}>
+                    <Td>{p.fullName || "—"}</Td>
+                    <Td className="text-mute">{p.email}</Td>
+                    <Td mono>{p.phone || "—"}</Td>
+                    <Td>
+                      <Chip
+                        severity={p.status === "approved" ? "low" : p.status === "pending" ? "medium" : "high"}
+                        label={p.status === "approved" ? "Approved" : p.status === "pending" ? "Pending approval" : "Rejected"}
+                      />
+                    </Td>
+                    <Td align="right">
+                      {p.engineerId === data.currentUserId ? null : (
+                        <span className="flex justify-end gap-2">
+                          {p.status !== "approved" ? <Button variant="solid" onClick={() => void review(p.id, true)}>Approve</Button> : null}
+                          {p.status !== "rejected" ? <Button variant="ghost" onClick={() => void review(p.id, false)}>{p.status === "approved" ? "Revoke" : "Reject"}</Button> : null}
+                        </span>
+                      )}
+                    </Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <Empty>No sign-ups yet.</Empty>
+        )}
+      </Panel>
 
       <Panel
         title={form.id ? "Edit engineer" : "Add engineer"}
@@ -96,8 +152,8 @@ function EngineersPage() {
           </Field>
           <Field label="Role">
             <Select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Engineer["role"] })}>
-              <option value="analyst">Engineer (fills daily update)</option>
-              <option value="manager">Team lead (monitoring only)</option>
+              <option value="analyst">Engineer</option>
+              <option value="manager">Manager</option>
             </Select>
           </Field>
           <div className="flex items-end gap-2">
@@ -116,7 +172,7 @@ function EngineersPage() {
                 <Th>Name</Th>
                 <Th>Role</Th>
                 <Th align="right">Plants</Th>
-                <Th align="right">Updates</Th>
+                <Th align="right">Tasks</Th>
                 <Th align="right">Reports</Th>
                 <Th align="right">Manage</Th>
               </tr>
@@ -128,9 +184,9 @@ function EngineersPage() {
                 return (
                   <Tr key={e.id}>
                     <Td>{e.name}</Td>
-                    <Td>{e.role === "analyst" ? "Engineer" : "Team lead"}</Td>
+                    <Td>{e.role === "analyst" ? "Engineer" : "Manager"}</Td>
                     <Td align="right" mono>{usage.plants}</Td>
-                    <Td align="right" mono>{usage.updates}</Td>
+                    <Td align="right" mono>{data.tasks.filter((t) => t.engineerId === e.id).length}</Td>
                     <Td align="right" mono>{usage.reports}</Td>
                     <Td align="right">
                       {confirmId === e.id ? (
@@ -164,70 +220,35 @@ function EngineersPage() {
       <div className="grid items-start gap-4 xl:grid-cols-2">
         {team.map((a) => {
           const s = engineerSummary(data, a.id);
-          const list = data.updates.filter((u) => u.engineerId === a.id && u.date >= from);
           return (
             <Panel
               key={a.id}
               title={a.name}
-              meta={<Chip severity={s.submittedToday ? "low" : "high"} label={s.submittedToday ? "Today updated" : "Today pending"} />}
+              meta={<Chip severity={s.activeToday ? "low" : "high"} label={s.activeToday ? "Tasks planned today" : "No tasks today"} />}
             >
               <div className="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
-                <Kpi label="Days updated" value={`${s.daysUpdated}/${s.days}`} tone={s.daysUpdated >= 6 ? "low" : "medium"} />
-                <Kpi label="Machines checked" value={s.machinesChecked} hint={`${s.entries} updates`} />
-                <Kpi label="High risk found" value={s.abnormal} tone={s.abnormal ? "medium" : "low"} />
+                <Kpi label="Active days" value={`${s.activeDays}/${s.days}`} tone={s.activeDays >= 5 ? "low" : "medium"} />
+                <Kpi label="Tasks · 7 d" value={s.tasks} />
+                <Kpi label="Completed" value={s.done} tone="low" hint={`${s.pending} pending`} />
                 <Kpi label="Reports late" value={s.reportsLate} tone={s.reportsLate ? "high" : "low"} hint={`${s.reportsSent} sent`} />
               </div>
               <div className="px-4 pb-3">
-                <SpecRow label="Plants covered" value={s.plantsCovered} />
-                <SpecRow label="Updates submitted" value={s.entries} />
                 <SpecRow label="Reports pending" value={s.reportsPending} />
                 <SpecRow label="Reports overdue" value={s.reportsOverdue} />
               </div>
               <div className="border-t border-line/60 px-4 py-3">
-                <div className="label-caps mb-2">Daily submission — last 7 days</div>
+                <div className="label-caps mb-2">Daily task list — last 7 days</div>
                 <div className="flex flex-wrap gap-2">
-                  {days.map((d) => {
-                    const done = list.some((u) => u.date === d);
-                    return (
-                      <span
-                        key={d}
-                        className={`num rounded-md px-2 py-1 text-[11px] ${done ? "bg-sev-low/10 text-sev-low" : "bg-sev-high/10 text-sev-high"}`}
-                      >
-                        {fmtDate(d).slice(0, 6)}
-                      </span>
-                    );
-                  })}
+                  {days.map((d) => (
+                    <span
+                      key={d}
+                      className={`num rounded-md px-2 py-1 text-[11px] ${s.activeOn(d) ? "bg-sev-low/10 text-sev-low" : "bg-sev-high/10 text-sev-high"}`}
+                    >
+                      {fmtDate(d).slice(0, 6)}
+                    </span>
+                  ))}
                 </div>
-                <div className="mt-3"><Bar pct={(s.daysUpdated / s.days) * 100} severity={s.daysUpdated >= 6 ? "low" : "medium"} /></div>
               </div>
-              {list.length ? (
-                <div className="overflow-x-auto border-t border-line/60">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr>
-                        <Th>Date</Th>
-                        <Th>Plant</Th>
-                        <Th align="right">Machines</Th>
-                        <Th align="right">High risk</Th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {list
-                        .sort((x, y) => (x.date < y.date ? 1 : -1))
-                        .map((u) => (
-                          <Tr key={u.id}>
-                            <Td mono>{fmtDate(u.date)}</Td>
-                            <Td className="max-w-[12rem] truncate">{plantName(data, u.plantId)}</Td>
-                            <Td align="right" mono>{u.machinesChecked}</Td>
-                            <Td align="right" mono className={u.abnormal ? "text-sev-medium" : undefined}>{u.abnormal}</Td>
-                          </Tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <Empty>No updates in the last 7 days.</Empty>
-              )}
             </Panel>
           );
         })}
