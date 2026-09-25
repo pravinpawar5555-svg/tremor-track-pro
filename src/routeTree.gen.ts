@@ -15,6 +15,7 @@ import { Route as DiscussionsRouteImport } from './routes/discussions'
 import { Route as EngineersRouteImport } from './routes/engineers'
 import { Route as PlantsRouteImport } from './routes/plants'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as ApiPublicBootstrapMgrRouteImport } from './routes/api/public/bootstrap-mgr'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +47,11 @@ const ReportsRoute = ReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicBootstrapMgrRoute = ApiPublicBootstrapMgrRouteImport.update({
+  id: '/api/public/bootstrap-mgr',
+  path: '/api/public/bootstrap-mgr',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/engineers': typeof EngineersRoute
   '/plants': typeof PlantsRoute
   '/reports': typeof ReportsRoute
+  '/api/public/bootstrap-mgr': typeof ApiPublicBootstrapMgrRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/engineers': typeof EngineersRoute
   '/plants': typeof PlantsRoute
   '/reports': typeof ReportsRoute
+  '/api/public/bootstrap-mgr': typeof ApiPublicBootstrapMgrRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,13 +79,27 @@ export interface FileRoutesById {
   '/engineers': typeof EngineersRoute
   '/plants': typeof PlantsRoute
   '/reports': typeof ReportsRoute
+  '/api/public/bootstrap-mgr': typeof ApiPublicBootstrapMgrRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/daily' | '/discussions' | '/engineers' | '/plants' | '/reports'
+    | '/'
+    | '/daily'
+    | '/discussions'
+    | '/engineers'
+    | '/plants'
+    | '/reports'
+    | '/api/public/bootstrap-mgr'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/daily' | '/discussions' | '/engineers' | '/plants' | '/reports'
+  to:
+    | '/'
+    | '/daily'
+    | '/discussions'
+    | '/engineers'
+    | '/plants'
+    | '/reports'
+    | '/api/public/bootstrap-mgr'
   id:
     | '__root__'
     | '/'
@@ -86,6 +108,7 @@ export interface FileRouteTypes {
     | '/engineers'
     | '/plants'
     | '/reports'
+    | '/api/public/bootstrap-mgr'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -95,6 +118,7 @@ export interface RootRouteChildren {
   EngineersRoute: typeof EngineersRoute
   PlantsRoute: typeof PlantsRoute
   ReportsRoute: typeof ReportsRoute
+  ApiPublicBootstrapMgrRoute: typeof ApiPublicBootstrapMgrRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -141,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/bootstrap-mgr': {
+      id: '/api/public/bootstrap-mgr'
+      path: '/api/public/bootstrap-mgr'
+      fullPath: '/api/public/bootstrap-mgr'
+      preLoaderRoute: typeof ApiPublicBootstrapMgrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -151,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   EngineersRoute: EngineersRoute,
   PlantsRoute: PlantsRoute,
   ReportsRoute: ReportsRoute,
+  ApiPublicBootstrapMgrRoute: ApiPublicBootstrapMgrRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
