@@ -10,7 +10,6 @@ import {
   fmtDate,
   plantName,
   removeEngineer,
-  resetDemoData,
   saveEngineer,
   shiftDate,
   useData,
