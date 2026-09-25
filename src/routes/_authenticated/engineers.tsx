@@ -17,6 +17,7 @@ import {
   type Engineer,
 } from "@/lib/store";
 import { Button } from "@/components/console/ui";
+import { reviewUser } from "@/lib/store";
 
 export const Route = createFileRoute("/_authenticated/engineers")({
   head: () => ({
@@ -70,13 +71,69 @@ function EngineersPage() {
     }
   };
 
+  const pendingUsers = data.profiles.filter((p) => p.status === "pending");
+  const review = async (id: string, approve: boolean) => {
+    const res = await reviewUser(id, approve);
+    setNote(res);
+  };
+
+  if (data.role !== "manager") {
+    return (
+      <AppShell>
+        <Empty>Only the manager can manage engineers and approve accounts.</Empty>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <PageHeader
         title="Engineers"
         subtitle="Manage the team and review the last 7 days of work"
-        actions={<Button variant="ghost" onClick={resetDemoData}>Reset demo data</Button>}
       />
+
+      <Panel title="Account approvals" meta={`${pendingUsers.length} waiting`} className="mb-4">
+        {data.profiles.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <Th>Name</Th>
+                  <Th>Email</Th>
+                  <Th>Mobile</Th>
+                  <Th>Status</Th>
+                  <Th align="right">Action</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...pendingUsers, ...data.profiles.filter((p) => p.status !== "pending")].map((p) => (
+                  <Tr key={p.id}>
+                    <Td>{p.fullName || "—"}</Td>
+                    <Td className="text-mute">{p.email}</Td>
+                    <Td mono>{p.phone || "—"}</Td>
+                    <Td>
+                      <Chip
+                        severity={p.status === "approved" ? "low" : p.status === "pending" ? "medium" : "high"}
+                        label={p.status === "approved" ? "Approved" : p.status === "pending" ? "Pending approval" : "Rejected"}
+                      />
+                    </Td>
+                    <Td align="right">
+                      {p.engineerId === data.currentUserId ? null : (
+                        <span className="flex justify-end gap-2">
+                          {p.status !== "approved" ? <Button variant="solid" onClick={() => void review(p.id, true)}>Approve</Button> : null}
+                          {p.status !== "rejected" ? <Button variant="ghost" onClick={() => void review(p.id, false)}>{p.status === "approved" ? "Revoke" : "Reject"}</Button> : null}
+                        </span>
+                      )}
+                    </Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <Empty>No sign-ups yet.</Empty>
+        )}
+      </Panel>
 
       <Panel
         title={form.id ? "Edit engineer" : "Add engineer"}
