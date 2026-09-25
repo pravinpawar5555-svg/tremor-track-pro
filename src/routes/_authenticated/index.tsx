@@ -60,7 +60,6 @@ function Dashboard() {
     .filter((r) => r.status !== "sent" && !reportTiming(r).late)
     .sort((a, b) => (a.dueDate > b.dueDate ? 1 : -1))
     .slice(0, 6);
-  const week = shiftDate(TODAY, -6);
   const tk = ticketKpis(data);
   const unread = totalUnread(data);
   const openTickets = (data.tickets ?? [])
@@ -190,10 +189,9 @@ function Dashboard() {
               <thead>
                 <tr>
                   <Th>Engineer</Th>
-                  <Th align="right">Days updated</Th>
-                  <Th align="right">Plants</Th>
-                  <Th align="right">Machines</Th>
-                  <Th align="right">High risk</Th>
+                  <Th align="right">Active days</Th>
+                  <Th align="right">Tasks</Th>
+                  <Th align="right">Completed</Th>
                   <Th align="right">Reports sent</Th>
                   <Th align="right">Late</Th>
                 </tr>
@@ -205,12 +203,11 @@ function Dashboard() {
                     <Tr key={a.id}>
                       <Td>
                         <div className="font-medium">{a.name}</div>
-                        <div className="mt-1"><Bar pct={(s.daysUpdated / s.days) * 100} severity={s.daysUpdated >= 6 ? "low" : "medium"} /></div>
+                        <div className="mt-1"><Bar pct={s.tasks ? (s.done / s.tasks) * 100 : 0} severity={s.pending ? "medium" : "low"} /></div>
                       </Td>
-                      <Td align="right" mono>{s.daysUpdated}/{s.days}</Td>
-                      <Td align="right" mono>{s.plantsCovered}</Td>
-                      <Td align="right" mono>{s.machinesChecked}</Td>
-                      <Td align="right" mono>{s.abnormal}</Td>
+                      <Td align="right" mono>{s.activeDays}/{s.days}</Td>
+                      <Td align="right" mono>{s.tasks}</Td>
+                      <Td align="right" mono>{s.done}</Td>
                       <Td align="right" mono>{s.reportsSent}</Td>
                       <Td align="right" mono className={s.reportsLate ? "text-sev-high" : undefined}>{s.reportsLate}</Td>
                     </Tr>
@@ -220,7 +217,7 @@ function Dashboard() {
             </table>
           </div>
           <div className="border-t border-line/60 px-4 py-2 text-[11px] text-mute">
-            Counts come from the engineers' own daily updates — use them for coverage, not as a judgement of analysis quality.
+            Counts come from the engineers' own daily task lists — use them for follow-up, not as a judgement of analysis quality.
           </div>
         </Panel>
 
@@ -261,7 +258,6 @@ function Dashboard() {
                 <Th>Plant</Th>
                 <Th>Customer</Th>
                 <Th>Report cycle</Th>
-                <Th>Last observed</Th>
                 <Th align="right">Machines</Th>
                 <Th>Last report sent</Th>
                 <Th>Next report due</Th>
@@ -271,7 +267,6 @@ function Dashboard() {
             <tbody>
               {data.plants.map((p) => {
                 const s = plantSummary(data, p.id);
-                const stale = !s.lastObserved || s.lastObserved < shiftDate(TODAY, -7);
                 return (
                   <Tr key={p.id}>
                     <Td>
@@ -279,7 +274,6 @@ function Dashboard() {
                     </Td>
                     <Td className="text-mute">{p.customer}</Td>
                     <Td>{frequencyText(p)}</Td>
-                    <Td mono className={stale ? "text-sev-high" : undefined}>{fmtDate(s.lastObserved)}</Td>
                     <Td align="right" mono>{p.machines}</Td>
                     <Td mono>{fmtDate(s.lastReportSent)}</Td>
                     <Td mono>{s.nextReport ? fmtDate(s.nextReport.dueDate) : "—"}</Td>

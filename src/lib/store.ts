@@ -1072,22 +1072,22 @@ export function fleetTotals(d: AppData) {
 
 export function engineerSummary(d: AppData, engineerId: string, days = 7) {
   const from = shiftDate(TODAY, -(days - 1));
-  const list = d.updates.filter((u) => u.engineerId === engineerId && u.date >= from);
-  const totals = sumUpdates(list);
+  const list = d.tasks.filter((t) => t.engineerId === engineerId && t.originalDate >= from);
+  const done = list.filter((t) => t.status === "completed").length;
   const reports = d.reports.filter((r) => r.byEngineerId === engineerId);
   const sent = reports.filter((r) => r.status === "sent");
   const late = sent.filter((r) => reportTiming(r).late);
   const pending = reports.filter((r) => r.status !== "sent");
   const overdue = pending.filter((r) => reportTiming(r).late);
-  const submittedToday = d.updates.some((u) => u.engineerId === engineerId && u.date === TODAY);
-  const daysUpdated = new Set(list.map((u) => u.date)).size;
+  const activeDays = new Set(list.map((t) => t.originalDate));
   return {
-    ...totals,
-    plantsCovered: new Set(list.map((u) => u.plantId)).size,
-    entries: list.length,
-    daysUpdated,
+    tasks: list.length,
+    done,
+    pending: list.length - done,
+    activeDays: activeDays.size,
+    activeOn: (iso: string) => activeDays.has(iso),
     days,
-    submittedToday,
+    activeToday: d.tasks.some((t) => t.engineerId === engineerId && t.taskDate === TODAY),
     reportsSent: sent.length,
     reportsLate: late.length,
     reportsPending: pending.length,

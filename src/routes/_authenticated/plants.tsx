@@ -217,7 +217,6 @@ function PlantsPage() {
                   <Th align="right">Node X</Th>
                   <Th>Report cycle</Th>
                   <Th>Engineer</Th>
-                  <Th>Last observed</Th>
                   <Th>Last report sent</Th>
                   <Th align="right"> </Th>
                 </tr>
@@ -225,7 +224,6 @@ function PlantsPage() {
               <tbody>
                 {data.plants.map((p) => {
                   const s = plantSummary(data, p.id);
-                  const stale = !s.lastObserved || s.lastObserved < shiftDate(TODAY, -7);
                   const cycles = plantFrequencies(p);
                   return (
                     <Tr key={p.id}>
@@ -246,7 +244,6 @@ function PlantsPage() {
                         </span>
                       </Td>
                       <Td>{engineerName(data, p.engineerId)}</Td>
-                      <Td mono className={stale ? "text-sev-high" : undefined}>{fmtDate(s.lastObserved)}</Td>
                       <Td mono>{fmtDate(s.lastReportSent)}</Td>
                       <Td align="right">
                         <span className="flex justify-end gap-1">
@@ -261,7 +258,7 @@ function PlantsPage() {
             </table>
           </div>
         ) : (
-          <Empty>No plants yet. Add your first plant to start recording daily work.</Empty>
+          <Empty>No plants yet. Add your first plant.</Empty>
         )}
       </Panel>
     </AppShell>
