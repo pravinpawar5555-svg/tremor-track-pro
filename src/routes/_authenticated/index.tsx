@@ -20,8 +20,7 @@ import {
   reportKpis,
   reportTiming,
   shiftDate,
-  sumUpdates,
-  todaysUpdates,
+  taskStats,
   useData,
 } from "@/lib/store";
 
@@ -47,11 +46,13 @@ export const Route = createFileRoute("/_authenticated/")({
 function Dashboard() {
   const data = useData();
   const team = analystsOf(data);
-  const today = todaysUpdates(data);
-  const totals = sumUpdates(today);
+  const stats = team.map((a) => ({ a, st: taskStats(data, a.id) }));
+  const tasksTotal = stats.reduce((n, x) => n + x.st.total, 0);
+  const tasksDone = stats.reduce((n, x) => n + x.st.done, 0);
+  const carried = stats.reduce((n, x) => n + x.st.carried, 0);
   const ft = fleetTotals(data);
   const rk = reportKpis(data);
-  const notUpdated = team.filter((a) => !today.some((u) => u.engineerId === a.id));
+  const notUpdated = team.filter((a) => !taskStats(data, a.id).total);
   const overdueReports = data.reports
     .filter((r) => r.status !== "sent" && reportTiming(r).late)
     .sort((a, b) => (a.dueDate > b.dueDate ? 1 : -1));
@@ -60,7 +61,6 @@ function Dashboard() {
     .sort((a, b) => (a.dueDate > b.dueDate ? 1 : -1))
     .slice(0, 6);
   const week = shiftDate(TODAY, -6);
-  const weekUpdates = data.updates.filter((u) => u.date >= week);
   const tk = ticketKpis(data);
   const unread = totalUnread(data);
   const openTickets = (data.tickets ?? [])
@@ -76,19 +76,14 @@ function Dashboard() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-8">
         <Kpi
-          label="Today's updates"
-          value={`${today.length ? new Set(today.map((u) => u.engineerId)).size : 0}/${team.length}`}
+          label="Engineers with tasks"
+          value={`${team.length - notUpdated.length}/${team.length}`}
           tone={notUpdated.length ? "high" : "low"}
-          hint={notUpdated.length ? `${notUpdated.map((a) => a.name).join(", ")} pending` : "Both engineers updated"}
+          hint={notUpdated.length ? `${notUpdated.map((a) => a.name).join(", ")} — no tasks` : "Everyone planned the day"}
         />
-        <Kpi label="Plants observed today" value={new Set(today.map((u) => u.plantId)).size} hint={`of ${data.plants.length} plants`} />
-        <Kpi label="Machines checked today" value={totals.machinesChecked} hint={`${today.length} updates submitted`} />
-        <Kpi
-          label="High risk found today"
-          value={totals.abnormal}
-          tone={totals.abnormal ? "medium" : "low"}
-          hint={`${totals.repeatHighRisk} repeat · ${totals.newHighRisk} new`}
-        />
+        <Kpi label="Tasks today" value={tasksTotal} hint={`${team.length} engineers`} />
+        <Kpi label="Tasks completed" value={tasksDone} tone={tasksDone === tasksTotal ? "low" : "medium"} hint={`${tasksTotal - tasksDone} pending`} />
+        <Kpi label="Carried over" value={carried} tone={carried ? "high" : "low"} hint="From previous days" />
         <Kpi label="Reports overdue" value={rk.overdue} tone={rk.overdue ? "high" : "low"} hint={`${rk.pending} pending in total`} />
         <Kpi label="Report on-time rate" value={rk.onTimePct} unit="%" tone={rk.onTimePct >= 90 ? "low" : "medium"} hint={`${rk.sent} sent · ${rk.late} late`} />
         <Kpi
@@ -108,40 +103,34 @@ function Dashboard() {
       </div>
 
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.2fr_1fr]">
-        <Panel title="Today's work update" meta={<Link to="/daily" className="text-signal">Open daily update</Link>}>
-          {today.length ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr>
-                    <Th>Engineer</Th>
-                    <Th>Plant</Th>
-                    <Th align="right">Machines</Th>
-                    <Th align="right">High risk</Th>
-                    <Th align="right">At</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {today.map((u) => (
-                    <Tr key={u.id}>
-                      <Td>{engineerName(data, u.engineerId)}</Td>
-                      <Td className="max-w-[16rem] truncate">{plantName(data, u.plantId)}</Td>
-                      <Td align="right" mono>{u.machinesChecked}</Td>
-                      <Td align="right" mono className={u.abnormal ? "text-sev-medium" : undefined}>{u.abnormal}</Td>
-                      <Td align="right" mono>{u.submittedAt}</Td>
-                    </Tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <Empty>No engineer has submitted today's work update yet.</Empty>
-          )}
-          {today.length ? (
-            <div className="border-t border-line/60 px-4 py-2 text-xs text-mute">
-              Remarks: {today.map((u) => `${plantName(data, u.plantId).split(" — ")[0]} — ${u.remark}`).join(" | ")}
-            </div>
-          ) : null}
+        <Panel title="Today's tasks" meta={<Link to="/tasks" className="text-signal">Open daily task</Link>}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <Th>Engineer</Th>
+                  <Th align="right">Tasks</Th>
+                  <Th align="right">Done</Th>
+                  <Th align="right">Pending</Th>
+                  <Th align="right">Carried</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.map(({ a, st }) => (
+                  <Tr key={a.id}>
+                    <Td>
+                      <div className="font-medium">{a.name}</div>
+                      <div className="mt-1"><Bar pct={st.total ? (st.done / st.total) * 100 : 0} severity={st.pending ? "medium" : "low"} /></div>
+                    </Td>
+                    <Td align="right" mono>{st.total}</Td>
+                    <Td align="right" mono className="text-sev-low">{st.done}</Td>
+                    <Td align="right" mono>{st.pending}</Td>
+                    <Td align="right" mono className={st.carried ? "text-sev-high" : undefined}>{st.carried}</Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Panel>
 
         <Panel title="Needs my attention" meta={<Link to="/discussions" className="text-signal">Open discussion</Link>}>
@@ -167,8 +156,8 @@ function Dashboard() {
             {notUpdated.map((a) => (
               <div key={a.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
                 <div>
-                  <div className="font-medium">{a.name} has not submitted today's update</div>
-                  <div className="text-xs text-mute">Morning work update pending</div>
+                  <div className="font-medium">{a.name} has no tasks for today</div>
+                  <div className="text-xs text-mute">Daily task list not started</div>
                 </div>
                 <Chip severity="high" label="Action" />
               </div>
@@ -189,7 +178,7 @@ function Dashboard() {
                 </div>
               );
             })}
-            {!notUpdated.length && !overdueReports.length ? <Empty>Nothing pending. All updates in and reports sent on time.</Empty> : null}
+            {!notUpdated.length && !overdueReports.length ? <Empty>Nothing pending. Everyone has tasks and reports are on time.</Empty> : null}
           </div>
         </Panel>
       </div>
@@ -264,7 +253,7 @@ function Dashboard() {
         </Panel>
       </div>
 
-      <Panel className="mt-4" title="Plant coverage" meta={`${weekUpdates.length} updates in last 7 days`}>
+      <Panel className="mt-4" title="Plant coverage" meta={`${data.plants.length} plants`}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

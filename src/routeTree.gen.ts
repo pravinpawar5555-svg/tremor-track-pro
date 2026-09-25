@@ -16,6 +16,7 @@ import { Route as AuthenticatedDiscussionsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedEngineersRouteImport } from './routes/_authenticated/engineers'
 import { Route as AuthenticatedPlantsRouteImport } from './routes/_authenticated/plants'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -52,6 +53,11 @@ const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/engineers': typeof AuthenticatedEngineersRoute
   '/plants': typeof AuthenticatedPlantsRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/tasks': typeof AuthenticatedTasksRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/engineers': typeof AuthenticatedEngineersRoute
   '/plants': typeof AuthenticatedPlantsRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/tasks': typeof AuthenticatedTasksRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
@@ -77,14 +85,28 @@ export interface FileRoutesById {
   '/_authenticated/engineers': typeof AuthenticatedEngineersRoute
   '/_authenticated/plants': typeof AuthenticatedPlantsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/discussions' | '/engineers' | '/plants' | '/reports'
+    | '/'
+    | '/auth'
+    | '/discussions'
+    | '/engineers'
+    | '/plants'
+    | '/reports'
+    | '/tasks'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/discussions' | '/engineers' | '/plants' | '/reports' | '/'
+  to:
+    | '/auth'
+    | '/discussions'
+    | '/engineers'
+    | '/plants'
+    | '/reports'
+    | '/tasks'
+    | '/'
   id:
     | '__root__'
     | '/_authenticated'
@@ -93,6 +115,7 @@ export interface FileRouteTypes {
     | '/_authenticated/engineers'
     | '/_authenticated/plants'
     | '/_authenticated/reports'
+    | '/_authenticated/tasks'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
@@ -152,6 +175,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tasks': {
+      id: '/_authenticated/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AuthenticatedTasksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -160,6 +190,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEngineersRoute: typeof AuthenticatedEngineersRoute
   AuthenticatedPlantsRoute: typeof AuthenticatedPlantsRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -168,6 +199,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEngineersRoute: AuthenticatedEngineersRoute,
   AuthenticatedPlantsRoute: AuthenticatedPlantsRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
