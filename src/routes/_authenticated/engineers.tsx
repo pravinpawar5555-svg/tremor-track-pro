@@ -18,7 +18,7 @@ import {
 } from "@/lib/store";
 import { Button } from "@/components/console/ui";
 
-export const Route = createFileRoute("/engineers")({
+export const Route = createFileRoute("/_authenticated/engineers")({
   head: () => ({
     meta: [
       { title: "Engineer Activity — Forbes Marshall CM Portal" },

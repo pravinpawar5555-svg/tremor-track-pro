@@ -51,7 +51,7 @@ import {
   type TicketStatus,
 } from "@/lib/store";
 
-export const Route = createFileRoute("/discussions")({
+export const Route = createFileRoute("/_authenticated/discussions")({
   head: () => ({
     meta: [
       { title: "Discussion & Tickets — Forbes Marshall CM Portal" },

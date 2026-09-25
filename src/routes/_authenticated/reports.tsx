@@ -33,7 +33,7 @@ import {
   type ReportStatus,
 } from "@/lib/store";
 
-export const Route = createFileRoute("/reports")({
+export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({
     meta: [
       { title: "Report Delivery Tracker — Forbes Marshall CM Portal" },

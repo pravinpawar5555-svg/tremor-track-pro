@@ -31,7 +31,7 @@ import {
   type Plant,
 } from "@/lib/store";
 
-export const Route = createFileRoute("/plants")({
+export const Route = createFileRoute("/_authenticated/plants")({
   head: () => ({
     meta: [
       { title: "Plants — Forbes Marshall CM Portal" },
