@@ -1,4 +1,5 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -7,7 +8,7 @@ import {
   currentUser,
   fmtDate,
   reportKpis,
-  setCurrentUser,
+  taskStats,
   ticketKpis,
   totalUnread,
   useData,
@@ -15,7 +16,7 @@ import {
 
 const nav = [
   { to: "/", label: "Dashboard" },
-  { to: "/daily", label: "Daily Work Update" },
+  { to: "/tasks", label: "Daily Task" },
   { to: "/discussions", label: "Discussion & Tickets" },
   { to: "/reports", label: "Reports" },
   { to: "/plants", label: "Plants" },
@@ -30,7 +31,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const me = currentUser(data);
   const unread = totalUnread(data);
   const tk = ticketKpis(data);
-  const submitted = team.filter((a) => data.updates.some((u) => u.engineerId === a.id && u.date === TODAY));
+  const manager = data.role === "manager";
+  const navigate = useNavigate();
+  const items = nav.filter((n) => manager || n.to !== "/engineers");
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
 
   return (
     <div className="min-h-screen bg-base text-ink">
@@ -54,19 +61,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="grid size-6 place-items-center rounded-full bg-base text-[10px] font-semibold text-mute ring-1 ring-line">
               {me?.initials ?? "—"}
             </span>
-            <select
-              aria-label="Signed in as"
-              value={data.currentUserId}
-              onChange={(e) => setCurrentUser(e.target.value)}
-              className="rounded-md bg-transparent text-xs text-mute outline-none"
-            >
-              {data.engineers.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name} · {e.role === "manager" ? "Manager" : "Engineer"}
-                </option>
-              ))}
-            </select>
+            <span className="text-xs text-mute">{me?.name ?? ""} · {manager ? "Manager" : "Engineer"}</span>
           </span>
+          <button onClick={() => void signOut()} className="rounded-md px-2 py-1 text-xs text-signal ring-1 ring-signal/40">
+            Sign out
+          </button>
         </div>
       </header>
 
@@ -74,7 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="sticky top-11 hidden w-52 shrink-0 self-start bg-panel/55 px-3 py-4 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)] backdrop-blur-md md:block md:min-h-[calc(100vh-2.75rem)]">
           <div className="label-caps px-2 pb-2">Portal</div>
           <div className="flex flex-col gap-0.5">
-            {nav.map((item) => {
+            {items.map((item) => {
               const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
               return (
                 <Link
@@ -91,13 +90,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </div>
           <div className="panel-inset mt-6 p-3">
-            <div className="label-caps">Today's updates</div>
-            {team.map((a) => {
-              const done = submitted.some((s) => s.id === a.id);
+            <div className="label-caps">Today's tasks</div>
+            {(manager ? team : me ? [me] : []).map((a) => {
+              const st = taskStats(data, a.id);
               return (
                 <div key={a.id} className="mt-2 flex items-center justify-between gap-2 text-xs">
                   <span className="text-mute">{a.name}</span>
-                  <span className={cn("num", done ? "text-sev-low" : "text-sev-high")}>{done ? "Updated" : "Pending"}</span>
+                  <span className={cn("num", st.total && !st.pending ? "text-sev-low" : st.total ? "text-sev-medium" : "text-sev-high")}>
+                    {st.done}/{st.total}
+                  </span>
                 </div>
               );
             })}
@@ -106,10 +107,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main className="min-w-0 flex-1">
           <div className="panel-inset mx-4 mt-3 flex items-center justify-between gap-2 p-2.5 text-xs md:hidden">
-            <span className="label-caps">Today's updates</span>
+            <span className="label-caps">Today's tasks</span>
+            <button onClick={() => void signOut()} className="text-signal">Sign out</button>
             <span className="flex items-center gap-2">
-              {team.map((a) => {
-                const done = submitted.some((s) => s.id === a.id);
+              {(manager ? team : me ? [me] : []).map((a) => {
+                const st = taskStats(data, a.id);
+                const done = st.total > 0 && st.pending === 0;
                 return (
                   <span
                     key={a.id}
@@ -118,7 +121,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       done ? "text-sev-low ring-sev-low/40" : "text-sev-high ring-sev-high/40",
                     )}
                   >
-                    {a.name.split(" ").slice(-1)[0]} {done ? "✓" : "—"}
+                    {a.name.split(" ").slice(-1)[0]} {st.done}/{st.total}
                   </span>
                 );
               })}
@@ -128,8 +131,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 gap-0.5 border-t border-line/60 bg-panel/90 px-1 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-md md:hidden">
-        {nav.map((item) => {
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 gap-0.5 [&:has(>a:nth-child(5):last-child)]:grid-cols-5 border-t border-line/60 bg-panel/90 px-1 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-md md:hidden">
+        {items.map((item) => {
           const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
           return (
             <Link
@@ -147,7 +150,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               />
               {item.label
-                .replace("Daily Work Update", "Daily")
+                .replace("Daily Task", "Tasks")
                 .replace("Dashboard", "Home")
                 .replace("Discussion & Tickets", "Chat")
                 .replace("Engineers", "Team")}
