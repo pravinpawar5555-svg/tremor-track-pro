@@ -1128,7 +1128,7 @@ function nowTime() {
 
 
 export function currentUser(d: AppData): Engineer | undefined {
-  return d.engineers.find((e) => e.id === d.currentUserId) ?? d.engineers[0];
+  return d.engineers.find((e) => e.id === d.currentUserId);
 }
 
 export function isManager(d: AppData, id = d.currentUserId) {
