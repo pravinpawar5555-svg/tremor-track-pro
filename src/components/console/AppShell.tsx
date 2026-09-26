@@ -26,12 +26,14 @@ const nav = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const data = useData();
+  const meId = data.currentUserId;
+  const manager = data.role === "manager";
+  const myReports = manager ? data.reports : data.reports.filter((r) => r.byEngineerId === meId);
+  const kpis = reportKpis({ ...data, reports: myReports });
   const team = analystsOf(data);
-  const kpis = reportKpis(data);
   const me = currentUser(data);
   const unread = totalUnread(data);
   const tk = ticketKpis(data);
-  const manager = data.role === "manager";
   const navigate = useNavigate();
   const items = nav.filter((n) => manager || n.to !== "/engineers");
   const signOut = async () => {
