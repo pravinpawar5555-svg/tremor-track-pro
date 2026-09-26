@@ -45,24 +45,30 @@ export const Route = createFileRoute("/_authenticated/")({
 
 function Dashboard() {
   const data = useData();
-  const team = analystsOf(data);
+  const manager = data.role === "manager";
+  const me = data.currentUserId;
+  const allTeam = analystsOf(data);
+  const team = manager ? allTeam : allTeam.filter((a) => a.id === me);
+  const plants = manager ? data.plants : data.plants.filter((p) => p.engineerId === me);
+  const reports = manager ? data.reports : data.reports.filter((r) => r.byEngineerId === me);
   const stats = team.map((a) => ({ a, st: taskStats(data, a.id) }));
   const tasksTotal = stats.reduce((n, x) => n + x.st.total, 0);
   const tasksDone = stats.reduce((n, x) => n + x.st.done, 0);
   const carried = stats.reduce((n, x) => n + x.st.carried, 0);
-  const ft = fleetTotals(data);
-  const rk = reportKpis(data);
+  const ft = fleetTotals({ ...data, plants });
+  const rk = reportKpis({ ...data, reports });
   const notUpdated = team.filter((a) => !taskStats(data, a.id).total);
-  const overdueReports = data.reports
+  const overdueReports = reports
     .filter((r) => r.status !== "sent" && reportTiming(r).late)
     .sort((a, b) => (a.dueDate > b.dueDate ? 1 : -1));
-  const dueSoon = data.reports
+  const dueSoon = reports
     .filter((r) => r.status !== "sent" && !reportTiming(r).late)
     .sort((a, b) => (a.dueDate > b.dueDate ? 1 : -1))
     .slice(0, 6);
   const tk = ticketKpis(data);
   const unread = totalUnread(data);
   const openTickets = (data.tickets ?? [])
+    .filter((t) => manager || t.raisedBy === me || t.assignedTo === me)
     .filter((t) => t.status !== "closed" && t.status !== "responded")
     .sort((a, b) => (a.raisedOn < b.raisedOn ? 1 : -1));
 
@@ -80,7 +86,7 @@ function Dashboard() {
           tone={notUpdated.length ? "high" : "low"}
           hint={notUpdated.length ? `${notUpdated.map((a) => a.name).join(", ")} — no tasks` : "Everyone planned the day"}
         />
-        <Kpi label="Tasks today" value={tasksTotal} hint={`${team.length} engineers`} />
+        <Kpi label="Tasks today" value={tasksTotal} hint={manager ? `${team.length} engineers` : "Your tasks"} />
         <Kpi label="Tasks completed" value={tasksDone} tone={tasksDone === tasksTotal ? "low" : "medium"} hint={`${tasksTotal - tasksDone} pending`} />
         <Kpi label="Carried over" value={carried} tone={carried ? "high" : "low"} hint="From previous days" />
         <Kpi label="Reports overdue" value={rk.overdue} tone={rk.overdue ? "high" : "low"} hint={`${rk.pending} pending in total`} />
@@ -183,7 +189,7 @@ function Dashboard() {
       </div>
 
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-2">
-        <Panel title="Engineer activity — last 7 days" meta={<Link to="/engineers" className="text-signal">Details</Link>}>
+        <Panel title={manager ? "Engineer activity — last 7 days" : "My activity — last 7 days"} meta={manager ? <Link to="/engineers" className="text-signal">Details</Link> : undefined}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -250,7 +256,7 @@ function Dashboard() {
         </Panel>
       </div>
 
-      <Panel className="mt-4" title="Plant coverage" meta={`${data.plants.length} plants`}>
+      <Panel className="mt-4" title="Plant coverage" meta={`${plants.length} plants`}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -265,7 +271,7 @@ function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {data.plants.map((p) => {
+              {plants.map((p) => {
                 const s = plantSummary(data, p.id);
                 return (
                   <Tr key={p.id}>
