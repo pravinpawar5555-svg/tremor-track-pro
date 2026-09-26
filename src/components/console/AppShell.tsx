@@ -26,8 +26,10 @@ const nav = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const data = useData();
-  const team = analystsOf(data);
-  const kpis = reportKpis(data);
+  const manager = data.role === "manager";
+  const meId = data.currentUserId;
+  const myReports = manager ? data.reports : data.reports.filter((r) => r.byEngineerId === meId);
+  const kpis = reportKpis({ ...data, reports: myReports });
   const me = currentUser(data);
   const unread = totalUnread(data);
   const tk = ticketKpis(data);

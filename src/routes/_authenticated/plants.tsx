@@ -66,6 +66,9 @@ const blank = {
 function PlantsPage() {
   const data = useData();
   const team = analystsOf(data);
+  const manager = data.role === "manager";
+  const me = data.currentUserId;
+  const plants = manager ? data.plants : data.plants.filter((p) => p.engineerId === me);
   const [form, setForm] = useState<typeof blank & { id?: string }>(blank);
   const [open, setOpen] = useState(false);
 
@@ -121,15 +124,17 @@ function PlantsPage() {
         title="Plants"
         subtitle="Add each plant once — customer, machine count, report cycles, contact details and assigned engineer"
         actions={
-          <Button
-            variant={open ? "ghost" : "solid"}
-            onClick={() => {
-              setForm(blank);
-              setOpen((o) => !o);
-            }}
-          >
-            {open ? "Cancel" : "Add plant"}
-          </Button>
+          manager ? (
+            <Button
+              variant={open ? "ghost" : "solid"}
+              onClick={() => {
+                setForm(blank);
+                setOpen((o) => !o);
+              }}
+            >
+              {open ? "Cancel" : "Add plant"}
+            </Button>
+          ) : null
         }
       />
 
@@ -202,8 +207,8 @@ function PlantsPage() {
         </Panel>
       ) : null}
 
-      <Panel title="Plant master" meta={`${data.plants.length} plants`}>
-        {data.plants.length ? (
+      <Panel title="Plant master" meta={`${plants.length} plants`}>
+        {plants.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -222,7 +227,7 @@ function PlantsPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.plants.map((p) => {
+                {plants.map((p) => {
                   const s = plantSummary(data, p.id);
                   const cycles = plantFrequencies(p);
                   return (
@@ -246,10 +251,12 @@ function PlantsPage() {
                       <Td>{engineerName(data, p.engineerId)}</Td>
                       <Td mono>{fmtDate(s.lastReportSent)}</Td>
                       <Td align="right">
-                        <span className="flex justify-end gap-1">
-                          <Button variant="ghost" onClick={() => edit(p)}>Edit</Button>
-                          <Button variant="ghost" onClick={() => removePlant(p.id)}>Delete</Button>
-                        </span>
+                        {manager ? (
+                          <span className="flex justify-end gap-1">
+                            <Button variant="ghost" onClick={() => edit(p)}>Edit</Button>
+                            <Button variant="ghost" onClick={() => removePlant(p.id)}>Delete</Button>
+                          </span>
+                        ) : null}
                       </Td>
                     </Tr>
                   );

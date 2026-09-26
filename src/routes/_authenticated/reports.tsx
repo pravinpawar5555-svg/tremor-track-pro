@@ -56,7 +56,10 @@ export const Route = createFileRoute("/_authenticated/reports")({
 function ReportsPage() {
   const data = useData();
   const team = analystsOf(data);
-  const rk = reportKpis(data);
+  const manager = data.role === "manager";
+  const me = data.currentUserId;
+  const allReports = manager ? data.reports : data.reports.filter((r) => r.byEngineerId === me);
+  const rk = reportKpis({ ...data, reports: allReports });
   const [type, setType] = useState<"all" | Frequency>("all");
   const [status, setStatus] = useState<"all" | ReportStatus>("all");
   const [adding, setAdding] = useState(false);
@@ -68,7 +71,7 @@ function ReportsPage() {
     byEngineerId: "",
   });
 
-  const rows = data.reports
+  const rows = allReports
     .filter((r) => (type === "all" ? true : r.type === type))
     .filter((r) => (status === "all" ? true : r.status === status))
     .sort((a, b) => (a.dueDate > b.dueDate ? -1 : 1));

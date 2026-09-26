@@ -103,12 +103,13 @@ function DiscussionsPage() {
   const tickets = useMemo(
     () =>
       data.tickets
+        .filter((t) => manager || t.raisedBy === meId || t.assignedTo === meId)
         .filter((t) =>
           statusFilter === "all" ? true : statusFilter === "open" ? t.status !== "closed" : t.status === statusFilter,
         )
         .filter((t) => (plantFilter === "all" ? true : t.plantId === plantFilter))
         .sort((a, b) => (a.raisedOn === b.raisedOn ? (a.raisedAt < b.raisedAt ? 1 : -1) : a.raisedOn < b.raisedOn ? 1 : -1)),
-    [data.tickets, statusFilter, plantFilter],
+    [data.tickets, statusFilter, plantFilter, manager, meId],
   );
 
   const ticket = data.tickets.find((t) => t.id === selectedTicket) ?? tickets[0];
