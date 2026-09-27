@@ -362,7 +362,7 @@ function DiscussionsPage() {
                 })}
               </div>
             ) : (
-              <Empty>Add a plant first.</Empty>
+              <Empty>No {catFilter} plants.</Empty>
             )}
           </Panel>
         )}
