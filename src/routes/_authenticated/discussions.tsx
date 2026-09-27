@@ -313,10 +313,28 @@ function DiscussionsPage() {
             )}
           </Panel>
         ) : (
-          <Panel title="Plant channels" meta={`${data.plants.length} plants`}>
-            {data.plants.length ? (
+          <Panel
+            title="Plant channels"
+            meta={
+              <span className="inline-flex rounded-md ring-1 ring-line/80 p-0.5">
+                {(["total", "order", "demo"] as const).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCatFilter(c)}
+                    className={`rounded px-2.5 py-1 text-xs capitalize transition-[background-color] ${
+                      catFilter === c ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"
+                    }`}
+                  >
+                    {c === "total" ? `Total (${data.plants.length})` : `${c} (${chatCategoryCounts[c]})`}
+                  </button>
+                ))}
+              </span>
+            }
+          >
+            {chatPlants.length ? (
               <div className="max-h-[32rem] overflow-y-auto">
-                {data.plants.map((p) => {
+                {chatPlants.map((p) => {
                   const unread = unreadCount(data, plantThread(p.id), meId);
                   const last = threadMessages(data, plantThread(p.id)).slice(-1)[0];
                   return (
@@ -331,7 +349,10 @@ function DiscussionsPage() {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-sm font-medium">{p.name}</span>
-                        {unread ? <span className="num text-[10px] text-sev-high">{unread} new</span> : null}
+                        <span className="ml-2 flex shrink-0 items-center gap-2">
+                          <span className="text-[10px] text-mute">{customerCategoryLabel[(p.category ?? "order") as CustomerCategory]}</span>
+                          {unread ? <span className="num text-[10px] text-sev-high">{unread} new</span> : null}
+                        </span>
                       </div>
                       <div className="truncate text-[11px] text-mute">
                         {last ? `${engineerName(data, last.authorId)}: ${last.text}` : "No messages yet"}
