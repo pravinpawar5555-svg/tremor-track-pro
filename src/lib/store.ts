@@ -958,6 +958,21 @@ export function engineerUsage(d: AppData, id: string) {
   };
 }
 
+/** Installed base covered by one engineer — machines, assets and sensor quantities across their plants. */
+export function engineerFleetTotals(d: AppData, engineerId: string) {
+  return d.plants
+    .filter((p) => p.engineerId === engineerId)
+    .reduce(
+      (a, p) => ({
+        machines: a.machines + (p.machines ?? 0),
+        assets: a.assets + (p.assets ?? 0),
+        node6: a.node6 + (p.node6 ?? 0),
+        nodeX: a.nodeX + (p.nodeX ?? 0),
+      }),
+      { machines: 0, assets: 0, node6: 0, nodeX: 0 },
+    );
+}
+
 /** Remove an engineer. Their plants/reports must first be reassigned to `reassignTo`. */
 export function removeEngineer(id: string, reassignTo?: string) {
   const engineers = data.engineers.filter((e) => e.id !== id);
