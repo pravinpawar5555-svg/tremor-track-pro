@@ -89,6 +89,7 @@ function PlantsPage() {
       contact: p.contact,
       contactPhone: p.contactPhone ?? "",
       engineerId: p.engineerId,
+      category: (p.category ?? "order") as CustomerCategory,
     });
     setOpen(true);
   };
@@ -116,6 +117,7 @@ function PlantsPage() {
       contact: form.contact.trim(),
       contactPhone: form.contactPhone.trim(),
       engineerId: form.engineerId || team[0]?.id || "",
+      category: form.category,
     });
     setForm(blank);
     setOpen(false);
