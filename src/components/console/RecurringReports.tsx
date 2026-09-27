@@ -93,7 +93,7 @@ export function RecurringReports({
           <Button variant="solid" onClick={add} disabled={!form.plantId}>Add schedule</Button>
         </div>
       </div>
-      {data.recurring.length ? (
+      {recurring.length ? (
         <div className="overflow-x-auto border-t border-line/60">
           <table className="w-full text-sm">
             <thead>
@@ -107,7 +107,7 @@ export function RecurringReports({
               </tr>
             </thead>
             <tbody>
-              {data.recurring.map((r) => (
+              {recurring.map((r) => (
                 <Tr key={r.id}>
                   <Td className="max-w-[14rem] truncate">{plantName(data, r.plantId)}</Td>
                   <Td>{frequencyLabel[r.type]}</Td>
