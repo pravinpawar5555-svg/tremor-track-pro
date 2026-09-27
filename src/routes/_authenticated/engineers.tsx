@@ -231,6 +231,10 @@ function EngineersPage() {
                 <Kpi label="Tasks · 7 d" value={s.tasks} />
                 <Kpi label="Completed" value={s.done} tone="low" hint={`${s.pending} pending`} />
                 <Kpi label="Reports late" value={s.reportsLate} tone={s.reportsLate ? "high" : "low"} hint={`${s.reportsSent} sent`} />
+                <Kpi label="Total machines" value={fleet.machines} hint={`${usage.plants} plants`} />
+                <Kpi label="Total assets" value={fleet.assets} />
+                <Kpi label="Node 6 sensors" value={fleet.node6} />
+                <Kpi label="Node X sensors" value={fleet.nodeX} />
               </div>
               <div className="px-4 pb-3">
                 <SpecRow label="Reports pending" value={s.reportsPending} />
