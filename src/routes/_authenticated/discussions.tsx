@@ -15,6 +15,7 @@ import {
 } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
 import {
+  customerCategoryLabel,
   TODAY,
   allAskFor,
   allPriorities,
@@ -46,6 +47,7 @@ import {
   unreadCount,
   useData,
   type AskFor,
+  type CustomerCategory,
   type TicketPriority,
   type TicketStatus,
 } from "@/lib/store";
@@ -92,6 +94,7 @@ function DiscussionsPage() {
   const [tab, setTab] = useState<"tickets" | "plants">("tickets");
   const [statusFilter, setStatusFilter] = useState<"open" | TicketStatus | "all">("open");
   const [plantFilter, setPlantFilter] = useState("all");
+  const [catFilter, setCatFilter] = useState<"total" | CustomerCategory>("total");
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState(emptyTicket);
   const [notice, setNotice] = useState("");
@@ -114,6 +117,14 @@ function DiscussionsPage() {
 
   const ticket = data.tickets.find((t) => t.id === selectedTicket) ?? tickets[0];
   const plantId = selectedPlant ?? data.plants[0]?.id ?? "";
+  const chatPlants = useMemo(
+    () => (catFilter === "total" ? data.plants : data.plants.filter((p) => (p.category ?? "order") === catFilter)),
+    [data.plants, catFilter],
+  );
+  const chatCategoryCounts = {
+    order: data.plants.filter((p) => (p.category ?? "order") === "order").length,
+    demo: data.plants.filter((p) => (p.category ?? "order") === "demo").length,
+  };
   const thread = tab === "tickets" ? (ticket ? ticketThread(ticket.id) : "") : plantId ? plantThread(plantId) : "";
   const msgs = thread ? threadMessages(data, thread) : [];
 
@@ -302,10 +313,28 @@ function DiscussionsPage() {
             )}
           </Panel>
         ) : (
-          <Panel title="Plant channels" meta={`${data.plants.length} plants`}>
-            {data.plants.length ? (
+          <Panel
+            title="Plant channels"
+            meta={
+              <span className="inline-flex rounded-md ring-1 ring-line/80 p-0.5">
+                {(["total", "order", "demo"] as const).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCatFilter(c)}
+                    className={`rounded px-2.5 py-1 text-xs capitalize transition-[background-color] ${
+                      catFilter === c ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"
+                    }`}
+                  >
+                    {c === "total" ? `Total (${data.plants.length})` : `${c} (${chatCategoryCounts[c]})`}
+                  </button>
+                ))}
+              </span>
+            }
+          >
+            {chatPlants.length ? (
               <div className="max-h-[32rem] overflow-y-auto">
-                {data.plants.map((p) => {
+                {chatPlants.map((p) => {
                   const unread = unreadCount(data, plantThread(p.id), meId);
                   const last = threadMessages(data, plantThread(p.id)).slice(-1)[0];
                   return (
@@ -320,7 +349,10 @@ function DiscussionsPage() {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-sm font-medium">{p.name}</span>
-                        {unread ? <span className="num text-[10px] text-sev-high">{unread} new</span> : null}
+                        <span className="ml-2 flex shrink-0 items-center gap-2">
+                          <span className="text-[10px] text-mute">{customerCategoryLabel[(p.category ?? "order") as CustomerCategory]}</span>
+                          {unread ? <span className="num text-[10px] text-sev-high">{unread} new</span> : null}
+                        </span>
                       </div>
                       <div className="truncate text-[11px] text-mute">
                         {last ? `${engineerName(data, last.authorId)}: ${last.text}` : "No messages yet"}
@@ -330,7 +362,7 @@ function DiscussionsPage() {
                 })}
               </div>
             ) : (
-              <Empty>Add a plant first.</Empty>
+              <Empty>No {catFilter} plants.</Empty>
             )}
           </Panel>
         )}
