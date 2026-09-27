@@ -30,7 +30,12 @@ export interface Plant {
   contact: string;
   contactPhone: string;
   engineerId: string;
+  /** Customer category: order (paying) or demo (trial). */
+  category: CustomerCategory;
 }
+
+export type CustomerCategory = "order" | "demo";
+export const customerCategoryLabel: Record<CustomerCategory, string> = { order: "Order", demo: "Demo" };
 
 export interface DailyUpdate {
   id: string;
@@ -509,6 +514,7 @@ const rowToPlant = (r: any): Plant => ({
   contact: r.contact ?? "",
   contactPhone: r.contact_phone ?? "",
   engineerId: r.engineer_id ?? "",
+  category: r.category === "demo" ? "demo" : "order",
 });
 const plantToRow = (p: Plant) => ({
   id: p.id,
@@ -523,6 +529,7 @@ const plantToRow = (p: Plant) => ({
   contact: p.contact,
   contact_phone: p.contactPhone,
   engineer_id: p.engineerId,
+  category: p.category ?? "order",
 });
 
 const rowToUpdate = (r: any): DailyUpdate => ({
