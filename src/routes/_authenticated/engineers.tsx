@@ -5,6 +5,7 @@ import { Bar, Chip, Empty, Field, Kpi, PageHeader, Panel, Select, SpecRow, Td, T
 import {
   TODAY,
   analystsOf,
+  engineerFleetTotals,
   engineerSummary,
   engineerUsage,
   fmtDate,
@@ -220,6 +221,8 @@ function EngineersPage() {
       <div className="grid items-start gap-4 xl:grid-cols-2">
         {team.map((a) => {
           const s = engineerSummary(data, a.id);
+          const usage = engineerUsage(data, a.id);
+          const fleet = engineerFleetTotals(data, a.id);
           return (
             <Panel
               key={a.id}
