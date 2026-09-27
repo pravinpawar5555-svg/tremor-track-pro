@@ -15,6 +15,7 @@ import {
 } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
 import {
+  customerCategoryLabel,
   TODAY,
   allAskFor,
   allPriorities,
@@ -92,6 +93,7 @@ function DiscussionsPage() {
   const [tab, setTab] = useState<"tickets" | "plants">("tickets");
   const [statusFilter, setStatusFilter] = useState<"open" | TicketStatus | "all">("open");
   const [plantFilter, setPlantFilter] = useState("all");
+  const [catFilter, setCatFilter] = useState<"total" | CustomerCategory>("total");
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState(emptyTicket);
   const [notice, setNotice] = useState("");
