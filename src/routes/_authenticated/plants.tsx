@@ -260,6 +260,7 @@ function PlantsPage() {
                           {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : "—"}
                         </span>
                       </Td>
+                      <Td className="text-mute">{customerCategoryLabel[(p.category ?? "order") as CustomerCategory]}</Td>
                       <Td>{engineerName(data, p.engineerId)}</Td>
                       <Td mono>{fmtDate(s.lastReportSent)}</Td>
                       <Td align="right">
