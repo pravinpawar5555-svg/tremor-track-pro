@@ -10,12 +10,31 @@ import {
   removeRecurring,
   saveRecurring,
   useData,
+  type CustomerCategory,
   type RecurringReport,
 } from "@/lib/store";
 
-export function RecurringReports() {
+type CatFilter = "total" | CustomerCategory;
+
+export function RecurringReports({
+  catFilter,
+  onCatFilter,
+}: {
+  catFilter: CatFilter;
+  onCatFilter: (c: CatFilter) => void;
+}) {
   const data = useData();
   const team = analystsOf(data);
+  const categoryCounts = {
+    order: data.plants.filter((p) => (p.category ?? "order") === "order").length,
+    demo: data.plants.filter((p) => (p.category ?? "order") === "demo").length,
+  };
+  const catIds = new Set(
+    (catFilter === "total" ? data.plants : data.plants.filter((p) => (p.category ?? "order") === catFilter)).map(
+      (p) => p.id,
+    ),
+  );
+  const recurring = data.recurring.filter((r) => catIds.has(r.plantId));
   const blank = { plantId: "", type: "weekly" as RecurringReport["type"], nextDue: TODAY, engineerId: "" };
   const [form, setForm] = useState(blank);
 
@@ -26,7 +45,29 @@ export function RecurringReports() {
   };
 
   return (
-    <Panel className="mt-4" title="Recurring reports" meta="Reports are created automatically a week before they fall due">
+    <Panel
+      className="mt-4"
+      title="Recurring reports"
+      meta={
+        <span className="flex flex-wrap items-center gap-3">
+          <span className="inline-flex rounded-md ring-1 ring-line/80 p-0.5">
+            {(["total", "order", "demo"] as const).map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => onCatFilter(c)}
+                className={`rounded px-2.5 py-1 text-xs capitalize transition-[background-color] ${
+                  catFilter === c ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"
+                }`}
+              >
+                {c === "total" ? `Total (${data.plants.length})` : `${c} (${categoryCounts[c]})`}
+              </button>
+            ))}
+          </span>
+          <span>Reports are created automatically a week before they fall due</span>
+        </span>
+      }
+    >
       <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5">
         <Field label="Plant">
           <Select value={form.plantId} onChange={(e) => setForm({ ...form, plantId: e.target.value })}>
@@ -52,7 +93,7 @@ export function RecurringReports() {
           <Button variant="solid" onClick={add} disabled={!form.plantId}>Add schedule</Button>
         </div>
       </div>
-      {data.recurring.length ? (
+      {recurring.length ? (
         <div className="overflow-x-auto border-t border-line/60">
           <table className="w-full text-sm">
             <thead>
@@ -66,7 +107,7 @@ export function RecurringReports() {
               </tr>
             </thead>
             <tbody>
-              {data.recurring.map((r) => (
+              {recurring.map((r) => (
                 <Tr key={r.id}>
                   <Td className="max-w-[14rem] truncate">{plantName(data, r.plantId)}</Td>
                   <Td>{frequencyLabel[r.type]}</Td>
