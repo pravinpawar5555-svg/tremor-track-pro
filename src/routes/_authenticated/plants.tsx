@@ -178,6 +178,12 @@ function PlantsPage() {
                 placeholder="+91 98200 11223"
               />
             </Field>
+            <Field label="Customer category">
+              <Select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as CustomerCategory })}>
+                <option value="order">Order</option>
+                <option value="demo">Demo</option>
+              </Select>
+            </Field>
             <Field label="Assigned engineer">
               <Select value={form.engineerId || team[0]?.id || ""} onChange={(e) => setForm({ ...form, engineerId: e.target.value })}>
                 {team.map((a) => (
@@ -226,6 +232,7 @@ function PlantsPage() {
                   <Th align="right">Node 6</Th>
                   <Th align="right">Node X</Th>
                   <Th>Report cycle</Th>
+                  <Th>Category</Th>
                   <Th>Engineer</Th>
                   <Th>Last report sent</Th>
                   <Th align="right"> </Th>
