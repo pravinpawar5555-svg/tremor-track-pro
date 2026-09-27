@@ -18,6 +18,7 @@ import {
   TODAY,
   allFrequencies,
   analystsOf,
+  customerCategoryLabel,
   engineerName,
   fmtDate,
   frequencyLabel,
@@ -27,6 +28,7 @@ import {
   savePlant,
   shiftDate,
   useData,
+  type CustomerCategory,
   type Frequency,
   type Plant,
 } from "@/lib/store";
@@ -61,6 +63,7 @@ const blank = {
   contact: "",
   contactPhone: "",
   engineerId: "",
+  category: "order" as CustomerCategory,
 };
 
 function PlantsPage() {
