@@ -23,6 +23,7 @@ import {
   shiftDate,
   taskStats,
   useData,
+  type CustomerCategory,
 } from "@/lib/store";
 
 export const Route = createFileRoute("/_authenticated/")({
