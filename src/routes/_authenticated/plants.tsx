@@ -266,7 +266,7 @@ function PlantsPage() {
                 </tr>
               </thead>
               <tbody>
-                {plants.map((p) => {
+                {shownPlants.map((p) => {
                   const s = plantSummary(data, p.id);
                   const cycles = plantFrequencies(p);
                   return (
