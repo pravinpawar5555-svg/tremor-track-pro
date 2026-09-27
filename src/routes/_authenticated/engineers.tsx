@@ -5,6 +5,7 @@ import { Bar, Chip, Empty, Field, Kpi, PageHeader, Panel, Select, SpecRow, Td, T
 import {
   TODAY,
   analystsOf,
+  engineerFleetTotals,
   engineerSummary,
   engineerUsage,
   fmtDate,
@@ -220,6 +221,8 @@ function EngineersPage() {
       <div className="grid items-start gap-4 xl:grid-cols-2">
         {team.map((a) => {
           const s = engineerSummary(data, a.id);
+          const usage = engineerUsage(data, a.id);
+          const fleet = engineerFleetTotals(data, a.id);
           return (
             <Panel
               key={a.id}
@@ -231,6 +234,10 @@ function EngineersPage() {
                 <Kpi label="Tasks · 7 d" value={s.tasks} />
                 <Kpi label="Completed" value={s.done} tone="low" hint={`${s.pending} pending`} />
                 <Kpi label="Reports late" value={s.reportsLate} tone={s.reportsLate ? "high" : "low"} hint={`${s.reportsSent} sent`} />
+                <Kpi label="Total machines" value={fleet.machines} hint={`${usage.plants} plants`} />
+                <Kpi label="Total assets" value={fleet.assets} />
+                <Kpi label="Node 6 sensors" value={fleet.node6} />
+                <Kpi label="Node X sensors" value={fleet.nodeX} />
               </div>
               <div className="px-4 pb-3">
                 <SpecRow label="Reports pending" value={s.reportsPending} />
