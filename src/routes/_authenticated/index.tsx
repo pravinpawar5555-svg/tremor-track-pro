@@ -73,6 +73,12 @@ function Dashboard() {
     .filter((t) => manager || t.raisedBy === me || t.assignedTo === me)
     .filter((t) => t.status !== "closed" && t.status !== "responded")
     .sort((a, b) => (a.raisedOn < b.raisedOn ? 1 : -1));
+  const [coverageCategory, setCoverageCategory] = useState<"total" | CustomerCategory>("total");
+  const coveragePlants = coverageCategory === "total" ? plants : plants.filter((p) => (p.category ?? "order") === coverageCategory);
+  const categoryCounts = {
+    order: plants.filter((p) => (p.category ?? "order") === "order").length,
+    demo: plants.filter((p) => (p.category ?? "order") === "demo").length,
+  };
 
   return (
     <AppShell>
