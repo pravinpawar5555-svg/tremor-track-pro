@@ -30,6 +30,7 @@ import {
   saveReport,
   setReportStatus,
   useData,
+  type CustomerCategory,
   type Frequency,
   type ReportStatus,
 } from "@/lib/store";
@@ -58,7 +59,17 @@ function ReportsPage() {
   const team = analystsOf(data);
   const manager = data.role === "manager";
   const me = data.currentUserId;
-  const allReports = manager ? data.reports : data.reports.filter((r) => r.byEngineerId === me);
+  const [cat, setCat] = useState<"total" | CustomerCategory>("total");
+  const categoryCounts = {
+    order: data.plants.filter((p) => (p.category ?? "order") === "order").length,
+    demo: data.plants.filter((p) => (p.category ?? "order") === "demo").length,
+  };
+  const catIds = new Set(
+    (cat === "total" ? data.plants : data.plants.filter((p) => (p.category ?? "order") === cat)).map((p) => p.id),
+  );
+  const allReports = (manager ? data.reports : data.reports.filter((r) => r.byEngineerId === me)).filter((r) =>
+    catIds.has(r.plantId),
+  );
   const rk = reportKpis({ ...data, reports: allReports });
   const [type, setType] = useState<"all" | Frequency>("all");
   const [status, setStatus] = useState<"all" | ReportStatus>("all");
@@ -103,7 +114,7 @@ function ReportsPage() {
         <Kpi label="Due in 7 days" value={rk.dueThisWeek} />
       </div>
 
-      {data.role === "manager" ? <RecurringReports /> : null}
+      {data.role === "manager" ? <RecurringReports catFilter={cat} onCatFilter={setCat} /> : null}
 
       {adding ? (
         <Panel className="mt-4" title="Schedule a report">
@@ -147,7 +158,21 @@ function ReportsPage() {
         className="mt-4"
         title="Report register"
         meta={
-          <span className="flex gap-2">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex rounded-md ring-1 ring-line/80 p-0.5">
+              {(["total", "order", "demo"] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCat(c)}
+                  className={`rounded px-2.5 py-1 text-xs capitalize transition-[background-color] ${
+                    cat === c ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"
+                  }`}
+                >
+                  {c === "total" ? `Total (${data.plants.length})` : `${c} (${categoryCounts[c]})`}
+                </button>
+              ))}
+            </span>
             <Select className="w-32" value={type} onChange={(e) => setType(e.target.value as typeof type)}>
               <option value="all">All types</option>
               <option value="weekly">Weekly</option>
