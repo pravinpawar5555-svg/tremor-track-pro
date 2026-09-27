@@ -15,6 +15,13 @@
       "when": 1790361055112,
       "tag": "0001_auth_tasks_recurring",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790497229983,
+      "tag": "0002_plants_customer_category",
+      "breakpoints": true
     }
   ]
 }

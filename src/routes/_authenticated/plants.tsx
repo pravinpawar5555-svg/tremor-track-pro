@@ -18,6 +18,7 @@ import {
   TODAY,
   allFrequencies,
   analystsOf,
+  customerCategoryLabel,
   engineerName,
   fmtDate,
   frequencyLabel,
@@ -27,6 +28,7 @@ import {
   savePlant,
   shiftDate,
   useData,
+  type CustomerCategory,
   type Frequency,
   type Plant,
 } from "@/lib/store";
@@ -61,6 +63,7 @@ const blank = {
   contact: "",
   contactPhone: "",
   engineerId: "",
+  category: "order" as CustomerCategory,
 };
 
 function PlantsPage() {
@@ -86,6 +89,7 @@ function PlantsPage() {
       contact: p.contact,
       contactPhone: p.contactPhone ?? "",
       engineerId: p.engineerId,
+      category: (p.category ?? "order") as CustomerCategory,
     });
     setOpen(true);
   };
@@ -113,6 +117,7 @@ function PlantsPage() {
       contact: form.contact.trim(),
       contactPhone: form.contactPhone.trim(),
       engineerId: form.engineerId || team[0]?.id || "",
+      category: form.category,
     });
     setForm(blank);
     setOpen(false);
@@ -173,6 +178,12 @@ function PlantsPage() {
                 placeholder="+91 98200 11223"
               />
             </Field>
+            <Field label="Customer category">
+              <Select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as CustomerCategory })}>
+                <option value="order">Order</option>
+                <option value="demo">Demo</option>
+              </Select>
+            </Field>
             <Field label="Assigned engineer">
               <Select value={form.engineerId || team[0]?.id || ""} onChange={(e) => setForm({ ...form, engineerId: e.target.value })}>
                 {team.map((a) => (
@@ -221,6 +232,7 @@ function PlantsPage() {
                   <Th align="right">Node 6</Th>
                   <Th align="right">Node X</Th>
                   <Th>Report cycle</Th>
+                  <Th>Category</Th>
                   <Th>Engineer</Th>
                   <Th>Last report sent</Th>
                   <Th align="right"> </Th>
@@ -248,6 +260,7 @@ function PlantsPage() {
                           {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : "—"}
                         </span>
                       </Td>
+                      <Td className="text-mute">{customerCategoryLabel[(p.category ?? "order") as CustomerCategory]}</Td>
                       <Td>{engineerName(data, p.engineerId)}</Td>
                       <Td mono>{fmtDate(s.lastReportSent)}</Td>
                       <Td align="right">

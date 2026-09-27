@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { AppShell } from "@/components/console/AppShell";
 import { Bar, Chip, Empty, Kpi, Panel, PageHeader, StatusChip, Td, Th, TimingChip, Tr } from "@/components/console/ui";
 import {
@@ -22,6 +23,7 @@ import {
   shiftDate,
   taskStats,
   useData,
+  type CustomerCategory,
 } from "@/lib/store";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -71,6 +73,12 @@ function Dashboard() {
     .filter((t) => manager || t.raisedBy === me || t.assignedTo === me)
     .filter((t) => t.status !== "closed" && t.status !== "responded")
     .sort((a, b) => (a.raisedOn < b.raisedOn ? 1 : -1));
+  const [coverageCategory, setCoverageCategory] = useState<"total" | CustomerCategory>("total");
+  const coveragePlants = coverageCategory === "total" ? plants : plants.filter((p) => (p.category ?? "order") === coverageCategory);
+  const categoryCounts = {
+    order: plants.filter((p) => (p.category ?? "order") === "order").length,
+    demo: plants.filter((p) => (p.category ?? "order") === "demo").length,
+  };
 
   return (
     <AppShell>
@@ -256,7 +264,29 @@ function Dashboard() {
         </Panel>
       </div>
 
-      <Panel className="mt-4" title="Plant coverage" meta={`${plants.length} plants`}>
+      <Panel
+        className="mt-4"
+        title="Plant coverage"
+        meta={
+          <span className="flex items-center gap-3">
+            <span className="inline-flex rounded-md ring-1 ring-line/80 p-0.5">
+              {(["total", "order", "demo"] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCoverageCategory(c)}
+                  className={`rounded px-2.5 py-1 text-xs capitalize transition-[background-color] ${
+                    coverageCategory === c ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"
+                  }`}
+                >
+                  {c === "total" ? `Total (${plants.length})` : `${c} (${categoryCounts[c]})`}
+                </button>
+              ))}
+            </span>
+            <span>{coveragePlants.length} plants</span>
+          </span>
+        }
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -271,7 +301,7 @@ function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {plants.map((p) => {
+              {coveragePlants.map((p) => {
                 const s = plantSummary(data, p.id);
                 return (
                   <Tr key={p.id}>

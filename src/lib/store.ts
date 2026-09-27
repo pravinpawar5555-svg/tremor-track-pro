@@ -30,7 +30,12 @@ export interface Plant {
   contact: string;
   contactPhone: string;
   engineerId: string;
+  /** Customer category: order (paying) or demo (trial). */
+  category: CustomerCategory;
 }
+
+export type CustomerCategory = "order" | "demo";
+export const customerCategoryLabel: Record<CustomerCategory, string> = { order: "Order", demo: "Demo" };
 
 export interface DailyUpdate {
   id: string;
@@ -280,12 +285,12 @@ export function reportTiming(r: ReportRow, today = TODAY): { late: boolean; days
 
 function seed(): AppData {
   const plants: Plant[] = [
-    { id: "pl-1", name: "Tata Steel — Kalinganagar CPP", customer: "Tata Steel", location: "Jajpur, Odisha", machines: 42, assets: 48, node6: 26, nodeX: 12, frequencies: ["weekly", "monthly"], contact: "S. Mohanty", contactPhone: "+91 98200 11223", engineerId: "eng-1" },
-    { id: "pl-2", name: "Reliance — Jamnagar Utilities", customer: "Reliance Industries", location: "Jamnagar, Gujarat", machines: 36, assets: 40, node6: 22, nodeX: 9, frequencies: ["weekly"], contact: "A. Trivedi", contactPhone: "+91 99040 55117", engineerId: "eng-2" },
-    { id: "pl-3", name: "UltraTech — Awarpur Line 2", customer: "UltraTech Cement", location: "Chandrapur, MH", machines: 28, assets: 31, node6: 18, nodeX: 6, frequencies: ["monthly", "on-demand"], contact: "R. Kulkarni", contactPhone: "+91 98220 47761", engineerId: "eng-1" },
-    { id: "pl-4", name: "Hindalco — Renukoot Smelter", customer: "Hindalco", location: "Sonbhadra, UP", machines: 24, assets: 27, node6: 14, nodeX: 5, frequencies: ["monthly"], contact: "V. Singh", contactPhone: "+91 94150 30982", engineerId: "eng-2" },
-    { id: "pl-5", name: "Grasim — Nagda Pulp", customer: "Grasim Industries", location: "Nagda, MP", machines: 18, assets: 20, node6: 11, nodeX: 4, frequencies: ["weekly"], contact: "D. Jain", contactPhone: "+91 94250 66104", engineerId: "eng-1" },
-    { id: "pl-6", name: "Deepak Fertilisers — Taloja", customer: "Deepak Fertilisers", location: "Taloja, MH", machines: 15, assets: 16, node6: 9, nodeX: 3, frequencies: ["on-demand"], contact: "N. Shetty", contactPhone: "+91 98330 27745", engineerId: "eng-2" },
+    { id: "pl-1", name: "Tata Steel — Kalinganagar CPP", customer: "Tata Steel", location: "Jajpur, Odisha", machines: 42, assets: 48, node6: 26, nodeX: 12, frequencies: ["weekly", "monthly"], contact: "S. Mohanty", contactPhone: "+91 98200 11223", engineerId: "eng-1", category: "order" },
+    { id: "pl-2", name: "Reliance — Jamnagar Utilities", customer: "Reliance Industries", location: "Jamnagar, Gujarat", machines: 36, assets: 40, node6: 22, nodeX: 9, frequencies: ["weekly"], contact: "A. Trivedi", contactPhone: "+91 99040 55117", engineerId: "eng-2", category: "order" },
+    { id: "pl-3", name: "UltraTech — Awarpur Line 2", customer: "UltraTech Cement", location: "Chandrapur, MH", machines: 28, assets: 31, node6: 18, nodeX: 6, frequencies: ["monthly", "on-demand"], contact: "R. Kulkarni", contactPhone: "+91 98220 47761", engineerId: "eng-1", category: "order" },
+    { id: "pl-4", name: "Hindalco — Renukoot Smelter", customer: "Hindalco", location: "Sonbhadra, UP", machines: 24, assets: 27, node6: 14, nodeX: 5, frequencies: ["monthly"], contact: "V. Singh", contactPhone: "+91 94150 30982", engineerId: "eng-2", category: "order" },
+    { id: "pl-5", name: "Grasim — Nagda Pulp", customer: "Grasim Industries", location: "Nagda, MP", machines: 18, assets: 20, node6: 11, nodeX: 4, frequencies: ["weekly"], contact: "D. Jain", contactPhone: "+91 94250 66104", engineerId: "eng-1", category: "demo" },
+    { id: "pl-6", name: "Deepak Fertilisers — Taloja", customer: "Deepak Fertilisers", location: "Taloja, MH", machines: 15, assets: 16, node6: 9, nodeX: 3, frequencies: ["on-demand"], contact: "N. Shetty", contactPhone: "+91 98330 27745", engineerId: "eng-2", category: "demo" },
   ];
 
   const u = (
@@ -509,6 +514,7 @@ const rowToPlant = (r: any): Plant => ({
   contact: r.contact ?? "",
   contactPhone: r.contact_phone ?? "",
   engineerId: r.engineer_id ?? "",
+  category: r.category === "demo" ? "demo" : "order",
 });
 const plantToRow = (p: Plant) => ({
   id: p.id,
@@ -523,6 +529,7 @@ const plantToRow = (p: Plant) => ({
   contact: p.contact,
   contact_phone: p.contactPhone,
   engineer_id: p.engineerId,
+  category: p.category ?? "order",
 });
 
 const rowToUpdate = (r: any): DailyUpdate => ({
