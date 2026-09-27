@@ -47,6 +47,7 @@ import {
   unreadCount,
   useData,
   type AskFor,
+  type CustomerCategory,
   type TicketPriority,
   type TicketStatus,
 } from "@/lib/store";
@@ -116,6 +117,14 @@ function DiscussionsPage() {
 
   const ticket = data.tickets.find((t) => t.id === selectedTicket) ?? tickets[0];
   const plantId = selectedPlant ?? data.plants[0]?.id ?? "";
+  const chatPlants = useMemo(
+    () => (catFilter === "total" ? data.plants : data.plants.filter((p) => (p.category ?? "order") === catFilter)),
+    [data.plants, catFilter],
+  );
+  const chatCategoryCounts = {
+    order: data.plants.filter((p) => (p.category ?? "order") === "order").length,
+    demo: data.plants.filter((p) => (p.category ?? "order") === "demo").length,
+  };
   const thread = tab === "tickets" ? (ticket ? ticketThread(ticket.id) : "") : plantId ? plantThread(plantId) : "";
   const msgs = thread ? threadMessages(data, thread) : [];
 
