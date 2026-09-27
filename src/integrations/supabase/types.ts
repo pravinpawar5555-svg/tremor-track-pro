@@ -116,6 +116,7 @@ export type Database = {
       plants: {
         Row: {
           assets: number
+          category: string
           contact: string
           contact_phone: string
           created_at: string
@@ -131,6 +132,7 @@ export type Database = {
         }
         Insert: {
           assets?: number
+          category?: string
           contact?: string
           contact_phone?: string
           created_at?: string
@@ -146,6 +148,7 @@ export type Database = {
         }
         Update: {
           assets?: number
+          category?: string
           contact?: string
           contact_phone?: string
           created_at?: string
