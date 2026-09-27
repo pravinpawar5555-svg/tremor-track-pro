@@ -72,6 +72,12 @@ function PlantsPage() {
   const manager = data.role === "manager";
   const me = data.currentUserId;
   const plants = manager ? data.plants : data.plants.filter((p) => p.engineerId === me);
+  const [catFilter, setCatFilter] = useState<"total" | CustomerCategory>("total");
+  const shownPlants = catFilter === "total" ? plants : plants.filter((p) => (p.category ?? "order") === catFilter);
+  const catCounts = {
+    order: plants.filter((p) => (p.category ?? "order") === "order").length,
+    demo: plants.filter((p) => (p.category ?? "order") === "demo").length,
+  };
   const [form, setForm] = useState<typeof blank & { id?: string }>(blank);
   const [open, setOpen] = useState(false);
 
@@ -218,8 +224,29 @@ function PlantsPage() {
         </Panel>
       ) : null}
 
-      <Panel title="Plant master" meta={`${plants.length} plants`}>
-        {plants.length ? (
+      <Panel
+        title="Plant master"
+        meta={
+          <span className="flex items-center gap-3">
+            <span className="inline-flex rounded-md ring-1 ring-line/80 p-0.5">
+              {(["total", "order", "demo"] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCatFilter(c)}
+                  className={`rounded px-2.5 py-1 text-xs capitalize transition-[background-color] ${
+                    catFilter === c ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"
+                  }`}
+                >
+                  {c === "total" ? `Total (${plants.length})` : `${c} (${catCounts[c]})`}
+                </button>
+              ))}
+            </span>
+            <span>{shownPlants.length} plants</span>
+          </span>
+        }
+      >
+        {shownPlants.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
