@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import fmLogo from "@/assets/fm-logo-white.png.asset.json";
 import { Button, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
 import { engineerName, fmtDate, plantName, useData, type AppData } from "@/lib/store";
 import { frequencyText, saveVisit, visitTypeLabel, type Attendee, type Visit, type VisitAction } from "@/lib/visits";
@@ -51,6 +52,24 @@ export function AttendeesEditor({ v, canEdit }: { v: Visit; canEdit: boolean }) 
 
 const respName = (data: AppData, r: string) => (r === "customer" ? "Customer" : engineerName(data, r) || r);
 
+let logoDataUrl: string | null = null;
+async function loadLogoDataUrl(): Promise<string | null> {
+  if (logoDataUrl) return logoDataUrl;
+  try {
+    const res = await fetch(fmLogo.url);
+    const blob = await res.blob();
+    logoDataUrl = await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+    return logoDataUrl;
+  } catch {
+    return null;
+  }
+}
+
 async function downloadMom(data: AppData, v: Visit) {
   const { jsPDF } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;
@@ -60,8 +79,12 @@ async function downloadMom(data: AppData, v: Visit) {
   doc.setFillColor(24, 44, 84);
   doc.rect(0, 0, W, 56, "F");
   doc.setTextColor(255);
+  const logo = await loadLogoDataUrl();
+  if (logo) doc.addImage(logo, "PNG", 40, 16, 108, 28);
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
-  doc.text("Forbes Marshall — Minutes of Meeting", 40, 34);
+  doc.text("Minutes of Meeting", W / 2, 34, { align: "center" });
+  doc.setFont("helvetica", "normal");
   if (v.momNo) {
     doc.setFontSize(10);
     doc.text(`MOM No: ${v.momNo}`, W - 40, 34, { align: "right" });
@@ -142,9 +165,10 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
       {mode === "preview" ? (
         <div className="p-4">
           <div className="mx-auto max-w-3xl bg-panel p-6 text-sm shadow ring-1 ring-line">
-            <div className="-mx-6 -mt-6 mb-4 flex items-center justify-between px-6 py-3 font-semibold text-white" style={{ backgroundColor: "#182C54" }}>
-              <span>Forbes Marshall — Minutes of Meeting</span>
-              {v.momNo ? <span className="num text-xs">MOM No: {v.momNo}</span> : null}
+            <div className="relative -mx-6 -mt-6 mb-4 flex items-center gap-3 px-6 py-3 text-white" style={{ backgroundColor: "#182C54" }}>
+              <img src={fmLogo.url} alt="Forbes Marshall" className="h-7 w-auto shrink-0" />
+              <span className="absolute left-1/2 -translate-x-1/2 truncate font-semibold">Minutes of Meeting</span>
+              {v.momNo ? <span className="num ml-auto text-xs">MOM No: {v.momNo}</span> : null}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div><span className="label-caps">Customer</span><div>{plant?.customer}</div></div>
