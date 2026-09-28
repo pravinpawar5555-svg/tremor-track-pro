@@ -71,7 +71,7 @@ function VisitsPage() {
   const data = useData();
   const all = useVisits();
   const search = Route.useSearch();
-  const manager = data.role === "manager";
+  const manager = true; // full access for manager and engineers
   const me = data.currentUserId;
   const team = analystsOf(data);
 

@@ -1,0 +1,1 @@
+CREATE POLICY "approved manage recurring" ON public.recurring_reports FOR ALL TO authenticated USING (public.is_approved(auth.uid())) WITH CHECK (public.is_approved(auth.uid()));
