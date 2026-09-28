@@ -398,7 +398,7 @@ function Kpi({ n, label, sub, tone }: { n: number; label: string; sub?: string; 
 
 // ------------------------------------------------------------------ rows
 
-function TaskGroup({ label, children, tasks, doneCount, totalCount, data: _d }: { label: string; children: ReactNode; tasks: Task[]; doneCount?: number; totalCount?: number; data: AppData }) {
+function TaskGroup({ label, children, tasks, doneCount, totalCount, data: _d }: { label: string; children: ReactNode; tasks: Task[]; doneCount?: number | undefined; totalCount?: number | undefined; data: AppData }) {
   const [open, setOpen] = useState(true);
   return (
     <div className="border-t border-line/60">
