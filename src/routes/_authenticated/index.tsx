@@ -222,7 +222,7 @@ function ManagerDashboard({ data }: { data: AppData }) {
         title="Dashboard"
         subtitle={`Team overview, key updates and actions · ${fmtDate(TODAY)}`}
         actions={
-          <Select value={eng} onChange={(e) => setEng(e.target.value)} aria-label="Engineer">
+          <Select className="w-48" value={eng} onChange={(e) => setEng(e.target.value)} aria-label="Engineer">
             <option value="all">All engineers</option>
             {allTeam.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </Select>
