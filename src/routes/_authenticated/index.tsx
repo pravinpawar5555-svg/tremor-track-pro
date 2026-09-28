@@ -128,30 +128,56 @@ function AttentionRow({ to, label, hint, value, tone }: { to: string; label: str
 }
 
 function FlowChart({ rows }: { rows: ReturnType<typeof flow> }) {
-  const max = Math.max(1, ...rows.flatMap((r) => [r.assigned, r.completed, r.carried]));
+  const peak = Math.max(0, ...rows.flatMap((r) => [r.assigned, r.completed, r.carried]));
+  const step = peak <= 4 ? 1 : Math.ceil(peak / 4);
+  const max = Math.max(4, step * 4);
+  const ticks = [4, 3, 2, 1, 0].map((i) => i * step);
   const series = [
     { k: "assigned" as const, c: "bg-signal", l: "Assigned" },
     { k: "completed" as const, c: "bg-sev-low", l: "Completed" },
     { k: "carried" as const, c: "bg-sev-medium", l: "Carried forward" },
   ];
+  const totals = series.map((s) => rows.reduce((a, r) => a + r[s.k], 0));
   return (
     <div className="px-4 py-3">
-      <div className="mb-2 flex flex-wrap gap-3 text-[11px] text-mute">
-        {series.map((s) => (
-          <span key={s.k} className="flex items-center gap-1"><span className={cn("size-2 rounded-full", s.c)} />{s.l}</span>
+      <div className="mb-3 flex flex-wrap gap-4 text-[11px] text-mute">
+        {series.map((s, i) => (
+          <span key={s.k} className="flex items-center gap-1.5"><span className={cn("size-2 rounded-full", s.c)} />{s.l} <b className="num text-ink">{totals[i]}</b></span>
         ))}
       </div>
-      <div className="grid h-32 grid-cols-7 items-end gap-2">
-        {rows.map((r) => (
-          <div key={r.d} className="flex h-full flex-col justify-end">
-            <div className="flex h-full items-end justify-center gap-0.5">
-              {series.map((s) => (
-                <div key={s.k} title={`${s.l}: ${r[s.k]}`} className={cn("w-2.5 rounded-t-sm", s.c)} style={{ height: `${(r[s.k] / max) * 100}%`, minHeight: r[s.k] ? 3 : 1 }} />
+      <div className="flex gap-2">
+        <div className="num flex h-40 flex-col justify-between text-right text-[10px] text-mute">
+          {ticks.map((t) => <span key={t} className="-translate-y-1/2 leading-none first:translate-y-0 last:translate-y-0">{t}</span>)}
+        </div>
+        <div className="flex-1">
+          <div className="relative h-40">
+            <div className="absolute inset-0 flex flex-col justify-between">
+              {ticks.map((t) => <div key={t} className={cn("border-t", t === 0 ? "border-line" : "border-dashed border-line/60")} />)}
+            </div>
+            <div className="relative grid h-full grid-cols-7 gap-1 sm:gap-3">
+              {rows.map((r) => (
+                <div key={r.d} className="flex h-full items-end justify-center gap-[3px]">
+                  {series.map((s) => {
+                    const v = r[s.k];
+                    return (
+                      <div key={s.k} className="relative flex h-full w-full max-w-4 flex-col justify-end" title={`${s.l}: ${v}`}>
+                        {v > 0 && <span className="num mb-0.5 text-center text-[9px] leading-none text-mute">{v}</span>}
+                        <div className={cn("w-full rounded-t-[3px]", s.c)} style={{ height: v ? `${(v / max) * 100}%` : 0 }} />
+                      </div>
+                    );
+                  })}
+                </div>
               ))}
             </div>
-            <div className="num mt-1 text-center text-[10px] text-mute">{fmtDate(r.d).split(" ").slice(0, 2).join(" ")}</div>
           </div>
-        ))}
+          <div className="mt-1.5 grid grid-cols-7 gap-1 sm:gap-3">
+            {rows.map((r) => (
+              <div key={r.d} className={cn("num text-center text-[10px]", r.d === TODAY ? "font-semibold text-ink" : "text-mute")}>
+                {fmtDate(r.d).split(" ").slice(0, 2).join(" ")}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
