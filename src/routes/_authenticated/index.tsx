@@ -97,7 +97,7 @@ function reportBuckets(d: AppData, reports: AppData["reports"]) {
 
 function Section({ title, link, to, children, className }: { title: string; link?: string; to?: string; children: ReactNode; className?: string }) {
   return (
-    <Panel className={className} title={title} meta={to ? <Link to={to} className="text-signal">{link ?? "View all"} →</Link> : undefined}>
+    <Panel className={className ?? ""} title={title} meta={to ? <Link to={to} className="text-signal">{link ?? "View all"} →</Link> : null}>
       {children}
     </Panel>
   );
