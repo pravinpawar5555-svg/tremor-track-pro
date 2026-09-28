@@ -223,7 +223,7 @@ function VisitsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  <Th>Visit date</Th><Th>Customer</Th><Th>Plant</Th><Th>Engineer</Th><Th>Visit type</Th><Th>Frequency</Th><Th>Status</Th><Th>Next visit</Th><Th align="right">Actions</Th>
+                  <Th>Visit date</Th><Th>Customer</Th><Th>Plant</Th><Th>Engineer</Th><Th>Visit type</Th><Th>Frequency</Th><Th>MOM No.</Th><Th>Status</Th><Th>Next visit</Th><Th align="right">Actions</Th>
                 </tr>
               </thead>
               <tbody>
