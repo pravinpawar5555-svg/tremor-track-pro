@@ -12,4 +12,5 @@
 - Store (src/lib/store.ts) loads only after startSession(); housekeeping() carries unfinished tasks to today and generates reports from recurring_reports — keeps the client-side store pattern without a scheduler.
 - Customer visits live in public.visits via src/lib/visits.ts (own small store, loaded on first use); completing an AMC visit creates the next visit row — keeps the big store untouched.
 - MOM sign-off is a per-visit cloud field and is opt-in; PDF generation keeps its two-party signature section together on one page — preserves each MOM's approval requirement and print layout.
+- Visits, Reports and Plants screens give engineers the same full access as the manager (user request); Engineers screen and approvals stay manager-only.
 - Daily Work reminders and close-day summaries live in public.reminders / public.day_closures via src/lib/dailywork.ts (own small store); tasks keep one record across days (task_date moves, original_date and carry_forward_count preserved) — avoids duplicate carry-forward rows.
