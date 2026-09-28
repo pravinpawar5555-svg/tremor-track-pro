@@ -142,7 +142,10 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
       {mode === "preview" ? (
         <div className="p-4">
           <div className="mx-auto max-w-3xl bg-panel p-6 text-sm shadow ring-1 ring-line">
-            <div className="-mx-6 -mt-6 mb-4 px-6 py-3 font-semibold text-white" className_PLACEHOLDER
+            <div className="-mx-6 -mt-6 mb-4 flex items-center justify-between px-6 py-3 font-semibold text-white" style={{ backgroundColor: "#182C54" }}>
+              <span>Forbes Marshall — Minutes of Meeting</span>
+              {v.momNo ? <span className="num text-xs">MOM No: {v.momNo}</span> : null}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div><span className="label-caps">Customer</span><div>{plant?.customer}</div></div>
               <div><span className="label-caps">Plant</span><div>{plantName(data, v.plantId)}</div></div>
