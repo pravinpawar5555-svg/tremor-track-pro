@@ -380,6 +380,66 @@ export type Database = {
         }
         Relationships: []
       }
+      visits: {
+        Row: {
+          actions: Json
+          completed_date: string | null
+          created_at: string
+          created_by: string
+          custom_every: number
+          custom_unit: string
+          discussion_points: string[]
+          engineer_ids: string[]
+          frequency: string
+          id: string
+          next_visit_date: string | null
+          observations: string
+          planned_date: string
+          plant_id: string
+          purpose: string
+          status: string
+          visit_type: string
+        }
+        Insert: {
+          actions?: Json
+          completed_date?: string | null
+          created_at?: string
+          created_by?: string
+          custom_every?: number
+          custom_unit?: string
+          discussion_points?: string[]
+          engineer_ids?: string[]
+          frequency?: string
+          id?: string
+          next_visit_date?: string | null
+          observations?: string
+          planned_date: string
+          plant_id: string
+          purpose?: string
+          status?: string
+          visit_type?: string
+        }
+        Update: {
+          actions?: Json
+          completed_date?: string | null
+          created_at?: string
+          created_by?: string
+          custom_every?: number
+          custom_unit?: string
+          discussion_points?: string[]
+          engineer_ids?: string[]
+          frequency?: string
+          id?: string
+          next_visit_date?: string | null
+          observations?: string
+          planned_date?: string
+          plant_id?: string
+          purpose?: string
+          status?: string
+          visit_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
