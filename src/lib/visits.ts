@@ -34,7 +34,11 @@ export interface Visit {
   actions: VisitAction[];
   nextVisitDate: string | null;
   createdBy: string;
+  customerAttendees: Attendee[];
+  fmAttendees: string[];
 }
+
+export interface Attendee { name: string; phone: string }
 
 export const visitTypeLabel: Record<VisitType, string> = { amc: "AMC Planned", request: "On-Request" };
 export const visitFrequencyLabel: Record<VisitFrequency, string> = {
@@ -124,6 +128,8 @@ const fromRow = (r: any): Visit => ({
   actions: Array.isArray(r.actions) ? r.actions : [],
   nextVisitDate: r.next_visit_date,
   createdBy: r.created_by ?? "",
+  customerAttendees: Array.isArray(r.customer_attendees) ? r.customer_attendees : [],
+  fmAttendees: Array.isArray(r.fm_attendees) ? r.fm_attendees : [],
 });
 
 const toRow = (v: Visit) => ({
@@ -143,6 +149,8 @@ const toRow = (v: Visit) => ({
   actions: v.actions,
   next_visit_date: v.nextVisitDate,
   created_by: v.createdBy,
+  customer_attendees: v.customerAttendees,
+  fm_attendees: v.fmAttendees,
 });
 
 export async function loadVisits() {
@@ -196,6 +204,8 @@ export function blankVisit(createdBy: string): Visit {
     actions: [],
     nextVisitDate: null,
     createdBy,
+    customerAttendees: [],
+    fmAttendees: [],
   };
 }
 
