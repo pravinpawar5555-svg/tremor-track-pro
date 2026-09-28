@@ -423,6 +423,7 @@ function CompleteForm({ visit, manager, onClose }: { visit: Visit; manager: bool
   const [points, setPoints] = useState<string[]>(visit.discussionPoints.length ? visit.discussionPoints : [""]);
   const [obs, setObs] = useState(visit.observations);
   const [actions, setActions] = useState<VisitAction[]>(visit.actions);
+  const [signOffRequired, setSignOffRequired] = useState(visit.signOffRequired);
   const auto = nextVisitAfter(visit, date);
   const [nextOverride, setNextOverride] = useState<string | null>(null);
   const next = nextOverride ?? auto;
@@ -431,7 +432,7 @@ function CompleteForm({ visit, manager, onClose }: { visit: Visit; manager: bool
     try {
       await completeVisit(
         visit,
-        { completedDate: date, discussionPoints: points.map((p) => p.trim()).filter(Boolean), observations: obs, actions: actions.filter((a) => a.action.trim()) },
+        { completedDate: date, discussionPoints: points.map((p) => p.trim()).filter(Boolean), observations: obs, actions: actions.filter((a) => a.action.trim()), signOffRequired },
         next,
       );
       toast.success(visit.visitType === "amc" && next ? `Visit completed · next visit ${fmtDate(next)}` : "Visit completed");
@@ -508,6 +509,16 @@ function CompleteForm({ visit, manager, onClose }: { visit: Visit; manager: bool
         ) : (
           <div className="text-xs text-mute md:col-span-4">On-request visit — the AMC schedule for this plant is not changed.</div>
         )}
+        <label className="panel-inset flex cursor-pointer items-center justify-between gap-4 p-3 md:col-span-4">
+          <span>
+            <span className="block font-medium">Sign-Off Required</span>
+            <span className="block text-xs text-mute">Add customer and Forbes Marshall signature blocks to the MOM PDF.</span>
+          </span>
+          <span className={cn("relative h-6 w-11 shrink-0 rounded-full transition-colors", signOffRequired ? "bg-signal" : "bg-line") }>
+            <input className="peer sr-only" type="checkbox" checked={signOffRequired} onChange={(e) => setSignOffRequired(e.target.checked)} />
+            <span className={cn("absolute top-1 size-4 rounded-full bg-panel shadow transition-transform", signOffRequired ? "translate-x-6" : "translate-x-1")} />
+          </span>
+        </label>
         <div className="md:col-span-4"><Button onClick={() => void submit()}>Complete visit</Button></div>
       </div>
     </Panel>

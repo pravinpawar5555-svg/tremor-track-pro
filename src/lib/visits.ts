@@ -38,6 +38,8 @@ export interface Visit {
   fmAttendees: string[];
   /** MOM serial, e.g. FM/2026/09/001 — assigned by the database on completion. */
   momNo: string;
+  /** Whether the generated MOM ends with customer and Forbes Marshall signatures. */
+  signOffRequired: boolean;
 }
 
 export interface Attendee { name: string; phone: string }
@@ -133,6 +135,7 @@ const fromRow = (r: any): Visit => ({
   customerAttendees: Array.isArray(r.customer_attendees) ? r.customer_attendees : [],
   fmAttendees: Array.isArray(r.fm_attendees) ? r.fm_attendees : [],
   momNo: r.mom_no ?? "",
+  signOffRequired: r.sign_off_required ?? false,
 });
 
 const toRow = (v: Visit) => ({
@@ -154,6 +157,7 @@ const toRow = (v: Visit) => ({
   created_by: v.createdBy,
   customer_attendees: v.customerAttendees,
   fm_attendees: v.fmAttendees,
+  sign_off_required: v.signOffRequired,
 });
 
 export async function loadVisits() {
@@ -215,6 +219,7 @@ export function blankVisit(createdBy: string): Visit {
     customerAttendees: [],
     fmAttendees: [],
     momNo: "",
+    signOffRequired: false,
   };
 }
 
@@ -227,7 +232,7 @@ export function saveVisit(v: Visit) {
  * (at `nextDate`, which the manager may override). On-request visits never
  * touch the AMC schedule.
  */
-export function completeVisit(v: Visit, summary: Pick<Visit, "completedDate" | "discussionPoints" | "observations" | "actions">, nextDate: string | null) {
+export function completeVisit(v: Visit, summary: Pick<Visit, "completedDate" | "discussionPoints" | "observations" | "actions" | "signOffRequired">, nextDate: string | null) {
   const done: Visit = { ...v, ...summary, status: "completed", nextVisitDate: v.visitType === "amc" ? nextDate : null };
   const list = [done];
   if (v.visitType === "amc" && nextDate) {

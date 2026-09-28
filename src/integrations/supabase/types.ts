@@ -400,6 +400,7 @@ export type Database = {
           planned_date: string
           plant_id: string
           purpose: string
+          sign_off_required: boolean
           status: string
           visit_type: string
         }
@@ -422,6 +423,7 @@ export type Database = {
           planned_date: string
           plant_id: string
           purpose?: string
+          sign_off_required?: boolean
           status?: string
           visit_type?: string
         }
@@ -444,6 +446,7 @@ export type Database = {
           planned_date?: string
           plant_id?: string
           purpose?: string
+          sign_off_required?: boolean
           status?: string
           visit_type?: string
         }

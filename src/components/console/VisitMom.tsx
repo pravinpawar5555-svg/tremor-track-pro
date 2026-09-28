@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import fmLogo from "@/assets/fm-logo-white.png.asset.json";
 import { Button, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
 import { engineerName, fmtDate, plantName, useData, type AppData } from "@/lib/store";
+import { cn } from "@/lib/utils";
 import { frequencyText, saveVisit, visitTypeLabel, type Attendee, type Visit, type VisitAction } from "@/lib/visits";
 
 /** Customer + Forbes Marshall attendee lists, editable any time after the visit is saved. */
@@ -51,6 +52,7 @@ export function AttendeesEditor({ v, canEdit }: { v: Visit; canEdit: boolean }) 
 }
 
 const respName = (data: AppData, r: string) => (r === "customer" ? "Customer" : engineerName(data, r) || r);
+const ACKNOWLEDGMENT = "By signing below, both parties acknowledge that these Minutes of Meeting accurately reflect the technical discussions, observations, decisions, responsibilities, and agreed action items recorded during the meeting.";
 
 let logoDataUrl: string | null = null;
 async function loadLogoDataUrl(): Promise<string | null> {
@@ -131,6 +133,51 @@ async function downloadMom(data: AppData, v: Visit) {
     head: [["Action", "Responsible", "Due", "Status", "Remarks"]],
     body: v.actions.length ? v.actions.map((a) => [a.action, respName(data, a.responsible), fmtDate(a.dueDate), a.status === "open" ? "Open" : "Closed", a.remarks]) : [["—", "", "", "", ""]],
   });
+  if (v.signOffRequired) {
+    const sectionHeight = 190;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let signY = y();
+    if (signY + sectionHeight > pageHeight - 40) {
+      doc.addPage();
+      signY = 48;
+    }
+    const margin = 40;
+    const gap = 14;
+    const blockWidth = (W - margin * 2 - gap) / 2;
+    doc.setDrawColor(24, 44, 84);
+    doc.setLineWidth(0.8);
+    doc.line(margin, signY, W - margin, signY);
+    doc.setTextColor(24, 44, 84);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("Acknowledgment & Sign-Off", margin, signY + 18);
+    doc.setTextColor(20, 26, 34);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    const acknowledgmentLines = doc.splitTextToSize(ACKNOWLEDGMENT, W - margin * 2);
+    doc.text(acknowledgmentLines, margin, signY + 34, { lineHeightFactor: 1.35 });
+    const acknowledgmentBottom = signY + 34 + acknowledgmentLines.length * 11.5;
+    const blockY = acknowledgmentBottom + 12;
+    const blockHeight = 100;
+    const drawSignatureBlock = (x: number, title: string) => {
+      doc.setDrawColor(24, 44, 84);
+      doc.roundedRect(x, blockY, blockWidth, blockHeight, 3, 3);
+      doc.setFillColor(24, 44, 84);
+      doc.rect(x, blockY, blockWidth, 24, "F");
+      doc.setTextColor(255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text(title, x + 10, blockY + 16, { maxWidth: blockWidth - 20 });
+      doc.setTextColor(20, 26, 34);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      ["Signature: __________________________", "Name: ______________________________", "Designation: ________________________", "Date: _______________________________"].forEach((line, index) => {
+        doc.text(line, x + 10, blockY + 42 + index * 15);
+      });
+    };
+    drawSignatureBlock(margin, `For Customer: ${plant?.customer ?? ""}`);
+    drawSignatureBlock(margin + blockWidth + gap, "For Forbes Marshall");
+  }
   doc.save(`MOM_${v.momNo ? v.momNo.replace(/\//g, "-") + "_" : ""}${plantName(data, v.plantId).replace(/[^\w]+/g, "_")}_${v.completedDate ?? v.plannedDate}.pdf`);
 }
 
@@ -201,6 +248,25 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
               </tbody>
             </table>
             {!v.actions.length ? <div className="text-mute">—</div> : null}
+            {v.signOffRequired ? (
+              <div className="mt-6 border-t-2 pt-4" style={{ borderColor: "#182C54" }}>
+                <div className="font-semibold" style={{ color: "#182C54" }}>Acknowledgment &amp; Sign-Off</div>
+                <p className="mt-2 text-xs leading-relaxed text-mute">{ACKNOWLEDGMENT}</p>
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {[`For Customer: ${plant?.customer ?? ""}`, "For Forbes Marshall"].map((title) => (
+                    <div key={title} className="overflow-hidden rounded border border-line">
+                      <div className="px-3 py-2 text-xs font-semibold text-white" style={{ backgroundColor: "#182C54" }}>{title}</div>
+                      <div className="space-y-2 p-3 text-xs">
+                        <div>Signature: __________________________</div>
+                        <div>Name: ______________________________</div>
+                        <div>Designation: ________________________</div>
+                        <div>Date: _______________________________</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : (
@@ -234,6 +300,16 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
           <button type="button" className="w-fit text-xs text-signal" onClick={() => setV((x) => ({ ...x, discussionPoints: [...x.discussionPoints, ""] }))}>+ Add point</button>
           <div className="label-caps">Observations / findings</div>
           <TextArea rows={3} value={v.observations} onChange={(e) => setV((x) => ({ ...x, observations: e.target.value }))} />
+          <label className="panel-inset flex cursor-pointer items-center justify-between gap-4 p-3">
+            <span>
+              <span className="block font-medium">Sign-Off Required</span>
+              <span className="block text-xs text-mute">Add acknowledgment and signature blocks to the bottom of the PDF.</span>
+            </span>
+            <span className={cn("relative h-6 w-11 shrink-0 rounded-full transition-colors", v.signOffRequired ? "bg-signal" : "bg-line") }>
+              <input className="sr-only" type="checkbox" checked={v.signOffRequired} onChange={(e) => setV((x) => ({ ...x, signOffRequired: e.target.checked }))} />
+              <span className={cn("absolute top-1 size-4 rounded-full bg-panel shadow transition-transform", v.signOffRequired ? "translate-x-6" : "translate-x-1")} />
+            </span>
+          </label>
           <div className="label-caps">Next actions</div>
           {v.actions.map((a, i) => (
             <div key={i} className="grid gap-2 md:grid-cols-[2fr_1fr_1fr_1fr_2fr]">
