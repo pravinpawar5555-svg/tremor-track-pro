@@ -56,6 +56,45 @@ export type Database = {
         }
         Relationships: []
       }
+      day_closures: {
+        Row: {
+          assigned: number
+          carried: number
+          closed_at: string
+          completed: number
+          engineer_id: string
+          id: string
+          note: string
+          remaining: number
+          waiting: number
+          work_date: string
+        }
+        Insert: {
+          assigned?: number
+          carried?: number
+          closed_at?: string
+          completed?: number
+          engineer_id: string
+          id?: string
+          note?: string
+          remaining?: number
+          waiting?: number
+          work_date: string
+        }
+        Update: {
+          assigned?: number
+          carried?: number
+          closed_at?: string
+          completed?: number
+          engineer_id?: string
+          id?: string
+          note?: string
+          remaining?: number
+          waiting?: number
+          work_date?: string
+        }
+        Relationships: []
+      }
       engineers: {
         Row: {
           created_at: string
@@ -224,6 +263,54 @@ export type Database = {
         }
         Relationships: []
       }
+      reminders: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          notify: string
+          plant_id: string
+          remind_date: string
+          remind_time: string
+          status: string
+          task_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          notify?: string
+          plant_id?: string
+          remind_date: string
+          remind_time?: string
+          status?: string
+          task_id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          notify?: string
+          plant_id?: string
+          remind_date?: string
+          remind_time?: string
+          status?: string
+          task_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           by_engineer_id: string
@@ -265,37 +352,73 @@ export type Database = {
       }
       tasks: {
         Row: {
+          activity: Json
           assigned_by: string
+          carry_forward_count: number
           completed_at: string | null
+          completion_note: string
           created_at: string
+          description: string
+          due_date: string | null
+          due_time: string
           engineer_id: string
           id: string
           original_date: string
+          plant_id: string
+          priority: string
+          started_at: string | null
           status: string
           task_date: string
+          task_type: string
           title: string
+          updated_at: string
+          waiting_reason: string
         }
         Insert: {
+          activity?: Json
           assigned_by?: string
+          carry_forward_count?: number
           completed_at?: string | null
+          completion_note?: string
           created_at?: string
+          description?: string
+          due_date?: string | null
+          due_time?: string
           engineer_id: string
           id?: string
           original_date?: string
+          plant_id?: string
+          priority?: string
+          started_at?: string | null
           status?: string
           task_date?: string
+          task_type?: string
           title: string
+          updated_at?: string
+          waiting_reason?: string
         }
         Update: {
+          activity?: Json
           assigned_by?: string
+          carry_forward_count?: number
           completed_at?: string | null
+          completion_note?: string
           created_at?: string
+          description?: string
+          due_date?: string | null
+          due_time?: string
           engineer_id?: string
           id?: string
           original_date?: string
+          plant_id?: string
+          priority?: string
+          started_at?: string | null
           status?: string
           task_date?: string
+          task_type?: string
           title?: string
+          updated_at?: string
+          waiting_reason?: string
         }
         Relationships: []
       }

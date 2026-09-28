@@ -125,10 +125,30 @@ export interface Task {
   title: string;
   taskDate: string;
   originalDate: string;
-  status: "pending" | "completed";
+  status: TaskStatus;
   completedAt: string | null;
   assignedBy: string;
+  description: string;
+  plantId: string;
+  taskType: TaskType;
+  priority: TaskPriority;
+  dueDate: string;
+  dueTime: string;
+  waitingReason: string;
+  startedAt: string | null;
+  carryCount: number;
+  completionNote: string;
+  activity: TaskActivity[];
 }
+
+export type TaskStatus = "pending" | "in_progress" | "waiting" | "completed";
+export type TaskType = "report" | "validation" | "followup" | "internal" | "visit" | "other";
+export type TaskPriority = "high" | "medium" | "normal";
+export interface TaskActivity { at: string; by: string; text: string }
+export const taskStatusLabel: Record<TaskStatus, string> = { pending: "To Do", in_progress: "In Progress", waiting: "Waiting", completed: "Completed" };
+export const taskTypeLabel: Record<TaskType, string> = { report: "Report", validation: "Validation", followup: "Customer Follow-up", internal: "Internal", visit: "Site Visit", other: "Other" };
+export const taskPriorityLabel: Record<TaskPriority, string> = { high: "High", medium: "Medium", normal: "Normal" };
+export const waitingReasons = ["Waiting for Manager", "Waiting for Customer", "Waiting for Data", "Waiting for Plant / Site", "Waiting for Information", "Other"];
 
 export interface RecurringReport {
   id: string;
@@ -646,9 +666,20 @@ const rowToTask = (r: any): Task => ({
   title: r.title,
   taskDate: r.task_date,
   originalDate: r.original_date,
-  status: r.status === "completed" ? "completed" : "pending",
+  status: (["pending", "in_progress", "waiting", "completed"].includes(r.status) ? r.status : "pending") as TaskStatus,
   completedAt: r.completed_at ?? null,
   assignedBy: r.assigned_by ?? "",
+  description: r.description ?? "",
+  plantId: r.plant_id ?? "",
+  taskType: (r.task_type || "internal") as TaskType,
+  priority: (r.priority || "normal") as TaskPriority,
+  dueDate: r.due_date ?? "",
+  dueTime: r.due_time ?? "",
+  waitingReason: r.waiting_reason ?? "",
+  startedAt: r.started_at ?? null,
+  carryCount: r.carry_forward_count ?? 0,
+  completionNote: r.completion_note ?? "",
+  activity: Array.isArray(r.activity) ? r.activity : [],
 });
 const taskToRow = (t: Task) => ({
   id: t.id,
@@ -659,6 +690,18 @@ const taskToRow = (t: Task) => ({
   status: t.status,
   completed_at: t.completedAt,
   assigned_by: t.assignedBy,
+  description: t.description,
+  plant_id: t.plantId,
+  task_type: t.taskType,
+  priority: t.priority,
+  due_date: t.dueDate || null,
+  due_time: t.dueTime,
+  waiting_reason: t.waitingReason,
+  started_at: t.startedAt,
+  carry_forward_count: t.carryCount,
+  completion_note: t.completionNote,
+  activity: t.activity,
+  updated_at: new Date().toISOString(),
 });
 const rowToRecurring = (r: any): RecurringReport => ({
   id: r.id,
@@ -726,16 +769,20 @@ function periodFor(type: RecurringReport["type"], due: string) {
   return `${MONTHS[Number(prev.slice(5, 7)) - 1]} ${prev.slice(0, 4)}`;
 }
 
+export function dayDiff(a: string, b: string) {
+  return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86400000);
+}
+
 /** Carry unfinished tasks forward and generate reports from recurring schedules. */
 function housekeeping() {
   if (!session) return;
   let next = data;
   const stale = next.tasks.filter(
-    (t) => t.status === "pending" && t.taskDate < TODAY && (session!.role === "manager" || t.engineerId === session!.engineerId),
+    (t) => t.status !== "completed" && t.taskDate < TODAY && (session!.role === "manager" || t.engineerId === session!.engineerId),
   );
   if (stale.length) {
     const ids = new Set(stale.map((t) => t.id));
-    next = { ...next, tasks: next.tasks.map((t) => (ids.has(t.id) ? { ...t, taskDate: TODAY } : t)) };
+    next = { ...next, tasks: next.tasks.map((t) => (ids.has(t.id) ? { ...t, taskDate: TODAY, carryCount: t.carryCount + Math.max(1, dayDiff(t.taskDate, TODAY)) } : t)) };
   }
   if (session.role === "manager") {
     const horizon = shiftDate(TODAY, 7);
@@ -871,37 +918,90 @@ const uid = (p: string) =>
 
 // ---------------------------------------------------------------- daily tasks
 
-export function addTask(title: string, engineerId: string, taskDate = TODAY) {
-  const t = title.trim();
-  if (!t || !engineerId) return;
+export interface TaskInput {
+  title: string;
+  engineerId: string;
+  taskDate?: string;
+  description?: string;
+  plantId?: string;
+  taskType?: TaskType;
+  priority?: TaskPriority;
+  dueDate?: string;
+  dueTime?: string;
+}
+
+const act = (text: string): TaskActivity => ({ at: new Date().toISOString(), by: data.currentUserId, text });
+
+export function addTask(input: string | TaskInput, engineerIdArg?: string, taskDateArg = TODAY) {
+  const i: TaskInput = typeof input === "string" ? { title: input, engineerId: engineerIdArg ?? "", taskDate: taskDateArg } : input;
+  const t = i.title.trim();
+  if (!t || !i.engineerId) return;
+  const taskDate = i.taskDate ?? TODAY;
   const task: Task = {
     id: uid("task"),
-    engineerId,
+    engineerId: i.engineerId,
     title: t,
     taskDate,
     originalDate: taskDate,
     status: "pending",
     completedAt: null,
-    assignedBy: data.currentUserId === engineerId ? "" : data.currentUserId,
+    assignedBy: data.currentUserId === i.engineerId ? "" : data.currentUserId,
+    description: i.description ?? "",
+    plantId: i.plantId ?? "",
+    taskType: i.taskType ?? "internal",
+    priority: i.priority ?? "normal",
+    dueDate: i.dueDate ?? "",
+    dueTime: i.dueTime ?? "",
+    waitingReason: "",
+    startedAt: null,
+    carryCount: 0,
+    completionNote: "",
+    activity: [act("Task created")],
   };
   commit({ ...data, tasks: [...data.tasks, task] });
 }
 
-export function toggleTask(id: string) {
+export function updateTask(id: string, patch: Partial<Task>, note?: string) {
   commit({
     ...data,
-    tasks: data.tasks.map((t) =>
-      t.id === id
-        ? t.status === "completed"
-          ? { ...t, status: "pending", completedAt: null }
-          : { ...t, status: "completed", completedAt: new Date().toISOString() }
-        : t,
-    ),
+    tasks: data.tasks.map((t) => (t.id === id ? { ...t, ...patch, activity: note ? [...t.activity, act(note)] : t.activity } : t)),
   });
+}
+
+export function setTaskStatus(id: string, status: TaskStatus, waitingReason = "") {
+  const t = data.tasks.find((x) => x.id === id);
+  if (!t) return;
+  const now = new Date().toISOString();
+  const patch: Partial<Task> = { status, waitingReason: status === "waiting" ? waitingReason : "" };
+  if (status === "in_progress" && !t.startedAt) patch.startedAt = now;
+  patch.completedAt = status === "completed" ? now : null;
+  updateTask(id, patch, status === "waiting" ? `Waiting · ${waitingReason}` : `Status → ${taskStatusLabel[status]}`);
+}
+
+export function addTaskNote(id: string, text: string) {
+  if (text.trim()) updateTask(id, {}, `Note: ${text.trim()}`);
+}
+
+export function toggleTask(id: string) {
+  const t = data.tasks.find((x) => x.id === id);
+  if (t) setTaskStatus(id, t.status === "completed" ? "pending" : "completed");
 }
 
 export function removeTask(id: string) {
   commit({ ...data, tasks: data.tasks.filter((t) => t.id !== id) });
+}
+
+/** Move unfinished tasks of an engineer from one day to the next working day (Close Day). */
+export function carryTasks(engineerId: string, from: string, to: string) {
+  const n = Math.max(1, dayDiff(from, to));
+  commit({
+    ...data,
+    tasks: data.tasks.map((t) =>
+      t.engineerId === engineerId && t.taskDate === from && t.status !== "completed"
+        ? { ...t, taskDate: to, carryCount: t.carryCount + n, activity: [...t.activity, act(`Carried forward to ${fmtDate(to)}`)] }
+        : t,
+    ),
+  });
 }
 
 export function tasksFor(d: AppData, engineerId: string, date = TODAY) {
@@ -911,7 +1011,7 @@ export function tasksFor(d: AppData, engineerId: string, date = TODAY) {
 export function taskStats(d: AppData, engineerId: string, date = TODAY) {
   const list = tasksFor(d, engineerId, date);
   const done = list.filter((t) => t.status === "completed").length;
-  const carried = list.filter((t) => t.originalDate < t.taskDate && t.status === "pending").length;
+  const carried = list.filter((t) => t.originalDate < t.taskDate && t.status !== "completed").length;
   return { total: list.length, done, pending: list.length - done, carried };
 }
 

@@ -16,7 +16,7 @@ import {
 
 const nav = [
   { to: "/", label: "Dashboard" },
-  { to: "/tasks", label: "Daily Task" },
+  { to: "/tasks", label: "Daily Work" },
   { to: "/discussions", label: "Discussion & Tickets" },
   { to: "/visits", label: "Visits" },
   { to: "/reports", label: "Reports" },
@@ -153,7 +153,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               />
               {item.label
-                .replace("Daily Task", "Tasks")
+                .replace("Daily Work", "Tasks")
                 .replace("Dashboard", "Home")
                 .replace("Discussion & Tickets", "Chat")
                 .replace("Engineers", "Team")}
