@@ -27,7 +27,7 @@ import {
 } from "@/lib/visits";
 
 export const Route = createFileRoute("/_authenticated/visits")({
-  validateSearch: (s: Record<string, unknown>) => ({ plant: typeof s.plant === "string" ? s.plant : undefined }),
+  validateSearch: (s: Record<string, unknown>): { plant?: string } => (typeof s['plant'] === "string" ? { plant: s['plant'] } : {}),
   head: () => ({
     meta: [
       { title: "Customer Visit Planner — Forbes Marshall CM Portal" },
@@ -329,8 +329,8 @@ function VisitForm({ initial, onClose }: { initial: Visit; onClose: () => void }
   const customers = [...new Set(data.plants.map((p) => p.customer).filter(Boolean))].sort();
   const set = (p: Partial<Visit>) => setV((x) => ({ ...x, ...p }));
   const submit = async () => {
-    if (!v.plantId) return toast.error("Choose a plant");
-    if (!v.engineerIds.length) return toast.error("Assign at least one engineer");
+    if (!v.plantId) { toast.error("Choose a plant"); return; }
+    if (!v.engineerIds.length) { toast.error("Assign at least one engineer"); return; }
     try {
       await saveVisit(v);
       toast.success("Visit saved");
