@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import fmLogo from "@/assets/fm-logo-white.png.asset.json";
 import { Button, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
 import { engineerName, fmtDate, plantName, useData, type AppData } from "@/lib/store";
+import { cn } from "@/lib/utils";
 import { frequencyText, saveVisit, visitTypeLabel, type Attendee, type Visit, type VisitAction } from "@/lib/visits";
 
 /** Customer + Forbes Marshall attendee lists, editable any time after the visit is saved. */
