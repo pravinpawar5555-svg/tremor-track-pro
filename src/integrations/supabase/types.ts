@@ -388,8 +388,10 @@ export type Database = {
           created_by: string
           custom_every: number
           custom_unit: string
+          customer_attendees: Json
           discussion_points: string[]
           engineer_ids: string[]
+          fm_attendees: Json
           frequency: string
           id: string
           next_visit_date: string | null
@@ -407,8 +409,10 @@ export type Database = {
           created_by?: string
           custom_every?: number
           custom_unit?: string
+          customer_attendees?: Json
           discussion_points?: string[]
           engineer_ids?: string[]
+          fm_attendees?: Json
           frequency?: string
           id?: string
           next_visit_date?: string | null
@@ -426,8 +430,10 @@ export type Database = {
           created_by?: string
           custom_every?: number
           custom_unit?: string
+          customer_attendees?: Json
           discussion_points?: string[]
           engineer_ids?: string[]
+          fm_attendees?: Json
           frequency?: string
           id?: string
           next_visit_date?: string | null

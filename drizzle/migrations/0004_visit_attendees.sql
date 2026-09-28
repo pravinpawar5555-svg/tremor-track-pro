@@ -1,0 +1,2 @@
+ALTER TABLE public.visits ADD COLUMN IF NOT EXISTS customer_attendees jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE public.visits ADD COLUMN IF NOT EXISTS fm_attendees jsonb NOT NULL DEFAULT '[]'::jsonb;
