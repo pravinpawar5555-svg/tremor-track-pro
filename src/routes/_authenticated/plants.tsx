@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/console/AppShell";
 import {
@@ -291,8 +291,9 @@ function PlantsPage() {
                       <Td>{engineerName(data, p.engineerId)}</Td>
                       <Td mono>{fmtDate(s.lastReportSent)}</Td>
                       <Td align="right">
+                        <Link to="/visits" search={{ plant: p.id }} className="mr-1 text-xs text-signal">Visit history</Link>
                         {manager ? (
-                          <span className="flex justify-end gap-1">
+                          <span className="inline-flex justify-end gap-1">
                             <Button variant="ghost" onClick={() => edit(p)}>Edit</Button>
                             <Button variant="ghost" onClick={() => removePlant(p.id)}>Delete</Button>
                           </span>
