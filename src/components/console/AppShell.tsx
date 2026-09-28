@@ -2,6 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { RefreshControls } from "@/components/console/RefreshControls";
 import {
   TODAY,
   analystsOf,
@@ -51,6 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="hidden text-xs text-mute sm:inline">Condition Monitoring Work Portal</span>
         </div>
         <div className="ml-auto flex items-center gap-3 text-xs text-mute">
+          <RefreshControls />
           <span className="num hidden md:inline">{fmtDate(TODAY)}</span>
           <span className="flex items-center gap-1.5">
             <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />
