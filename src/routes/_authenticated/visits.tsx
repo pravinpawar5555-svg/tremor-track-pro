@@ -81,6 +81,7 @@ function VisitsPage() {
   const [customer, setCustomer] = useState("");
   const [plant, setPlant] = useState(search.plant ?? "");
   const [q, setQ] = useState("");
+  const [momQ, setMomQ] = useState("");
   const [month, setMonth] = useState(TODAY.slice(0, 7));
   const [editing, setEditing] = useState<Visit | null>(null);
   const [completing, setCompleting] = useState<Visit | null>(null);
@@ -106,6 +107,7 @@ function VisitsPage() {
       const t = `${plantName(data, v.plantId)} ${pCust(v.plantId)}`.toLowerCase();
       if (!t.includes(q.toLowerCase())) return false;
     }
+    if (momQ.trim() && !v.momNo.toLowerCase().includes(momQ.trim().toLowerCase())) return false;
     return true;
   });
 
@@ -212,6 +214,8 @@ function VisitsPage() {
             <option value="">All plants</option>
             {plantOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </Select>
+          <TextInput className="w-56" placeholder="Find MOM No. e.g. FM/2026/09/001" value={momQ} onChange={(e) => setMomQ(e.target.value)} />
+          {momQ ? <button type="button" className="text-xs text-mute hover:text-ink" onClick={() => setMomQ("")}>Clear</button> : null}
         </div>
 
         {view === "list" ? (
@@ -219,7 +223,7 @@ function VisitsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  <Th>Visit date</Th><Th>Customer</Th><Th>Plant</Th><Th>Engineer</Th><Th>Visit type</Th><Th>Frequency</Th><Th>Status</Th><Th>Next visit</Th><Th align="right">Actions</Th>
+                  <Th>Visit date</Th><Th>Customer</Th><Th>Plant</Th><Th>Engineer</Th><Th>Visit type</Th><Th>Frequency</Th><Th>MOM No.</Th><Th>Status</Th><Th>Next visit</Th><Th align="right">Actions</Th>
                 </tr>
               </thead>
               <tbody>
@@ -233,6 +237,7 @@ function VisitsPage() {
                       <Td>{v.engineerIds.map((id) => engineerName(data, id)).join(" + ") || "—"}</Td>
                       <Td>{visitTypeLabel[v.visitType]}</Td>
                       <Td>{frequencyText(v)}</Td>
+                      <Td mono>{v.momNo || "—"}</Td>
                       <Td><StatusPill v={v} /></Td>
                       <Td mono>{fmtDate(v.nextVisitDate ?? undefined)}</Td>
                       <Td align="right">
