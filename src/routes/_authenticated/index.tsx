@@ -146,7 +146,7 @@ const FLOW_SERIES = [
   { k: "carried" as const, color: "var(--flow-carried)", l: "Carried Forward" },
 ];
 
-function FlowChart({ rows, who }: { rows: ReturnType<typeof flow>; who?: string }) {
+function FlowChart({ rows, who }: { rows: ReturnType<typeof flow>; who?: string | undefined }) {
   const peak = Math.max(1, ...rows.flatMap((r) => [r.assigned, r.completed, r.carried]));
   const step = Math.max(1, Math.ceil(peak / 4));
   const max = step * 4 + Math.ceil(step / 2); // headroom for labels
