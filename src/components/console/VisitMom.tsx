@@ -1,0 +1,226 @@
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
+import { engineerName, fmtDate, plantName, useData, type AppData } from "@/lib/store";
+import { frequencyText, saveVisit, visitTypeLabel, type Attendee, type Visit, type VisitAction } from "@/lib/visits";
+
+/** Customer + Forbes Marshall attendee lists, editable any time after the visit is saved. */
+export function AttendeesEditor({ v, canEdit }: { v: Visit; canEdit: boolean }) {
+  const data = useData();
+  const [cust, setCust] = useState<Attendee[]>(v.customerAttendees.length ? v.customerAttendees : [{ name: "", phone: "" }]);
+  const [fm, setFm] = useState<string[]>(v.fmAttendees.length ? v.fmAttendees : v.engineerIds.map((id) => engineerName(data, id)));
+  const save = async () => {
+    try {
+      await saveVisit({
+        ...v,
+        customerAttendees: cust.map((a) => ({ name: a.name.trim(), phone: a.phone.trim() })).filter((a) => a.name),
+        fmAttendees: fm.map((n) => n.trim()).filter(Boolean),
+      });
+      toast.success("Attendees saved");
+    } catch {
+      toast.error("Could not save attendees");
+    }
+  };
+  return (
+    <div className="panel-inset grid gap-4 p-3 md:col-span-4 md:grid-cols-2">
+      <div>
+        <div className="label-caps mb-1">Customer attendees</div>
+        {cust.map((a, i) => (
+          <div key={i} className="mb-1.5 flex gap-2">
+            <TextInput disabled={!canEdit} placeholder="Name" value={a.name} onChange={(e) => setCust((x) => x.map((y, j) => (j === i ? { ...y, name: e.target.value } : y)))} />
+            <TextInput disabled={!canEdit} type="tel" placeholder="Contact number" value={a.phone} onChange={(e) => setCust((x) => x.map((y, j) => (j === i ? { ...y, phone: e.target.value } : y)))} />
+            {canEdit ? <button type="button" className="text-xs text-mute" onClick={() => setCust((x) => x.filter((_, j) => j !== i))}>Remove</button> : null}
+          </div>
+        ))}
+        {canEdit ? <button type="button" className="text-xs text-signal" onClick={() => setCust((x) => [...x, { name: "", phone: "" }])}>+ Add customer attendee</button> : null}
+      </div>
+      <div>
+        <div className="label-caps mb-1">Forbes Marshall attendees</div>
+        {fm.map((n, i) => (
+          <div key={i} className="mb-1.5 flex gap-2">
+            <TextInput disabled={!canEdit} placeholder="Name" value={n} onChange={(e) => setFm((x) => x.map((y, j) => (j === i ? e.target.value : y)))} />
+            {canEdit ? <button type="button" className="text-xs text-mute" onClick={() => setFm((x) => x.filter((_, j) => j !== i))}>Remove</button> : null}
+          </div>
+        ))}
+        {canEdit ? <button type="button" className="text-xs text-signal" onClick={() => setFm((x) => [...x, ""])}>+ Add Forbes Marshall attendee</button> : null}
+      </div>
+      {canEdit ? <div className="md:col-span-2"><Button onClick={() => void save()}>Save attendees</Button></div> : null}
+    </div>
+  );
+}
+
+const respName = (data: AppData, r: string) => (r === "customer" ? "Customer" : engineerName(data, r) || r);
+
+async function downloadMom(data: AppData, v: Visit) {
+  const { jsPDF } = await import("jspdf");
+  const autoTable = (await import("jspdf-autotable")).default;
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const W = doc.internal.pageSize.getWidth();
+  const plant = data.plants.find((p) => p.id === v.plantId);
+  doc.setFillColor(10, 147, 150);
+  doc.rect(0, 0, W, 56, "F");
+  doc.setTextColor(255);
+  doc.setFontSize(15);
+  doc.text("Forbes Marshall — Minutes of Meeting", 40, 34);
+  doc.setTextColor(20, 26, 34);
+  const head = { fillColor: [10, 147, 150] as [number, number, number] };
+  autoTable(doc, {
+    startY: 72,
+    theme: "grid",
+    styles: { fontSize: 9 },
+    body: [
+      ["Customer", plant?.customer ?? "", "Plant", plantName(data, v.plantId)],
+      ["Visit type", visitTypeLabel[v.visitType], "Frequency", frequencyText(v)],
+      ["Visit date", fmtDate(v.completedDate ?? v.plannedDate), "Next visit", fmtDate(v.nextVisitDate ?? undefined)],
+      ["Purpose", { content: v.purpose || "—", colSpan: 3 }],
+    ],
+  });
+  const y = () => (doc as any).lastAutoTable.finalY + 16;
+  autoTable(doc, {
+    startY: y(),
+    headStyles: head,
+    styles: { fontSize: 9 },
+    head: [["Customer attendee", "Contact number", "Forbes Marshall attendee"]],
+    body: Array.from({ length: Math.max(1, v.customerAttendees.length, v.fmAttendees.length) }, (_, i) => [
+      v.customerAttendees[i]?.name ?? "",
+      v.customerAttendees[i]?.phone ?? "",
+      v.fmAttendees[i] ?? "",
+    ]),
+  });
+  autoTable(doc, {
+    startY: y(),
+    headStyles: head,
+    styles: { fontSize: 9 },
+    head: [["#", "Discussion points"]],
+    body: v.discussionPoints.length ? v.discussionPoints.map((p, i) => [String(i + 1), p]) : [["", "—"]],
+    columnStyles: { 0: { cellWidth: 24 } },
+  });
+  autoTable(doc, { startY: y(), headStyles: head, styles: { fontSize: 9 }, head: [["Observations / findings"]], body: [[v.observations || "—"]] });
+  autoTable(doc, {
+    startY: y(),
+    headStyles: head,
+    styles: { fontSize: 9 },
+    head: [["Action", "Responsible", "Due", "Status", "Remarks"]],
+    body: v.actions.length ? v.actions.map((a) => [a.action, respName(data, a.responsible), fmtDate(a.dueDate), a.status === "open" ? "Open" : "Closed", a.remarks]) : [["—", "", "", "", ""]],
+  });
+  doc.save(`MOM_${plantName(data, v.plantId).replace(/[^\w]+/g, "_")}_${v.completedDate ?? v.plannedDate}.pdf`);
+}
+
+/** Minutes of Meeting: edit, preview and download as PDF (completed visits). */
+export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: boolean; onClose: () => void }) {
+  const data = useData();
+  const [v, setV] = useState<Visit>(visit);
+  const [mode, setMode] = useState<"preview" | "edit">("preview");
+  const plant = data.plants.find((p) => p.id === v.plantId);
+  const setAction = (i: number, p: Partial<VisitAction>) => setV((x) => ({ ...x, actions: x.actions.map((a, j) => (j === i ? { ...a, ...p } : a)) }));
+  const save = async () => {
+    try {
+      await saveVisit({ ...v, discussionPoints: v.discussionPoints.filter((p) => p.trim()), customerAttendees: v.customerAttendees.filter((a) => a.name.trim()), fmAttendees: v.fmAttendees.filter((n) => n.trim()) });
+      toast.success("MOM saved");
+      setMode("preview");
+    } catch {
+      toast.error("Could not save MOM");
+    }
+  };
+  return (
+    <Panel
+      className="mt-4"
+      title={`MOM — ${plantName(data, v.plantId)}`}
+      meta={
+        <span className="flex items-center gap-3">
+          {canEdit ? <button type="button" className="text-signal" onClick={() => setMode(mode === "edit" ? "preview" : "edit")}>{mode === "edit" ? "Preview" : "Edit"}</button> : null}
+          <button type="button" className="text-signal" onClick={() => void downloadMom(data, v)}>Download PDF</button>
+          <button type="button" className="text-signal" onClick={onClose}>Close</button>
+        </span>
+      }
+    >
+      {mode === "preview" ? (
+        <div className="p-4">
+          <div className="mx-auto max-w-3xl bg-panel p-6 text-sm shadow ring-1 ring-line">
+            <div className="-mx-6 -mt-6 mb-4 bg-signal px-6 py-3 font-semibold text-signal-foreground">Forbes Marshall — Minutes of Meeting</div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><span className="label-caps">Customer</span><div>{plant?.customer}</div></div>
+              <div><span className="label-caps">Plant</span><div>{plantName(data, v.plantId)}</div></div>
+              <div><span className="label-caps">Visit</span><div>{visitTypeLabel[v.visitType]} · {frequencyText(v)}</div></div>
+              <div><span className="label-caps">Date</span><div className="num">{fmtDate(v.completedDate ?? v.plannedDate)}</div></div>
+              <div className="col-span-2"><span className="label-caps">Purpose</span><div>{v.purpose || "—"}</div></div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div>
+                <div className="label-caps">Customer attendees</div>
+                {v.customerAttendees.length ? v.customerAttendees.map((a, i) => <div key={i}>{a.name} <span className="num text-mute">{a.phone}</span></div>) : <div className="text-mute">—</div>}
+              </div>
+              <div>
+                <div className="label-caps">Forbes Marshall attendees</div>
+                {v.fmAttendees.length ? v.fmAttendees.map((n, i) => <div key={i}>{n}</div>) : <div className="text-mute">—</div>}
+              </div>
+            </div>
+            <div className="mt-4 label-caps">Discussion points</div>
+            {v.discussionPoints.length ? <ol className="list-decimal pl-5">{v.discussionPoints.map((p, i) => <li key={i}>{p}</li>)}</ol> : <div className="text-mute">—</div>}
+            <div className="mt-4 label-caps">Observations / findings</div>
+            <p className="whitespace-pre-wrap">{v.observations || "—"}</p>
+            <div className="mt-4 label-caps">Next actions</div>
+            <table className="w-full text-xs">
+              <thead><tr className="text-left text-mute"><th>Action</th><th>Responsible</th><th>Due</th><th>Status</th><th>Remarks</th></tr></thead>
+              <tbody>
+                {v.actions.map((a, i) => (
+                  <tr key={i} className="border-t border-line/60"><td>{a.action}</td><td>{respName(data, a.responsible)}</td><td className="num">{fmtDate(a.dueDate)}</td><td>{a.status === "open" ? "Open" : "Closed"}</td><td>{a.remarks}</td></tr>
+                ))}
+              </tbody>
+            </table>
+            {!v.actions.length ? <div className="text-mute">—</div> : null}
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-3 p-4 text-sm">
+          <div className="label-caps">Customer attendees</div>
+          {v.customerAttendees.map((a, i) => (
+            <div key={i} className="flex gap-2">
+              <TextInput placeholder="Name" value={a.name} onChange={(e) => setV((x) => ({ ...x, customerAttendees: x.customerAttendees.map((y, j) => (j === i ? { ...y, name: e.target.value } : y)) }))} />
+              <TextInput placeholder="Contact number" value={a.phone} onChange={(e) => setV((x) => ({ ...x, customerAttendees: x.customerAttendees.map((y, j) => (j === i ? { ...y, phone: e.target.value } : y)) }))} />
+              <button type="button" className="text-xs text-mute" onClick={() => setV((x) => ({ ...x, customerAttendees: x.customerAttendees.filter((_, j) => j !== i) }))}>Remove</button>
+            </div>
+          ))}
+          <button type="button" className="w-fit text-xs text-signal" onClick={() => setV((x) => ({ ...x, customerAttendees: [...x.customerAttendees, { name: "", phone: "" }] }))}>+ Add customer attendee</button>
+          <div className="label-caps">Forbes Marshall attendees</div>
+          {v.fmAttendees.map((n, i) => (
+            <div key={i} className="flex gap-2">
+              <TextInput value={n} onChange={(e) => setV((x) => ({ ...x, fmAttendees: x.fmAttendees.map((y, j) => (j === i ? e.target.value : y)) }))} />
+              <button type="button" className="text-xs text-mute" onClick={() => setV((x) => ({ ...x, fmAttendees: x.fmAttendees.filter((_, j) => j !== i) }))}>Remove</button>
+            </div>
+          ))}
+          <button type="button" className="w-fit text-xs text-signal" onClick={() => setV((x) => ({ ...x, fmAttendees: [...x.fmAttendees, ""] }))}>+ Add Forbes Marshall attendee</button>
+          <div className="label-caps">Purpose</div>
+          <TextInput value={v.purpose} onChange={(e) => setV((x) => ({ ...x, purpose: e.target.value }))} />
+          <div className="label-caps">Discussion points</div>
+          {v.discussionPoints.map((p, i) => (
+            <div key={i} className="flex gap-2">
+              <TextInput value={p} onChange={(e) => setV((x) => ({ ...x, discussionPoints: x.discussionPoints.map((y, j) => (j === i ? e.target.value : y)) }))} />
+              <button type="button" className="text-xs text-mute" onClick={() => setV((x) => ({ ...x, discussionPoints: x.discussionPoints.filter((_, j) => j !== i) }))}>Remove</button>
+            </div>
+          ))}
+          <button type="button" className="w-fit text-xs text-signal" onClick={() => setV((x) => ({ ...x, discussionPoints: [...x.discussionPoints, ""] }))}>+ Add point</button>
+          <div className="label-caps">Observations / findings</div>
+          <TextArea rows={3} value={v.observations} onChange={(e) => setV((x) => ({ ...x, observations: e.target.value }))} />
+          <div className="label-caps">Next actions</div>
+          {v.actions.map((a, i) => (
+            <div key={i} className="grid gap-2 md:grid-cols-[2fr_1fr_1fr_1fr_2fr]">
+              <TextInput value={a.action} onChange={(e) => setAction(i, { action: e.target.value })} />
+              <Select value={a.responsible} onChange={(e) => setAction(i, { responsible: e.target.value })}>
+                {data.engineers.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                <option value="customer">Customer</option>
+              </Select>
+              <TextInput type="date" value={a.dueDate} onChange={(e) => setAction(i, { dueDate: e.target.value })} />
+              <Select value={a.status} onChange={(e) => setAction(i, { status: e.target.value as VisitAction["status"] })}>
+                <option value="open">Open</option>
+                <option value="closed">Closed</option>
+              </Select>
+              <TextInput value={a.remarks} onChange={(e) => setAction(i, { remarks: e.target.value })} />
+            </div>
+          ))}
+          <div><Button onClick={() => void save()}>Save MOM</Button></div>
+        </div>
+      )}
+    </Panel>
+  );
+}

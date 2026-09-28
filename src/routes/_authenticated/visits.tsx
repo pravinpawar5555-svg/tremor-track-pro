@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, Kpi, Panel, PageHeader, Select, TextArea, TextInput, Td, Th, Tr } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
+import { AttendeesEditor, MomPanel } from "@/components/console/VisitMom";
 import { TODAY, analystsOf, engineerName, fmtDate, plantName, shiftDate, useData } from "@/lib/store";
 import {
   blankVisit,
@@ -513,6 +514,8 @@ function VisitDetail({ v, manager, canComplete, onClose, onEdit, onComplete }: {
   const s = visitStatus(v);
   const [date, setDate] = useState(v.plannedDate);
   const openStatus = s !== "completed" && s !== "cancelled";
+  const [mom, setMom] = useState(false);
+  if (mom) return <MomPanel visit={v} canEdit={canComplete || manager} onClose={() => setMom(false)} />;
   return (
     <Panel className="mt-4" title={`${plantName(data, v.plantId)} · ${visitTypeLabel[v.visitType]} visit`} meta={<button type="button" className="text-signal" onClick={onClose}>Close</button>}>
       <div className="grid gap-3 p-4 text-sm md:grid-cols-4">
@@ -524,6 +527,7 @@ function VisitDetail({ v, manager, canComplete, onClose, onEdit, onComplete }: {
         <div><div className="label-caps">Visited on</div><span className="num">{fmtDate(v.completedDate ?? undefined)}</span></div>
         <div><div className="label-caps">Next visit due</div><span className="num">{fmtDate(v.nextVisitDate ?? undefined)}</span></div>
         <div className="md:col-span-4"><div className="label-caps">Purpose</div>{v.purpose || "—"}</div>
+        <AttendeesEditor key={v.id} v={v} canEdit={manager || canComplete} />
         {v.discussionPoints.length ? (
           <div className="md:col-span-4">
             <div className="label-caps">Discussion points</div>
@@ -560,6 +564,7 @@ function VisitDetail({ v, manager, canComplete, onClose, onEdit, onComplete }: {
         ) : null}
         <div className="flex flex-wrap items-end gap-2 md:col-span-4">
           {openStatus && canComplete ? <Button onClick={onComplete}>Complete visit</Button> : null}
+          {s === "completed" ? <Button variant="solid" onClick={() => setMom(true)}>MOM · preview / edit / PDF</Button> : null}
           {manager && openStatus ? (
             <>
               <TextInput type="date" className="w-40" value={date} onChange={(e) => setDate(e.target.value)} />
