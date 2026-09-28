@@ -114,7 +114,7 @@ function CarryBadge({ t }: { t: Task }) {
   const n = ageDays(t);
   if (!n) return <span className="text-mute">—</span>;
   const cls = n >= 3 ? "bg-sev-critical/10 text-sev-critical" : n === 2 ? "bg-sev-high/15 text-sev-high" : "bg-sev-medium/15 text-sev-medium";
-  return <Badge className={cls}>From {fmtDate(t.originalDate)} · {n} {n === 1 ? "day" : "days"}</Badge>;
+  return <Badge className={cls}>From {fmtDate(t.originalDate).slice(0, 6)} · {n} {n === 1 ? "day" : "days"}</Badge>;
 }
 
 // ------------------------------------------------------------------ page
@@ -408,8 +408,8 @@ function TaskGroup({ label, children, tasks, doneCount, totalCount, data: _d }: 
           <span className="num text-xs text-mute">{totalCount !== undefined ? `${doneCount} / ${totalCount} completed` : `${tasks.length} ${tasks.length === 1 ? "task" : "tasks"}`}</span>
         </button>
       ) : (
-        <div className="hidden grid-cols-[28px_80px_minmax(0,1fr)_120px_120px_90px_150px_100px_90px] gap-2 border-b border-line/60 px-4 py-2 md:grid">
-          {["", "Priority", "Task", "Plant", "Type", "Due", "Carry Forward", "Status", ""].map((h, i) => <span key={i} className="label-caps">{h}</span>)}
+        <div className="hidden grid-cols-[24px_64px_minmax(0,1fr)_120px_92px_128px] gap-2 border-b border-line/60 px-4 py-2 md:grid">
+          {["", "Priority", "Task · Plant · Due", "Carry Forward", "Status", ""].map((h, i) => <span key={i} className="label-caps">{h}</span>)}
         </div>
       )}
       {open ? <ul className="divide-y divide-line/60">{children}</ul> : null}
@@ -422,28 +422,27 @@ function TaskRow({ t, data, manager, onOpen, onComplete, onStart, onWait }: { t:
   const primary =
     t.status === "pending" ? <Button onClick={onStart}>Start</Button> : t.status === "in_progress" ? <Button variant="solid" onClick={onComplete}>Complete</Button> : <Button onClick={onStart}>Resume</Button>;
   return (
-    <li className="grid grid-cols-[28px_minmax(0,1fr)] items-center gap-2 px-4 py-2.5 text-sm md:grid-cols-[28px_80px_minmax(0,1fr)_120px_120px_90px_150px_100px_90px]">
+    <li className="grid grid-cols-[28px_minmax(0,1fr)] items-center gap-2 px-4 py-2.5 text-sm md:grid-cols-[24px_64px_minmax(0,1fr)_120px_92px_128px]">
       <input type="checkbox" aria-label={`Complete "${t.title}"`} className="size-4 accent-signal" checked={false} onChange={onComplete} />
       <div className="hidden md:block"><Badge className={prioCls[t.priority]}>{taskPriorityLabel[t.priority]}</Badge></div>
       <button type="button" onClick={onOpen} className="min-w-0 text-left">
         <div className="font-medium hover:text-signal">{t.title}</div>
         <div className="text-[11px] text-mute">
-          {manager ? engineerName(data, t.engineerId) : ""}
-          {t.status === "waiting" && t.waitingReason ? `${manager ? " · " : ""}${t.waitingReason}` : ""}
+          {[
+            manager ? engineerName(data, t.engineerId) : "",
+            t.plantId ? plantName(data, t.plantId) : "",
+            taskTypeLabel[t.taskType],
+            t.status === "waiting" ? t.waitingReason : "",
+          ].filter(Boolean).join(" · ")}
+          {t.dueDate ? <span className={cn(overdue && "font-medium text-sev-critical")}> · Due {t.dueDate === TODAY ? "Today" : fmtDate(t.dueDate).slice(0, 6)}{t.dueTime ? ` ${t.dueTime}` : ""}</span> : null}
         </div>
         {/* mobile meta */}
         <div className="mt-1 flex flex-wrap gap-1.5 md:hidden">
           <Badge className={prioCls[t.priority]}>{taskPriorityLabel[t.priority]}</Badge>
           <Badge className={statusCls[t.status]}>{taskStatusLabel[t.status]}</Badge>
-          {t.plantId ? <span className="text-[11px] text-mute">{plantName(data, t.plantId)}</span> : null}
           <CarryBadge t={t} />
         </div>
       </button>
-      <span className="hidden truncate text-xs md:block">{t.plantId ? plantName(data, t.plantId) : "—"}</span>
-      <span className="hidden text-xs text-mute md:block">{taskTypeLabel[t.taskType]}</span>
-      <span className={cn("hidden text-xs md:block", overdue && "font-medium text-sev-critical")}>
-        {t.dueDate === TODAY ? "Today" : fmtDate(t.dueDate)}{t.dueTime ? ` ${t.dueTime}` : ""}
-      </span>
       <span className="hidden md:block"><CarryBadge t={t} /></span>
       <span className="hidden md:block"><Badge className={statusCls[t.status]}>{taskStatusLabel[t.status]}</Badge></span>
       <div className="col-span-2 flex justify-end gap-1 md:col-span-1">
@@ -542,7 +541,7 @@ function TaskDrawer({ task: t, data, manager, me, onClose, onWait, onRemind }: {
                 ["Type", taskTypeLabel[t.taskType]],
                 ["Created", fmtDate(t.originalDate)],
                 ["Current work date", fmtDate(t.taskDate)],
-                ["Due", `${fmtDate(t.dueDate)}${t.dueTime ? ` ${t.dueTime}` : ""}`],
+                ["Due", t.dueDate ? `${fmtDate(t.dueDate)}${t.dueTime ? ` ${t.dueTime}` : ""}` : "Not set"],
                 ["Carried forward", `${t.carryCount} ${t.carryCount === 1 ? "time" : "times"}`],
                 ...(t.waitingReason ? [["Waiting reason", t.waitingReason]] : []),
                 ...(t.startedAt ? [["Started", `${fmtDate(t.startedAt.slice(0, 10))} ${timeOf(t.startedAt)}`]] : []),
@@ -849,7 +848,7 @@ function TaskHistory({ data, manager, scopeIds, onOpen }: { data: AppData; manag
                   <td className="px-2 py-2">{t.title}</td>
                   <td className="px-2 py-2 text-xs text-mute">{taskTypeLabel[t.taskType]}</td>
                   <td className="num px-2 py-2 text-xs">{fmtDate(t.originalDate)}</td>
-                  <td className="num px-2 py-2 text-xs">{fmtDate(t.dueDate)}</td>
+                  <td className="num px-2 py-2 text-xs">{t.dueDate ? fmtDate(t.dueDate) : "—"}</td>
                   <td className="num px-2 py-2 text-xs">{t.completedAt ? `${fmtDate(t.completedAt.slice(0, 10))} ${timeOf(t.completedAt)}` : "—"}</td>
                   <td className="num px-2 py-2 text-xs">{ageDays(t) || t.carryCount ? `${Math.max(ageDays(t), t.carryCount)} days` : "—"}</td>
                   <td className="px-2 py-2"><Badge className={statusCls[t.status]}>{taskStatusLabel[t.status]}</Badge></td>
