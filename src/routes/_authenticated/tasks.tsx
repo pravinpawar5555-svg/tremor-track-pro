@@ -155,7 +155,7 @@ function DailyWorkPage() {
 
   const scopeIds = manager ? (engFilter === "all" ? team.map((t) => t.id) : [engFilter]) : [me];
   const scoped = data.tasks.filter((t) => scopeIds.includes(t.engineerId));
-  const dayTasks = scoped.filter((t) => t.taskDate === date || (t.status === "completed" && t.completedAt?.slice(0, 10) === date && t.taskDate !== date && false));
+  const dayTasks = scoped.filter((t) => t.taskDate === date);
   const active = dayTasks.filter((t) => t.status !== "completed");
   const doneToday = dayTasks.filter((t) => t.status === "completed").sort((a, b) => ((a.completedAt ?? "") < (b.completedAt ?? "") ? 1 : -1));
 
