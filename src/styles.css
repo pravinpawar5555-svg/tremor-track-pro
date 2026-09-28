@@ -59,6 +59,10 @@
   --sev-medium: oklch(0.651 0.121 85);
   --sev-high: oklch(0.585 0.176 43);
   --sev-critical: oklch(0.523 0.203 17);
+
+  --flow-assigned: #2563eb;
+  --flow-completed: #22a06b;
+  --flow-carried: #f59e0b;
 }
 
 @layer base {

@@ -68,15 +68,28 @@ function dueWord(iso: string) {
   return fmtDate(iso);
 }
 
+/*
+ * 7-day work flow — reconstructed from each task's own history so past days stay stable.
+ * A task keeps one record across days: originalDate = first work date, taskDate = latest work date,
+ * completedAt = the day it was finished. Its workload span is originalDate → (completion day, or taskDate).
+ *  ASSIGNED  (date d): tasks whose span covers d — counted once per task per day.
+ *  COMPLETED (date d): tasks whose completion day is d.
+ *  CARRIED   (date d): tasks in the span on d that started on an earlier date (unfinished, brought in).
+ * Changing or completing a task later only affects dates from today onward, never earlier days.
+ */
 function flow(tasks: Task[]) {
   return Array.from({ length: 7 }, (_, i) => {
     const d = shiftDate(TODAY, i - 6);
-    return {
-      d,
-      assigned: tasks.filter((t) => t.originalDate === d).length,
-      completed: tasks.filter((t) => doneOn(t) === d).length,
-      carried: tasks.filter((t) => t.originalDate < d && t.taskDate >= d && (t.status !== "completed" || doneOn(t) >= d)).length,
-    };
+    let assigned = 0, completed = 0, carried = 0;
+    for (const t of tasks) {
+      const done = t.status === "completed" ? doneOn(t) || t.taskDate : "";
+      const end = done || (t.taskDate > TODAY ? t.taskDate : t.taskDate < TODAY ? TODAY : t.taskDate);
+      if (t.originalDate > d || end < d) continue;
+      assigned++;
+      if (done === d) completed++;
+      if (t.originalDate < d) carried++;
+    }
+    return { d, assigned, completed, carried };
   });
 }
 
@@ -127,59 +140,83 @@ function AttentionRow({ to, label, hint, value, tone }: { to: string; label: str
   );
 }
 
-function FlowChart({ rows }: { rows: ReturnType<typeof flow> }) {
-  const peak = Math.max(0, ...rows.flatMap((r) => [r.assigned, r.completed, r.carried]));
-  const step = peak <= 4 ? 1 : Math.ceil(peak / 4);
-  const max = Math.max(4, step * 4);
+const FLOW_SERIES = [
+  { k: "assigned" as const, color: "var(--flow-assigned)", l: "Assigned" },
+  { k: "completed" as const, color: "var(--flow-completed)", l: "Completed" },
+  { k: "carried" as const, color: "var(--flow-carried)", l: "Carried Forward" },
+];
+
+function FlowChart({ rows, who }: { rows: ReturnType<typeof flow>; who?: string }) {
+  const peak = Math.max(1, ...rows.flatMap((r) => [r.assigned, r.completed, r.carried]));
+  const step = Math.max(1, Math.ceil(peak / 4));
+  const max = step * 4 + Math.ceil(step / 2); // headroom for labels
   const ticks = [4, 3, 2, 1, 0].map((i) => i * step);
-  const series = [
-    { k: "assigned" as const, c: "bg-signal", l: "Assigned" },
-    { k: "completed" as const, c: "bg-sev-low", l: "Completed" },
-    { k: "carried" as const, c: "bg-sev-medium", l: "Carried forward" },
-  ];
-  const totals = series.map((s) => rows.reduce((a, r) => a + r[s.k], 0));
+  const H = 180;
   return (
     <div className="px-4 py-3">
       <div className="mb-3 flex flex-wrap gap-4 text-[11px] text-mute">
-        {series.map((s, i) => (
-          <span key={s.k} className="flex items-center gap-1.5"><span className={cn("size-2 rounded-full", s.c)} />{s.l} <b className="num text-ink">{totals[i]}</b></span>
+        {FLOW_SERIES.map((s) => (
+          <span key={s.k} className="flex items-center gap-1.5"><span className="size-2.5 rounded-full" style={{ background: s.color }} />{s.l}</span>
         ))}
       </div>
-      <div className="flex gap-2">
-        <div className="num flex h-40 flex-col justify-between text-right text-[10px] text-mute">
-          {ticks.map((t) => <span key={t} className="-translate-y-1/2 leading-none first:translate-y-0 last:translate-y-0">{t}</span>)}
-        </div>
-        <div className="flex-1">
-          <div className="relative h-40">
-            <div className="absolute inset-0 flex flex-col justify-between">
-              {ticks.map((t) => <div key={t} className={cn("border-t", t === 0 ? "border-line" : "border-dashed border-line/60")} />)}
+      <div className="overflow-x-auto">
+        <div className="flex min-w-[520px] gap-2">
+          <div className="relative w-6 shrink-0" style={{ height: H }}>
+            {ticks.map((t) => (
+              <span key={t} className="num absolute right-0 -translate-y-1/2 text-[10px] leading-none text-mute" style={{ bottom: `${(t / max) * 100}%`, transform: "translateY(50%)" }}>{t}</span>
+            ))}
+          </div>
+          <div className="flex-1">
+            <div className="relative" style={{ height: H }}>
+              {ticks.map((t) => (
+                <div key={t} className={cn("absolute inset-x-0 border-t", t === 0 ? "border-line" : "border-line/50")} style={{ bottom: `${(t / max) * 100}%` }} />
+              ))}
+              <div className="relative grid h-full grid-cols-7 gap-4">
+                {rows.map((r) => (
+                  <div key={r.d} className="flex h-full items-end justify-center gap-1" title={`${fmtDate(r.d)}${who ? ` · ${who}` : ""}\nAssigned: ${r.assigned}\nCompleted: ${r.completed}\nCarried Forward: ${r.carried}`}>
+                    {FLOW_SERIES.map((s) => {
+                      const v = r[s.k];
+                      return (
+                        <div key={s.k} className="flex h-full w-full max-w-5 flex-col items-center justify-end">
+                          <span className="num mb-0.5 text-[10px] font-semibold leading-none text-ink">{v}</span>
+                          <div className="w-full rounded-t-[2px]" style={{ height: `${(v / max) * 100}%`, background: s.color }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="relative grid h-full grid-cols-7 gap-1 sm:gap-3">
+            <div className="mt-1.5 grid grid-cols-7 gap-4">
               {rows.map((r) => (
-                <div key={r.d} className="flex h-full items-end justify-center gap-[3px]">
-                  {series.map((s) => {
-                    const v = r[s.k];
-                    return (
-                      <div key={s.k} className="relative flex h-full w-full max-w-4 flex-col justify-end" title={`${s.l}: ${v}`}>
-                        {v > 0 && <span className="num mb-0.5 text-center text-[9px] leading-none text-mute">{v}</span>}
-                        <div className={cn("w-full rounded-t-[3px]", s.c)} style={{ height: v ? `${(v / max) * 100}%` : 0 }} />
-                      </div>
-                    );
-                  })}
+                <div key={r.d} className={cn("num text-center text-[10px]", r.d === TODAY ? "font-semibold text-ink" : "text-mute")}>
+                  {fmtDate(r.d).split(" ").slice(0, 2).join(" ")}
                 </div>
               ))}
             </div>
           </div>
-          <div className="mt-1.5 grid grid-cols-7 gap-1 sm:gap-3">
-            {rows.map((r) => (
-              <div key={r.d} className={cn("num text-center text-[10px]", r.d === TODAY ? "font-semibold text-ink" : "text-mute")}>
-                {fmtDate(r.d).split(" ").slice(0, 2).join(" ")}
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function TeamFlow({ data }: { data: AppData }) {
+  const team = analystsOf(data);
+  const [sel, setSel] = useState("all");
+  const person = team.find((a) => a.id === sel);
+  const rows = flow(data.tasks.filter((t) => (person ? t.engineerId === person.id : team.some((a) => a.id === t.engineerId))));
+  const toggle = (
+    <div className="inline-flex overflow-hidden rounded-md ring-1 ring-line">
+      {[{ id: "all", n: "Total" }, ...team.map((a) => ({ id: a.id, n: a.name.split(" ")[0] }))].map((o) => (
+        <button key={o.id} type="button" onClick={() => setSel(o.id)} className={cn("px-2.5 py-1 text-[11px] font-medium", sel === o.id ? "bg-signal text-signal-foreground" : "bg-panel text-mute hover:bg-base")}>{o.n}</button>
+      ))}
+    </div>
+  );
+  return (
+    <Panel title={person ? `7-Day Work Flow — ${person.name}` : "7-Day Work Flow (Team)"} meta={toggle}>
+      <FlowChart rows={rows} who={person?.name} />
+    </Panel>
   );
 }
 
@@ -318,9 +355,7 @@ function ManagerDashboard({ data }: { data: AppData }) {
             </div>
           </Section>
 
-          <Section title="7-day work flow (team)">
-            <FlowChart rows={flow(tasks)} />
-          </Section>
+          <TeamFlow data={data} />
         </div>
 
         <div className="grid gap-4">
@@ -543,8 +578,8 @@ function EngineerDashboard({ data }: { data: AppData }) {
             </div>
           </Section>
 
-          <Section title="7-day work summary (you)">
-            <FlowChart rows={flow(mineAll)} />
+          <Section title={`7-Day Work Summary — ${engineerName(data, me)}`}>
+            <FlowChart rows={flow(mineAll)} who={engineerName(data, me)} />
           </Section>
         </div>
       </div>
