@@ -69,7 +69,7 @@ const blank = {
 function PlantsPage() {
   const data = useData();
   const team = analystsOf(data);
-  const manager = data.role === "manager";
+  const manager = true; // full access for manager and engineers
   const me = data.currentUserId;
   const plants = manager ? data.plants : data.plants.filter((p) => p.engineerId === me);
   const [catFilter, setCatFilter] = useState<"total" | CustomerCategory>("total");

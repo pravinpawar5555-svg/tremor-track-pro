@@ -784,7 +784,7 @@ function housekeeping() {
     const ids = new Set(stale.map((t) => t.id));
     next = { ...next, tasks: next.tasks.map((t) => (ids.has(t.id) ? { ...t, taskDate: TODAY, carryCount: t.carryCount + Math.max(1, dayDiff(t.taskDate, TODAY)) } : t)) };
   }
-  if (session.role === "manager") {
+  {
     const horizon = shiftDate(TODAY, 7);
     const reports = [...next.reports];
     let changed = false;
@@ -883,7 +883,7 @@ function syncToCloud(prev: AppData, next: AppData) {
   pushDiff("tickets", prev.tickets, next.tickets, ticketToRow);
   pushDiff("messages", prev.messages, next.messages, messageToRow);
   pushDiff("tasks", prev.tasks, next.tasks, taskToRow);
-  if (next.role === "manager") pushDiff("recurring_reports", prev.recurring, next.recurring, recurringToRow);
+  pushDiff("recurring_reports", prev.recurring, next.recurring, recurringToRow);
 }
 
 function commit(next: AppData) {

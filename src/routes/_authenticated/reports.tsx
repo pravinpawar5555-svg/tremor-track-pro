@@ -57,7 +57,7 @@ export const Route = createFileRoute("/_authenticated/reports")({
 function ReportsPage() {
   const data = useData();
   const team = analystsOf(data);
-  const manager = data.role === "manager";
+  const manager = true; // full access for manager and engineers
   const me = data.currentUserId;
   const [cat, setCat] = useState<"total" | CustomerCategory>("total");
   const categoryCounts = {
@@ -100,7 +100,7 @@ function ReportsPage() {
         title="Report Delivery Tracker"
         subtitle="On-demand, weekly and monthly reports — was it sent to the customer on time?"
         actions={
-          data.role === "manager" ? (
+          true ? (
             <Button variant={adding ? "ghost" : "solid"} onClick={() => setAdding((a) => !a)}>{adding ? "Cancel" : "Create report"}</Button>
           ) : null
         }
@@ -114,7 +114,7 @@ function ReportsPage() {
         <Kpi label="Due in 7 days" value={rk.dueThisWeek} />
       </div>
 
-      {data.role === "manager" ? <RecurringReports catFilter={cat} onCatFilter={setCat} /> : null}
+      {true ? <RecurringReports catFilter={cat} onCatFilter={setCat} /> : null}
 
       {adding ? (
         <Panel className="mt-4" title="Schedule a report">
