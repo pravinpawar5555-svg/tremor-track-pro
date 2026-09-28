@@ -120,7 +120,7 @@ function VisitsPage() {
       <PageHeader
         title="Customer Visit Planner"
         subtitle="AMC planned and on-request customer visits, summaries and follow-up actions"
-        actions={manager ? <Button onClick={() => setEditing(blankVisit(me))}>+ Add Visit</Button> : undefined}
+        actions={manager ? <Button variant="solid" onClick={() => setEditing(blankVisit(me))}>+ Add Visit</Button> : undefined}
       />
 
       {manager ? (
@@ -563,13 +563,13 @@ function VisitDetail({ v, manager, canComplete, onClose, onEdit, onComplete }: {
           {manager && openStatus ? (
             <>
               <TextInput type="date" className="w-40" value={date} onChange={(e) => setDate(e.target.value)} />
-              <Button variant="secondary" onClick={() => void rescheduleVisit(v, date).then(() => toast.success("Visit rescheduled"))}>Reschedule</Button>
-              <Button variant="secondary" onClick={onEdit}>Edit</Button>
-              <Button variant="secondary" onClick={() => void cancelVisit(v).then(() => toast.success("Visit cancelled"))}>Cancel visit</Button>
+              <Button variant="ghost" onClick={() => void rescheduleVisit(v, date).then(() => toast.success("Visit rescheduled"))}>Reschedule</Button>
+              <Button variant="ghost" onClick={onEdit}>Edit</Button>
+              <Button variant="ghost" onClick={() => void cancelVisit(v).then(() => toast.success("Visit cancelled"))}>Cancel visit</Button>
             </>
           ) : null}
           {manager ? (
-            <Button variant="secondary" onClick={() => { if (confirm("Delete this visit?")) { void deleteVisit(v.id); onClose(); } }}>Delete</Button>
+            <Button variant="ghost" onClick={() => { if (confirm("Delete this visit?")) { void deleteVisit(v.id); onClose(); } }}>Delete</Button>
           ) : null}
         </div>
       </div>

@@ -18,6 +18,7 @@ const nav = [
   { to: "/", label: "Dashboard" },
   { to: "/tasks", label: "Daily Task" },
   { to: "/discussions", label: "Discussion & Tickets" },
+  { to: "/visits", label: "Visits" },
   { to: "/reports", label: "Reports" },
   { to: "/plants", label: "Plants" },
   { to: "/engineers", label: "Engineers" },
