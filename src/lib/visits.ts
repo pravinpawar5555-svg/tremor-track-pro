@@ -174,7 +174,7 @@ async function save(list: Visit[]) {
     throw error;
   }
   if (data?.length) {
-    const fresh = new Map(data.map((r: any) => [r.id, fromRow(r)]));
+    const fresh = new Map<string, Visit>(data.map((r: any) => [r.id, fromRow(r)] as [string, Visit]));
     visits = visits.map((v) => fresh.get(v.id) ?? v);
     emit();
   }
