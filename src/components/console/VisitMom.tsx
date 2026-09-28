@@ -57,13 +57,13 @@ async function downloadMom(data: AppData, v: Visit) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   const plant = data.plants.find((p) => p.id === v.plantId);
-  doc.setFillColor(10, 147, 150);
+  doc.setFillColor(24, 44, 84);
   doc.rect(0, 0, W, 56, "F");
   doc.setTextColor(255);
   doc.setFontSize(15);
   doc.text("Forbes Marshall — Minutes of Meeting", 40, 34);
   doc.setTextColor(20, 26, 34);
-  const head = { fillColor: [10, 147, 150] as [number, number, number] };
+  const head = { fillColor: [24, 44, 84] as [number, number, number] };
   autoTable(doc, {
     startY: 72,
     theme: "grid",
@@ -137,7 +137,7 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
       {mode === "preview" ? (
         <div className="p-4">
           <div className="mx-auto max-w-3xl bg-panel p-6 text-sm shadow ring-1 ring-line">
-            <div className="-mx-6 -mt-6 mb-4 bg-signal px-6 py-3 font-semibold text-signal-foreground">Forbes Marshall — Minutes of Meeting</div>
+            <div className="-mx-6 -mt-6 mb-4 px-6 py-3 font-semibold text-white" style={{ backgroundColor: "#182C54" }}>Forbes Marshall — Minutes of Meeting</div>
             <div className="grid grid-cols-2 gap-2">
               <div><span className="label-caps">Customer</span><div>{plant?.customer}</div></div>
               <div><span className="label-caps">Plant</span><div>{plantName(data, v.plantId)}</div></div>
