@@ -36,6 +36,8 @@ export interface Visit {
   createdBy: string;
   customerAttendees: Attendee[];
   fmAttendees: string[];
+  /** MOM serial, e.g. FM/2026/09/001 — assigned by the database on completion. */
+  momNo: string;
 }
 
 export interface Attendee { name: string; phone: string }
@@ -130,6 +132,7 @@ const fromRow = (r: any): Visit => ({
   createdBy: r.created_by ?? "",
   customerAttendees: Array.isArray(r.customer_attendees) ? r.customer_attendees : [],
   fmAttendees: Array.isArray(r.fm_attendees) ? r.fm_attendees : [],
+  momNo: r.mom_no ?? "",
 });
 
 const toRow = (v: Visit) => ({
@@ -165,10 +168,15 @@ async function save(list: Visit[]) {
   const ids = new Set(list.map((v) => v.id));
   visits = [...visits.filter((v) => !ids.has(v.id)), ...list].sort((a, b) => (a.plannedDate < b.plannedDate ? -1 : 1));
   emit();
-  const { error } = await db.from("visits").upsert(list.map(toRow));
+  const { data, error } = await db.from("visits").upsert(list.map(toRow)).select("*");
   if (error) {
     console.error("visit save failed", error);
     throw error;
+  }
+  if (data?.length) {
+    const fresh = new Map<string, Visit>(data.map((r: any) => [r.id, fromRow(r)] as [string, Visit]));
+    visits = visits.map((v) => fresh.get(v.id) ?? v);
+    emit();
   }
 }
 
@@ -206,6 +214,7 @@ export function blankVisit(createdBy: string): Visit {
     createdBy,
     customerAttendees: [],
     fmAttendees: [],
+    momNo: "",
   };
 }
 

@@ -62,6 +62,10 @@ async function downloadMom(data: AppData, v: Visit) {
   doc.setTextColor(255);
   doc.setFontSize(15);
   doc.text("Forbes Marshall — Minutes of Meeting", 40, 34);
+  if (v.momNo) {
+    doc.setFontSize(10);
+    doc.text(`MOM No: ${v.momNo}`, W - 40, 34, { align: "right" });
+  }
   doc.setTextColor(20, 26, 34);
   const head = { fillColor: [24, 44, 84] as [number, number, number] };
   autoTable(doc, {
@@ -72,6 +76,7 @@ async function downloadMom(data: AppData, v: Visit) {
       ["Customer", plant?.customer ?? "", "Plant", plantName(data, v.plantId)],
       ["Visit type", visitTypeLabel[v.visitType], "Frequency", frequencyText(v)],
       ["Visit date", fmtDate(v.completedDate ?? v.plannedDate), "Next visit", fmtDate(v.nextVisitDate ?? undefined)],
+      ["MOM No.", { content: v.momNo || "—", colSpan: 3 }],
       ["Purpose", { content: v.purpose || "—", colSpan: 3 }],
     ],
   });
@@ -103,7 +108,7 @@ async function downloadMom(data: AppData, v: Visit) {
     head: [["Action", "Responsible", "Due", "Status", "Remarks"]],
     body: v.actions.length ? v.actions.map((a) => [a.action, respName(data, a.responsible), fmtDate(a.dueDate), a.status === "open" ? "Open" : "Closed", a.remarks]) : [["—", "", "", "", ""]],
   });
-  doc.save(`MOM_${plantName(data, v.plantId).replace(/[^\w]+/g, "_")}_${v.completedDate ?? v.plannedDate}.pdf`);
+  doc.save(`MOM_${v.momNo ? v.momNo.replace(/\//g, "-") + "_" : ""}${plantName(data, v.plantId).replace(/[^\w]+/g, "_")}_${v.completedDate ?? v.plannedDate}.pdf`);
 }
 
 /** Minutes of Meeting: edit, preview and download as PDF (completed visits). */
@@ -125,7 +130,7 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
   return (
     <Panel
       className="mt-4"
-      title={`MOM — ${plantName(data, v.plantId)}`}
+      title={`MOM${v.momNo ? " " + v.momNo : ""} — ${plantName(data, v.plantId)}`}
       meta={
         <span className="flex items-center gap-3">
           {canEdit ? <button type="button" className="text-signal" onClick={() => setMode(mode === "edit" ? "preview" : "edit")}>{mode === "edit" ? "Preview" : "Edit"}</button> : null}
@@ -137,7 +142,10 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
       {mode === "preview" ? (
         <div className="p-4">
           <div className="mx-auto max-w-3xl bg-panel p-6 text-sm shadow ring-1 ring-line">
-            <div className="-mx-6 -mt-6 mb-4 px-6 py-3 font-semibold text-white" style={{ backgroundColor: "#182C54" }}>Forbes Marshall — Minutes of Meeting</div>
+            <div className="-mx-6 -mt-6 mb-4 flex items-center justify-between px-6 py-3 font-semibold text-white" style={{ backgroundColor: "#182C54" }}>
+              <span>Forbes Marshall — Minutes of Meeting</span>
+              {v.momNo ? <span className="num text-xs">MOM No: {v.momNo}</span> : null}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div><span className="label-caps">Customer</span><div>{plant?.customer}</div></div>
               <div><span className="label-caps">Plant</span><div>{plantName(data, v.plantId)}</div></div>

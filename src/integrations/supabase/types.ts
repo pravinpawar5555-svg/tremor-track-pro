@@ -394,6 +394,7 @@ export type Database = {
           fm_attendees: Json
           frequency: string
           id: string
+          mom_no: string
           next_visit_date: string | null
           observations: string
           planned_date: string
@@ -415,6 +416,7 @@ export type Database = {
           fm_attendees?: Json
           frequency?: string
           id?: string
+          mom_no?: string
           next_visit_date?: string | null
           observations?: string
           planned_date: string
@@ -436,6 +438,7 @@ export type Database = {
           fm_attendees?: Json
           frequency?: string
           id?: string
+          mom_no?: string
           next_visit_date?: string | null
           observations?: string
           planned_date?: string
