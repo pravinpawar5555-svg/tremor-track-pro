@@ -274,6 +274,7 @@ export type Database = {
           plant_id: string
           remind_date: string
           remind_time: string
+          seen_at: string | null
           status: string
           task_id: string
           title: string
@@ -289,6 +290,7 @@ export type Database = {
           plant_id?: string
           remind_date: string
           remind_time?: string
+          seen_at?: string | null
           status?: string
           task_id?: string
           title: string
@@ -304,6 +306,7 @@ export type Database = {
           plant_id?: string
           remind_date?: string
           remind_time?: string
+          seen_at?: string | null
           status?: string
           task_id?: string
           title?: string
