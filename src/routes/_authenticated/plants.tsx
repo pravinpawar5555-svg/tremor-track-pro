@@ -59,6 +59,7 @@ const blank = {
   assets: "",
   node6: "",
   nodeX: "",
+  vibassist: "",
   frequencies: ["weekly"] as Frequency[],
   contact: "",
   contactPhone: "",
@@ -91,6 +92,7 @@ function PlantsPage() {
       assets: String(p.assets ?? 0),
       node6: String(p.node6 ?? 0),
       nodeX: String(p.nodeX ?? 0),
+      vibassist: String(p.vibassist ?? 0),
       frequencies: plantFrequencies(p),
       contact: p.contact,
       contactPhone: p.contactPhone ?? "",
@@ -119,6 +121,7 @@ function PlantsPage() {
       assets: Math.max(0, Number(form.assets) || 0),
       node6: Math.max(0, Number(form.node6) || 0),
       nodeX: Math.max(0, Number(form.nodeX) || 0),
+      vibassist: Math.max(0, Number(form.vibassist) || 0),
       frequencies: allFrequencies.filter((f) => form.frequencies.includes(f)),
       contact: form.contact.trim(),
       contactPhone: form.contactPhone.trim(),
@@ -172,6 +175,9 @@ function PlantsPage() {
             </Field>
             <Field label="Node X sensors (qty)">
               <TextInput type="number" min={0} value={form.nodeX} onChange={(e) => setForm({ ...form, nodeX: e.target.value })} />
+            </Field>
+            <Field label="VibAssist sensors (qty)">
+              <TextInput type="number" min={0} value={form.vibassist} onChange={(e) => setForm({ ...form, vibassist: e.target.value })} />
             </Field>
             <Field label="Customer contact name">
               <TextInput value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} placeholder="S. Mohanty" />
@@ -258,6 +264,7 @@ function PlantsPage() {
                   <Th align="right">Assets</Th>
                   <Th align="right">Node 6</Th>
                   <Th align="right">Node X</Th>
+                  <Th align="right">VibAssist</Th>
                   <Th>Report cycle</Th>
                   <Th>Category</Th>
                   <Th>Engineer</Th>
@@ -282,6 +289,7 @@ function PlantsPage() {
                       <Td align="right" mono>{p.assets ?? 0}</Td>
                       <Td align="right" mono>{p.node6 ?? 0}</Td>
                       <Td align="right" mono>{p.nodeX ?? 0}</Td>
+                      <Td align="right" mono>{p.vibassist ?? 0}</Td>
                       <Td>
                         <span className="flex flex-wrap gap-1">
                           {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : "—"}

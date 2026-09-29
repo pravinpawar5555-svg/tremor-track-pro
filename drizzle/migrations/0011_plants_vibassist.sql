@@ -1,0 +1,1 @@
+ALTER TABLE public.plants ADD COLUMN vibassist integer NOT NULL DEFAULT 0;
