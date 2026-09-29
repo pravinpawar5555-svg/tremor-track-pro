@@ -238,6 +238,7 @@ function EngineersPage() {
                 <Kpi label="Total assets" value={fleet.assets} />
                 <Kpi label="Node 6 sensors" value={fleet.node6} />
                 <Kpi label="Node X sensors" value={fleet.nodeX} />
+                <Kpi label="VibAssist sensors" value={fleet.vibassist ?? 0} />
               </div>
               <div className="px-4 pb-3">
                 <SpecRow label="Reports pending" value={s.reportsPending} />
