@@ -690,7 +690,7 @@ function ReminderCenter({ data, me, manager, scopeIds, reminders, onEdit }: { da
   const [tab, setTab] = useState<"today" | "upcoming" | "overdue">("today");
   const now = new Date();
   const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-  const mine = reminders.filter((r) => r.status === "active" && (manager ? scopeIds.includes(r.userId) || r.userId === me : r.userId === me));
+  const mine = reminders.filter((r) => r.status === "active" && (r.userId === me || r.createdBy === me || (manager && scopeIds.includes(r.userId))));
   const late = (r: Reminder) => r.date < TODAY || (r.date === TODAY && !!r.time && r.time < hhmm);
   const lists = {
     today: mine.filter((r) => r.date === TODAY && !late(r)),
@@ -722,7 +722,7 @@ function ReminderCenter({ data, me, manager, scopeIds, reminders, onEdit }: { da
                 <span className={cn("num w-14 shrink-0 text-xs font-medium", late(r) ? "text-sev-critical" : "text-signal")}>{r.date !== TODAY ? fmtDate(r.date).slice(0, 6) : ""}{r.time ? ` ${r.time}` : r.date === TODAY ? "Today" : ""}</span>
                 <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onEdit(r)}>
                   <div className="text-sm font-medium">{r.title}</div>
-                  <div className="text-[11px] text-mute">{[r.description, r.plantId ? plantName(data, r.plantId) : "", manager && r.userId !== me ? engineerName(data, r.userId) : ""].filter(Boolean).join(" · ")}</div>
+                  <div className="text-[11px] text-mute">{[r.description, r.plantId ? plantName(data, r.plantId) : "", r.userId !== me ? `For ${engineerName(data, r.userId)}` : "", r.userId === me && r.createdBy && r.createdBy !== me ? `From ${engineerName(data, r.createdBy)}` : ""].filter(Boolean).join(" · ")}</div>
                 </button>
               </div>
               <div className="mt-1 flex justify-end gap-1">
@@ -754,9 +754,7 @@ function ReminderDialog({ r, data, manager, onClose, tasks }: { r: Reminder | nu
           <Field label="Time"><TextInput type="time" value={f.time} onChange={(e) => setF({ ...f, time: e.target.value })} /></Field>
           <Field label="Plant (optional)"><Select value={f.plantId} onChange={(e) => setF({ ...f, plantId: e.target.value })}><option value="">— None —</option>{data.plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select></Field>
           <Field label="Linked task (optional)"><Select value={f.taskId} onChange={(e) => setF({ ...f, taskId: e.target.value })}><option value="">— None —</option>{tasks.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}</Select></Field>
-          {manager ? (
-            <Field label="Assigned person"><Select value={f.userId} onChange={(e) => setF({ ...f, userId: e.target.value })}><option value={data.currentUserId}>Me</option>{team.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
-          ) : null}
+          <Field label="Assigned person"><Select value={f.userId} onChange={(e) => setF({ ...f, userId: e.target.value })}><option value={data.currentUserId}>Me</option>{data.engineers.filter((a) => a.id !== data.currentUserId).map((a) => <option key={a.id} value={a.id}>{a.name}{team.some((t) => t.id === a.id) ? "" : " (Manager)"}</option>)}</Select></Field>
           <Field label="Notify"><Select value={f.notify} onChange={(e) => setF({ ...f, notify: e.target.value as NotifyRule })}>{(Object.keys(notifyLabel) as NotifyRule[]).map((k) => <option key={k} value={k}>{notifyLabel[k]}</option>)}</Select></Field>
           <div className="flex justify-end gap-2 sm:col-span-2">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>
