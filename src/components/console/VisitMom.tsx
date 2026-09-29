@@ -3,7 +3,6 @@ import { Download, Eye, Loader2, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import fmLogo from "@/assets/fm-logo-white.png.asset.json";
 import { FM_LOGO_PNG } from "@/assets/fmLogoData";
 import { Button, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
 import { engineerName, fmtDate, plantName, useData, type AppData } from "@/lib/store";
@@ -258,7 +257,7 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
         <div className="p-4">
           <div className="mx-auto max-w-3xl bg-panel p-6 text-sm shadow ring-1 ring-line">
             <div className="relative -mx-6 -mt-6 mb-4 flex items-center gap-3 px-6 py-3 text-white" style={{ backgroundColor: "#182C54" }}>
-              <img src={fmLogo.url} alt="Forbes Marshall" className="h-7 w-auto shrink-0" />
+              <img src={FM_LOGO_PNG} alt="Forbes Marshall" className="h-7 w-auto shrink-0 object-contain" />
               <span className="absolute left-1/2 -translate-x-1/2 truncate font-semibold">Minutes of Meeting</span>
               {v.momNo ? <span className="num ml-auto text-xs">MOM No: {v.momNo}</span> : null}
             </div>
