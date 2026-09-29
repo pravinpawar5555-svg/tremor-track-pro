@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Download, Eye, Loader2, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import fmLogo from "@/assets/fm-logo-white.png.asset.json";
 import { Button, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
 import { engineerName, fmtDate, plantName, useData, type AppData } from "@/lib/store";
@@ -59,14 +61,18 @@ let logoDataUrl: string | null = null;
 async function loadLogoDataUrl(): Promise<string | null> {
   if (logoDataUrl) return logoDataUrl;
   try {
-    const res = await fetch(fmLogo.url);
-    const blob = await res.blob();
-    logoDataUrl = await new Promise<string>((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(String(r.result));
-      r.onerror = reject;
-      r.readAsDataURL(blob);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = reject;
+      img.src = fmLogo.url;
     });
+    const c = document.createElement("canvas");
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    c.getContext("2d")!.drawImage(img, 0, 0);
+    logoDataUrl = c.toDataURL("image/png");
     return logoDataUrl;
   } catch {
     return null;
@@ -74,8 +80,6 @@ async function loadLogoDataUrl(): Promise<string | null> {
 }
 
 async function downloadMom(data: AppData, v: Visit) {
-  const { jsPDF } = await import("jspdf");
-  const autoTable = (await import("jspdf-autotable")).default;
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   const plant = data.plants.find((p) => p.id === v.plantId);
@@ -83,7 +87,13 @@ async function downloadMom(data: AppData, v: Visit) {
   doc.rect(0, 0, W, 56, "F");
   doc.setTextColor(255);
   const logo = await loadLogoDataUrl();
-  if (logo) doc.addImage(logo, "PNG", 40, 16, 108, 28);
+  if (logo) {
+    try {
+      doc.addImage(logo, "PNG", 40, 16, 108, 28);
+    } catch (e) {
+      console.warn("MOM logo skipped", e);
+    }
+  }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
   doc.text("Minutes of Meeting", W / 2, 34, { align: "center" });
@@ -132,7 +142,7 @@ async function downloadMom(data: AppData, v: Visit) {
     headStyles: head,
     styles: { fontSize: 9 },
     head: [["Action", "Responsible", "Due", "Status", "Remarks"]],
-    body: v.actions.length ? v.actions.map((a) => [a.action, respName(data, a.responsible), fmtDate(a.dueDate), a.status === "open" ? "Open" : "Closed", a.remarks]) : [["—", "", "", "", ""]],
+    body: v.actions.length ? v.actions.map((a) => [a.action ?? "", respName(data, a.responsible ?? ""), a.dueDate ? fmtDate(a.dueDate) : "", a.status === "open" ? "Open" : "Closed", a.remarks ?? ""]) : [["—", "", "", "", ""]],
   });
   if (v.signOffRequired) {
     const sectionHeight = 190;
@@ -218,7 +228,8 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
     try {
       await downloadMom(data, v);
       toast.success("PDF downloaded");
-    } catch {
+    } catch (e) {
+      console.error("MOM PDF failed", e);
       toast.error("Could not create the PDF");
     } finally {
       setDownloading(false);
