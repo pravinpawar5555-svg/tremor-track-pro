@@ -794,6 +794,8 @@ function housekeeping() {
     let changed = false;
     const recurring = next.recurring.map((rr) => {
       if (!rr.active) return rr;
+      const plant = next.plants.find((p) => p.id === rr.plantId);
+      if (!plant || !plantFrequencies(plant).includes(rr.type)) return rr;
       let due = rr.nextDue;
       let guard = 0;
       while (due <= horizon && guard++ < 60) {

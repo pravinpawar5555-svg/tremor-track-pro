@@ -25,6 +25,7 @@ import {
   fmtDate,
   frequencyText,
   plantName,
+  plantFrequencies,
   reportKpis,
   reportTiming,
   saveReport,
@@ -73,9 +74,15 @@ function ReportsPage() {
   const catIds = new Set(
     (cat === "total" ? data.plants : data.plants.filter((p) => (p.category ?? "order") === cat)).map((p) => p.id),
   );
-  const allReports = (manager ? data.reports : data.reports.filter((r) => r.byEngineerId === me)).filter((r) =>
-    catIds.has(r.plantId),
-  );
+  const plantById = new Map(data.plants.map((p) => [p.id, p]));
+  const allReports = (manager ? data.reports : data.reports.filter((r) => r.byEngineerId === me))
+    .filter((r) => catIds.has(r.plantId))
+    .filter((r) => {
+      // hide unsent reports whose type is no longer in the plant's report cycle
+      if (r.status === "sent") return true;
+      const p = plantById.get(r.plantId);
+      return !p || plantFrequencies(p).includes(r.type);
+    });
   const rk = reportKpis({ ...data, reports: allReports });
   const [type, setType] = useState<"all" | Frequency>("all");
   const [status, setStatus] = useState<"all" | ReportStatus>("all");

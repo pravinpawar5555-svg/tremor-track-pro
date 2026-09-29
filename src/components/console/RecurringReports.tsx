@@ -34,7 +34,9 @@ export function RecurringReports({
       (p) => p.id,
     ),
   );
-  const recurring = data.recurring.filter((r) => catIds.has(r.plantId));
+  const inCat = data.recurring.filter((r) => catIds.has(r.plantId));
+  const [engFilter, setEngFilter] = useState<string>("all");
+  const recurring = engFilter === "all" ? inCat : inCat.filter((r) => r.engineerId === engFilter);
   const blank = { plantId: "", type: "weekly" as RecurringReport["type"], nextDue: TODAY, engineerId: "" };
   const [form, setForm] = useState(blank);
 
@@ -61,6 +63,20 @@ export function RecurringReports({
                 }`}
               >
                 {c === "total" ? `Total (${data.plants.length})` : `${c} (${categoryCounts[c]})`}
+              </button>
+            ))}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full ring-1 ring-line/80 p-1">
+            {[{ id: "all", label: "Total" }, ...team.map((a) => ({ id: a.id, label: a.name.split(" ")[0] ?? a.name }))].map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => setEngFilter(o.id)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-[background-color] ${
+                  engFilter === o.id ? "bg-signal text-signal-foreground" : "text-mute hover:bg-black/5"
+                }`}
+              >
+                {o.label} ({o.id === "all" ? inCat.length : inCat.filter((r) => r.engineerId === o.id).length})
               </button>
             ))}
           </span>
