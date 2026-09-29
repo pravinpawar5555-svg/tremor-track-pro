@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import fmLogo from "@/assets/fm-logo-white.png.asset.json";
+import { FM_LOGO_PNG } from "@/assets/fmLogoData";
 import { Button, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
 import { engineerName, fmtDate, plantName, useData, type AppData } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -57,26 +58,8 @@ export function AttendeesEditor({ v, canEdit }: { v: Visit; canEdit: boolean }) 
 const respName = (data: AppData, r: string) => (r === "customer" ? "Customer" : engineerName(data, r) || r);
 const ACKNOWLEDGMENT = "By signing below, both parties acknowledge that these Minutes of Meeting accurately reflect the technical discussions, observations, decisions, responsibilities, and agreed action items recorded during the meeting.";
 
-let logoDataUrl: string | null = null;
-async function loadLogoDataUrl(): Promise<string | null> {
-  if (logoDataUrl) return logoDataUrl;
-  try {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = reject;
-      img.src = fmLogo.url;
-    });
-    const c = document.createElement("canvas");
-    c.width = img.naturalWidth;
-    c.height = img.naturalHeight;
-    c.getContext("2d")!.drawImage(img, 0, 0);
-    logoDataUrl = c.toDataURL("image/png");
-    return logoDataUrl;
-  } catch {
-    return null;
-  }
+async function loadLogoDataUrl(): Promise<string> {
+  return FM_LOGO_PNG;
 }
 
 async function downloadMom(data: AppData, v: Visit) {
