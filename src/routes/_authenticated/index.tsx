@@ -559,22 +559,43 @@ function EngineerDashboard({ data }: { data: AppData }) {
             </div>
           </Section>
 
-          <Section title="Upcoming" to="/reports">
+          <Section title={`Upcoming — ${engineerName(data, me)}`} to="/reports" meta={`${weekReports.length + upcomingFollow.length} this week`}>
             <div className="divide-y divide-line/60 text-sm">
-              <div className="flex items-start justify-between gap-3 px-4 py-2.5">
-                <div>
-                  <div className="font-medium">{weekReports.length} reports due</div>
-                  <div className="text-xs text-mute">{[...new Set(weekReports.map((r) => plantName(data, r.plantId)))].slice(0, 3).join(", ") || "—"}</div>
-                </div>
-                <span className="text-xs text-signal">Within this week</span>
+              <div className="flex items-center justify-between bg-surface/60 px-4 py-1.5 text-xs font-medium text-mute">
+                <span>Reports due</span><span className="num">{weekReports.length}</span>
               </div>
-              <div className="flex items-start justify-between gap-3 px-4 py-2.5">
-                <div>
-                  <div className="font-medium">{upcomingFollow.length} customer follow-ups</div>
-                  <div className="text-xs text-mute">{upcomingFollow.slice(0, 3).map((t) => (t.plantId ? plantName(data, t.plantId) : t.title)).join(", ") || "—"}</div>
-                </div>
-                <span className="text-xs text-signal">Within this week</span>
+              {weekReports
+                .slice()
+                .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+                .slice(0, 5)
+                .map((r) => (
+                  <div key={r.id} className="flex items-start justify-between gap-3 px-4 py-2">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{plantName(data, r.plantId)}</div>
+                      <div className="text-xs text-mute">{r.type} · {r.period || "—"}</div>
+                    </div>
+                    <span className={cn("shrink-0 text-xs", reportTiming(r).late ? "text-sev-critical" : "text-mute")}>{reportTiming(r).late ? "Overdue" : dueWord(r.dueDate)}</span>
+                  </div>
+                ))}
+              {!weekReports.length ? <Empty>No reports due this week.</Empty> : null}
+
+              <div className="flex items-center justify-between bg-surface/60 px-4 py-1.5 text-xs font-medium text-mute">
+                <span>Customer follow-ups</span><span className="num">{upcomingFollow.length}</span>
               </div>
+              {upcomingFollow
+                .slice()
+                .sort((a, b) => (a.dueDate || "").localeCompare(b.dueDate || ""))
+                .slice(0, 5)
+                .map((t) => (
+                  <div key={t.id} className="flex items-start justify-between gap-3 px-4 py-2">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{t.title}</div>
+                      <div className="text-xs text-mute">{t.plantId ? plantName(data, t.plantId) : "Internal"}</div>
+                    </div>
+                    <span className="shrink-0 text-xs text-mute">{t.dueDate ? dueWord(t.dueDate) : "—"}</span>
+                  </div>
+                ))}
+              {!upcomingFollow.length ? <Empty>No follow-ups this week.</Empty> : null}
             </div>
           </Section>
 
