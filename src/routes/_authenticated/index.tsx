@@ -12,6 +12,7 @@ import {
   fmtDate,
   frequencyLabel,
   plantName,
+  plantFrequencies,
   reportTiming,
   shiftDate,
   taskPriorityLabel,
