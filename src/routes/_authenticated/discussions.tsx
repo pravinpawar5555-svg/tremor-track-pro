@@ -321,7 +321,14 @@ function DiscussionsPage() {
                       </div>
                       <div className="mt-1 flex items-center gap-2">
                         <Chip severity={ticketSeverity(t.priority)} label={priorityLabel[t.priority]} />
-                        {unread ? <span className="num text-[10px] text-sev-high">{unread} new</span> : null}
+                        {unread ? (
+                          <span className="num inline-flex items-center gap-1 text-[10px] font-semibold text-sev-high">
+                            <span className="size-2 rounded-full bg-sev-high" aria-label="Unread" />
+                            {unread} new
+                          </span>
+                        ) : lastKey.get(ticketThread(t.id)) ? (
+                          <span className="text-[10px] text-mute" title="All read">✓✓ Read</span>
+                        ) : null}
                       </div>
                     </button>
                   );
@@ -367,14 +374,21 @@ function DiscussionsPage() {
                       )}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-medium">{p.name}</span>
+                        <span className={cn("truncate text-sm", unread ? "font-semibold" : "font-medium")}>{p.name}</span>
                         <span className="ml-2 flex shrink-0 items-center gap-2">
                           <span className="text-[10px] text-mute">{customerCategoryLabel[(p.category ?? "order") as CustomerCategory]}</span>
-                          {unread ? <span className="num text-[10px] text-sev-high">{unread} new</span> : null}
+                          {unread ? (
+                            <span className="num inline-flex items-center gap-1 text-[10px] font-semibold text-sev-high">
+                              <span className="size-2 rounded-full bg-sev-high" aria-label="Unread" />
+                              {unread} new
+                            </span>
+                          ) : last ? (
+                            <span className="text-[10px] text-mute" title="All read">✓✓</span>
+                          ) : null}
                         </span>
                       </div>
                       <div className="truncate text-[11px] text-mute">
-                        {last ? `${engineerName(data, last.authorId)}: ${last.text}` : "No messages yet"}
+                        {last ? `${fmtDate(last.date)} ${last.at} · ${engineerName(data, last.authorId)}: ${last.text}` : "No messages yet"}
                       </div>
                     </button>
                   );
