@@ -78,6 +78,13 @@
       "when": 1790687419049,
       "tag": "0010_messages_acked_by",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790690777205,
+      "tag": "0011_plants_vibassist",
+      "breakpoints": true
     }
   ]
 }

@@ -171,6 +171,7 @@ export type Database = {
           name: string
           node_x: number
           node6: number
+          vibassist: number
         }
         Insert: {
           assets?: number
@@ -187,6 +188,7 @@ export type Database = {
           name: string
           node_x?: number
           node6?: number
+          vibassist?: number
         }
         Update: {
           assets?: number
@@ -203,6 +205,7 @@ export type Database = {
           name?: string
           node_x?: number
           node6?: number
+          vibassist?: number
         }
         Relationships: []
       }
