@@ -25,6 +25,8 @@ export interface Plant {
   node6: number;
   /** Installed Node X sensor quantity. */
   nodeX: number;
+  /** Installed VibAssist sensor quantity. */
+  vibassist: number;
   /** One or more report cycles agreed with the customer. */
   frequencies: Frequency[];
   contact: string;
@@ -532,6 +534,7 @@ const rowToPlant = (r: any): Plant => ({
   assets: r.assets ?? 0,
   node6: r.node6 ?? 0,
   nodeX: r.node_x ?? 0,
+  vibassist: r.vibassist ?? 0,
   frequencies: (r.frequencies ?? []) as Frequency[],
   contact: r.contact ?? "",
   contactPhone: r.contact_phone ?? "",
@@ -547,6 +550,7 @@ const plantToRow = (p: Plant) => ({
   assets: p.assets,
   node6: p.node6,
   node_x: p.nodeX,
+  vibassist: p.vibassist ?? 0,
   frequencies: plantFrequencies(p),
   contact: p.contact,
   contact_phone: p.contactPhone,
@@ -1074,8 +1078,9 @@ export function engineerFleetTotals(d: AppData, engineerId: string) {
         assets: a.assets + (p.assets ?? 0),
         node6: a.node6 + (p.node6 ?? 0),
         nodeX: a.nodeX + (p.nodeX ?? 0),
+        vibassist: a.vibassist + (p.vibassist ?? 0),
       }),
-      { machines: 0, assets: 0, node6: 0, nodeX: 0 },
+      { machines: 0, assets: 0, node6: 0, nodeX: 0, vibassist: 0 },
     );
 }
 
@@ -1197,8 +1202,9 @@ export function fleetTotals(d: AppData) {
       assets: a.assets + (p.assets ?? 0),
       node6: a.node6 + (p.node6 ?? 0),
       nodeX: a.nodeX + (p.nodeX ?? 0),
+      vibassist: a.vibassist + (p.vibassist ?? 0),
     }),
-    { machines: 0, assets: 0, node6: 0, nodeX: 0 },
+    { machines: 0, assets: 0, node6: 0, nodeX: 0, vibassist: 0 },
   );
 }
 
