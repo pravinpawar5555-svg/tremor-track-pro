@@ -354,7 +354,7 @@ function DailyWorkPage() {
         {/* Right rail */}
         <aside className="min-w-0 space-y-4">
           <CloseDayCard data={data} manager={manager} me={me} date={date} dayTasks={dayTasks} closures={dw.closures} onClose={() => setClosing(true)} />
-          <ReminderCenter data={data} me={me} manager={manager} scopeIds={scopeIds} reminders={dw.reminders} onEdit={setReminder} />
+          <ReminderCenter data={data} me={me} manager={manager} reminders={dw.reminders} onEdit={setReminder} />
           <Panel title="Needs Attention">
             <ul className="divide-y divide-line/60">
               {attentionItems.map((a) => (
@@ -686,7 +686,7 @@ function CloseDayDialog({ open, onClose, data, me, date }: { open: boolean; onCl
   );
 }
 
-function ReminderCenter({ data, me, manager, scopeIds, reminders, onEdit }: { data: AppData; me: string; manager: boolean; scopeIds: string[]; reminders: Reminder[]; onEdit: (r: Reminder) => void }) {
+function ReminderCenter({ data, me, manager, reminders, onEdit }: { data: AppData; me: string; manager: boolean; reminders: Reminder[]; onEdit: (r: Reminder) => void }) {
   const [tab, setTab] = useState<"today" | "upcoming" | "overdue">("today");
   const now = new Date();
   const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
