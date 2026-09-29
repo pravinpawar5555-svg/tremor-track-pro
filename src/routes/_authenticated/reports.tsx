@@ -182,7 +182,7 @@ function ReportsPage() {
                     cat === c ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"
                   }`}
                 >
-                  {c === "total" ? `Total (${data.plants.length})` : `${c} (${categoryCounts[c])}`}
+                  {c === "total" ? `Total (${data.plants.length})` : `${c} (${categoryCounts[c]})`}
                 </button>
               ))}
             </span>
