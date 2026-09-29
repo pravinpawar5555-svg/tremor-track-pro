@@ -101,6 +101,8 @@ export interface ChatMessage {
   date: string; // yyyy-mm-dd
   at: string; // HH:MM
   readBy: string[];
+  /** Users who gave the message a thumbs-up acknowledgement. */
+  ackedBy?: string[];
 }
 
 export interface AppData {
@@ -649,6 +651,7 @@ const rowToMessage = (r: any): ChatMessage => ({
   date: r.date,
   at: r.at ?? "",
   readBy: r.read_by ?? [],
+  ackedBy: r.acked_by ?? [],
 });
 const messageToRow = (m: ChatMessage) => ({
   id: m.id,
@@ -658,6 +661,7 @@ const messageToRow = (m: ChatMessage) => ({
   date: m.date,
   at: m.at,
   read_by: m.readBy ?? [],
+  acked_by: m.ackedBy ?? [],
 });
 
 const rowToTask = (r: any): Task => ({
@@ -1331,6 +1335,25 @@ export function markThreadRead(thread: string, userId: string) {
   });
 }
 
+export function toggleAck(messageId: string, userId: string) {
+  commit({
+    ...data,
+    messages: data.messages.map((x) => {
+      if (x.id !== messageId) return x;
+      const a = x.ackedBy ?? [];
+      return { ...x, ackedBy: a.includes(userId) ? a.filter((u) => u !== userId) : [...a, userId] };
+    }),
+  });
+}
+
+/** Ticket threads are private to the engineer who raised it, its assignee and managers. */
+export function canSeeThread(d: AppData, thread: string, userId = d.currentUserId) {
+  if (!thread.startsWith("ticket:")) return true;
+  if (isManager(d, userId)) return true;
+  const t = (d.tickets ?? []).find((x) => ticketThread(x.id) === thread);
+  return !!t && (t.raisedBy === userId || t.assignedTo === userId);
+}
+
 /** Manager gives the observation / recommendation the engineer asked for. */
 export function respondToTicket(id: string, authorId: string, text: string) {
   const body = text.trim();
@@ -1386,7 +1409,19 @@ export function unreadCount(d: AppData, thread: string, userId = d.currentUserId
 }
 
 export function totalUnread(d: AppData, userId = d.currentUserId) {
-  return (d.messages ?? []).filter((x) => !x.readBy.includes(userId) && x.authorId !== userId).length;
+  return (d.messages ?? []).filter((x) => !x.readBy.includes(userId) && x.authorId !== userId && canSeeThread(d, x.thread, userId)).length;
+}
+
+/** Unread plant-chat messages only (tickets counted separately). */
+export function chatUnread(d: AppData, userId = d.currentUserId) {
+  return (d.messages ?? []).filter((x) => x.thread.startsWith("plant:") && !x.readBy.includes(userId) && x.authorId !== userId).length;
+}
+
+/** Tickets needing this user's attention: manager = awaiting reply; engineer = own tickets with unread replies. */
+export function ticketAttention(d: AppData, userId = d.currentUserId) {
+  const open = (d.tickets ?? []).filter((t) => t.status !== "closed");
+  if (isManager(d, userId)) return open.filter((t) => t.status !== "responded").length;
+  return open.filter((t) => (t.raisedBy === userId || t.assignedTo === userId) && unreadCount(d, ticketThread(t.id), userId) > 0).length;
 }
 
 export function ticketKpis(d: AppData, userId = d.currentUserId) {
