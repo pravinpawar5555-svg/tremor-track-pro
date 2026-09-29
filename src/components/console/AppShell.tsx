@@ -11,8 +11,8 @@ import {
   fmtDate,
   reportKpis,
   taskStats,
-  ticketKpis,
-  totalUnread,
+  chatUnread,
+  ticketAttention,
   useData,
 } from "@/lib/store";
 
@@ -35,8 +35,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const kpis = reportKpis({ ...data, reports: myReports });
   const team = analystsOf(data);
   const me = currentUser(data);
-  const unread = totalUnread(data);
-  const tk = ticketKpis(data);
+  const unread = chatUnread(data);
+  const tickets = ticketAttention(data);
   const navigate = useNavigate();
   const items = nav.filter((n) => manager || n.to !== "/engineers");
   const signOut = async () => {
@@ -68,11 +68,20 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link
             to="/discussions"
             search={{ unread: unread ? true : undefined }}
-            title={unread ? "Open the newest unread message" : "Open discussions"}
+            title={unread ? "Open the newest unread plant chat message" : "Open plant chats"}
             className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 hover:bg-black/5 hover:text-ink"
           >
-            <span className={cn("size-2 rounded-full", unread || tk.waitingOnManager ? "bg-sev-medium" : "bg-sev-low")} />
-            <span className="num underline-offset-2 hover:underline">{unread} unread · {tk.waitingOnManager} tickets</span>
+            <span className={cn("size-2 rounded-full", unread ? "bg-sev-medium" : "bg-sev-low")} />
+            <span className="num underline-offset-2 hover:underline">{unread} unread</span>
+          </Link>
+          <Link
+            to="/discussions"
+            search={{ tickets: true }}
+            title={manager ? "Tickets awaiting your reply" : "Your tickets with new replies"}
+            className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 hover:bg-black/5 hover:text-ink"
+          >
+            <span className={cn("size-2 rounded-full", tickets ? "bg-sev-high" : "bg-sev-low")} />
+            <span className="num underline-offset-2 hover:underline">{tickets} tickets</span>
           </Link>
           <span className="hidden items-center gap-1.5 lg:flex">
             <span className="grid size-6 place-items-center rounded-full bg-base text-[10px] font-semibold text-mute ring-1 ring-line">

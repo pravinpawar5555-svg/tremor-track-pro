@@ -4,7 +4,7 @@ import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { markRemindersSeen, useDailyWork, type Reminder } from "@/lib/dailywork";
-import { TODAY, engineerName, fmtDate, plantName, useData } from "@/lib/store";
+import { TODAY, canSeeThread, engineerName, fmtDate, plantName, useData } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 type Note = { id: string; kind: "assigned" | "due"; r: Reminder };
@@ -40,13 +40,13 @@ export function NotificationBell() {
   const chats = useMemo(() => {
     const m = new Map<string, { thread: string; count: number; last: { authorId: string; text: string; date: string; at: string } }>();
     for (const x of data.messages ?? []) {
-      if (!me || x.authorId === me || x.readBy.includes(me)) continue;
+      if (!me || x.authorId === me || x.readBy.includes(me) || !canSeeThread(data, x.thread, me)) continue;
       const c = m.get(x.thread);
       if (!c) m.set(x.thread, { thread: x.thread, count: 1, last: x });
       else { c.count++; if (`${x.date} ${x.at}` > `${c.last.date} ${c.last.at}`) c.last = x; }
     }
     return [...m.values()].sort((a, b) => (`${a.last.date} ${a.last.at}` < `${b.last.date} ${b.last.at}` ? 1 : -1));
-  }, [data.messages, me]);
+  }, [data.messages, data.tickets, me]);
   const chatLabel = (thread: string) => {
     if (thread.startsWith("plant:")) return `Plant chat · ${plantName(data, thread.slice(6))}`;
     const t = data.tickets.find((x) => `ticket:${x.id}` === thread);
