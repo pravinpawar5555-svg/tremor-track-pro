@@ -12,6 +12,7 @@ import {
   fmtDate,
   frequencyLabel,
   plantName,
+  plantFrequencies,
   reportTiming,
   shiftDate,
   taskPriorityLabel,
@@ -442,7 +443,15 @@ function EngineerDashboard({ data }: { data: AppData }) {
   const completed = today.filter((t) => t.status === "completed");
   const waiting = active.filter((t) => t.status === "waiting");
   const carried = today.filter(isCarried);
-  const reports = data.reports.filter((r) => r.byEngineerId === me && r.status !== "sent");
+  const mePlants = new Map(data.plants.map((p) => [p.id, p]));
+  const reports = data.reports
+    .filter((r) => r.byEngineerId === me && r.status !== "sent")
+    .filter((r) => {
+      // same visibility rule as the Report register: hide unsent reports whose
+      // type is no longer in the plant's report cycle
+      const p = mePlants.get(r.plantId);
+      return !p || plantFrequencies(p).includes(r.type);
+    });
   const weekReports = reports.filter((r) => r.dueDate <= shiftDate(TODAY, 7));
   const pct = today.length ? Math.round((completed.length / today.length) * 100) : 0;
   const next = active.find((t) => t.status !== "waiting");
@@ -461,7 +470,7 @@ function EngineerDashboard({ data }: { data: AppData }) {
         <Kpi label="Remaining" value={active.length} tone={active.length ? "medium" : "low"} hint="Needs action" />
         <Kpi label="Carried forward" value={carried.length} tone={carried.length ? "medium" : "low"} hint="From previous days" />
         <Kpi label="Waiting" value={waiting.length} tone={waiting.length ? "high" : "low"} hint="On hold" />
-        <Kpi label="Reports due" value={weekReports.length} tone={weekReports.some((r) => reportTiming(r).late) ? "critical" : "advisory"} hint="This week" />
+        <Kpi label="Reports due" value={weekReports.length} tone={weekReports.some((r) => reportTiming(r).late) ? "critical" : "advisory"} hint="Your reports · this week" />
       </div>
 
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.6fr_1fr]">

@@ -85,7 +85,9 @@ function ReportsPage() {
       const p = plantById.get(r.plantId);
       return !p || plantFrequencies(p).includes(r.type);
     });
-  const rk = reportKpis({ ...data, reports: allReports });
+  // KPI cards: engineers see their own counts; manager sees the full team
+  const kpiReports = data.role === "manager" ? allReports : allReports.filter((r) => r.byEngineerId === me);
+  const rk = reportKpis({ ...data, reports: kpiReports });
   const [type, setType] = useState<"all" | Frequency>("all");
   const [status, setStatus] = useState<"all" | ReportStatus>("all");
   const [eng, setEng] = useState(search.eng ?? "all");
