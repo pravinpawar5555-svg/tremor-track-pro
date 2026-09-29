@@ -26,6 +26,8 @@
   --color-foreground: var(--ink);
   --color-card: var(--panel);
   --color-card-foreground: var(--ink);
+  --color-popover: var(--panel);
+  --color-popover-foreground: var(--ink);
   --color-primary: var(--signal);
   --color-primary-foreground: var(--signal-foreground);
   --color-secondary: var(--base);
