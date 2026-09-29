@@ -332,7 +332,8 @@ function ReportsPage() {
                               }
                             }}
                           >
-                            Delete
+                            <Trash2 size={16} aria-hidden />
+                            <span className="sr-only">Delete</span>
                           </Button>
                         </span>
                       </Td>
