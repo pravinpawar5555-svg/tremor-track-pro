@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/console/AppShell";
 import { RecurringReports } from "@/components/console/RecurringReports";
@@ -331,7 +332,8 @@ function ReportsPage() {
                               }
                             }}
                           >
-                            Delete
+                            <Trash2 size={16} aria-hidden />
+                            <span className="sr-only">Delete</span>
                           </Button>
                         </span>
                       </Td>
