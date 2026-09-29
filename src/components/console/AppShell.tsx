@@ -78,10 +78,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             to="/discussions"
             search={{ tickets: true }}
             title={manager ? "Tickets awaiting your reply" : "Your tickets with new replies"}
-            className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 hover:bg-black/5 hover:text-ink"
+            className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-mute ring-1 ring-line hover:bg-base hover:text-ink"
           >
             <span className={cn("size-2 rounded-full", tickets ? "bg-sev-high" : "bg-sev-low")} />
-            <span className="num underline-offset-2 hover:underline">{tickets} tickets</span>
+            <span className="num">{tickets} tickets</span>
           </Link>
           <span className="hidden items-center gap-1.5 lg:flex">
             <span className="grid size-6 place-items-center rounded-full bg-base text-[10px] font-semibold text-mute ring-1 ring-line">
