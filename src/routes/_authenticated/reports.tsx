@@ -59,6 +59,7 @@ function ReportsPage() {
   const team = analystsOf(data);
   const manager = true; // full access for manager and engineers
   const me = data.currentUserId;
+  const [view, setView] = useState<"register" | "recurring">("register");
   const [cat, setCat] = useState<"total" | CustomerCategory>("total");
   const categoryCounts = {
     order: data.plants.filter((p) => (p.category ?? "order") === "order").length,
@@ -113,7 +114,7 @@ function ReportsPage() {
         title="Report Delivery Tracker"
         subtitle="On-demand, weekly and monthly reports — was it sent to the customer on time?"
         actions={
-          true ? (
+          view === "register" ? (
             <Button variant={adding ? "ghost" : "solid"} onClick={() => setAdding((a) => !a)}>{adding ? "Cancel" : "Create report"}</Button>
           ) : null
         }
@@ -127,9 +128,41 @@ function ReportsPage() {
         <Kpi label="Due in 7 days" value={rk.dueThisWeek} />
       </div>
 
-      {true ? <RecurringReports catFilter={cat} onCatFilter={setCat} /> : null}
+      <div className="mt-4 flex items-center border-b border-line">
+        <button
+          type="button"
+          onClick={() => setView("register")}
+          className={`relative px-4 py-3 text-sm font-semibold transition-colors ${
+            view === "register" ? "text-signal" : "text-mute hover:text-ink"
+          }`}
+        >
+          Report Register
+          <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] ${view === "register" ? "bg-signal/10" : "bg-canvas"}`}>
+            {allReports.length}
+          </span>
+          {view === "register" ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-signal" /> : null}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setAdding(false);
+            setView("recurring");
+          }}
+          className={`relative px-4 py-3 text-sm font-semibold transition-colors ${
+            view === "recurring" ? "text-signal" : "text-mute hover:text-ink"
+          }`}
+        >
+          Recurring Settings
+          <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] ${view === "recurring" ? "bg-signal/10" : "bg-canvas"}`}>
+            {data.recurring.length}
+          </span>
+          {view === "recurring" ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-signal" /> : null}
+        </button>
+      </div>
 
-      {adding ? (
+      {view === "recurring" ? <RecurringReports catFilter={cat} onCatFilter={setCat} /> : null}
+
+      {view === "register" && adding ? (
         <Panel className="mt-4" title="Schedule a report">
           <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5">
             <Field label="Plant">
@@ -167,7 +200,7 @@ function ReportsPage() {
         </Panel>
       ) : null}
 
-      <Panel
+      {view === "register" ? <Panel
         className="mt-4"
         title="Report register"
         meta={
@@ -287,7 +320,7 @@ function ReportsPage() {
           "Mark sent" records today's date as the delivery date; on time or late is calculated against the due date. Report cycle per plant: {" "}
           {data.plants.map((p) => `${p.name.split(" — ")[0]} ${frequencyText(p)}`).join(" · ")}
         </div>
-      </Panel>
+      </Panel> : null}
     </AppShell>
   );
 }
