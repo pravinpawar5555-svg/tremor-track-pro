@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Download, Eye, Loader2, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import fmLogo from "@/assets/fm-logo-white.png.asset.json";
 import { Button, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
@@ -186,6 +187,7 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
   const data = useData();
   const [v, setV] = useState<Visit>(visit);
   const [mode, setMode] = useState<"preview" | "edit">("preview");
+  const [downloading, setDownloading] = useState(false);
   const plant = data.plants.find((p) => p.id === v.plantId);
   const setAction = (i: number, p: Partial<VisitAction>) => setV((x) => ({ ...x, actions: x.actions.map((a, j) => (j === i ? { ...a, ...p } : a)) }));
   const save = async () => {
@@ -197,15 +199,50 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
       toast.error("Could not save MOM");
     }
   };
+  const download = async () => {
+    setDownloading(true);
+    try {
+      await downloadMom(data, v);
+      toast.success("PDF downloaded");
+    } catch {
+      toast.error("Could not create the PDF");
+    } finally {
+      setDownloading(false);
+    }
+  };
+  const toolBtn = "inline-flex items-center gap-1.5 rounded-md border border-line bg-panel px-2.5 py-1.5 text-xs font-medium text-ink shadow-sm transition-colors hover:bg-base";
   return (
     <Panel
       className="mt-4"
       title={`MOM${v.momNo ? " " + v.momNo : ""} — ${plantName(data, v.plantId)}`}
       meta={
-        <span className="flex items-center gap-3">
-          {canEdit ? <button type="button" className="text-signal" onClick={() => setMode(mode === "edit" ? "preview" : "edit")}>{mode === "edit" ? "Preview" : "Edit"}</button> : null}
-          <button type="button" className="text-signal" onClick={() => void downloadMom(data, v)}>Download PDF</button>
-          <button type="button" className="text-signal" onClick={onClose}>Close</button>
+        <span className="flex flex-wrap items-center gap-1.5">
+          {canEdit ? (
+            <span className="inline-flex overflow-hidden rounded-md border border-line shadow-sm">
+              <button
+                type="button"
+                title="Preview"
+                onClick={() => setMode("preview")}
+                className={cn("inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-colors", mode === "preview" ? "bg-signal text-signal-foreground" : "bg-panel text-ink hover:bg-base")}
+              >
+                <Eye className="size-3.5" /> Preview
+              </button>
+              <button
+                type="button"
+                title="Edit"
+                onClick={() => setMode("edit")}
+                className={cn("inline-flex items-center gap-1.5 border-l border-line px-2.5 py-1.5 text-xs font-medium transition-colors", mode === "edit" ? "bg-signal text-signal-foreground" : "bg-panel text-ink hover:bg-base")}
+              >
+                <Pencil className="size-3.5" /> Edit
+              </button>
+            </span>
+          ) : null}
+          <button type="button" title="Download PDF" disabled={downloading} onClick={() => void download()} className={cn(toolBtn, "disabled:opacity-50")}>
+            {downloading ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />} {downloading ? "Preparing…" : "Download PDF"}
+          </button>
+          <button type="button" title="Close" onClick={onClose} className={toolBtn}>
+            <X className="size-3.5" /> Close
+          </button>
         </span>
       }
     >
