@@ -690,7 +690,8 @@ function ReminderCenter({ data, me, manager, scopeIds, reminders, onEdit }: { da
   const [tab, setTab] = useState<"today" | "upcoming" | "overdue">("today");
   const now = new Date();
   const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-  const mine = reminders.filter((r) => r.status === "active" && (r.userId === me || r.createdBy === me || (manager && scopeIds.includes(r.userId))));
+  // Everyone (manager included) sees only reminders assigned to them or created by them.
+  const mine = reminders.filter((r) => r.status === "active" && (r.userId === me || r.createdBy === me));
   const late = (r: Reminder) => r.date < TODAY || (r.date === TODAY && !!r.time && r.time < hhmm);
   const lists = {
     today: mine.filter((r) => r.date === TODAY && !late(r)),
