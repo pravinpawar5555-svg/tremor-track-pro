@@ -559,7 +559,7 @@ function EngineerDashboard({ data }: { data: AppData }) {
             </div>
           </Section>
 
-          <Section title={`Upcoming — ${engineerName(data, me)}`} to="/reports" meta={`${weekReports.length + upcomingFollow.length} this week`}>
+          <Section title={`Upcoming — ${engineerName(data, me)} (${weekReports.length + upcomingFollow.length} this week)`} to="/reports">
             <div className="divide-y divide-line/60 text-sm">
               <div className="flex items-center justify-between bg-surface/60 px-4 py-1.5 text-xs font-medium text-mute">
                 <span>Reports due</span><span className="num">{weekReports.length}</span>
