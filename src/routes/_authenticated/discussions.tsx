@@ -53,6 +53,10 @@ import {
 } from "@/lib/store";
 
 export const Route = createFileRoute("/_authenticated/discussions")({
+  validateSearch: (s: Record<string, unknown>): { unread?: boolean; thread?: string } => ({
+    unread: s.unread ? true : undefined,
+    thread: typeof s.thread === "string" ? s.thread : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Discussion & Tickets — Forbes Marshall CM Portal" },
@@ -150,6 +154,30 @@ function DiscussionsPage() {
   useEffect(() => {
     if (thread && meId) markThreadRead(thread, meId);
   }, [thread, meId, msgs.length]);
+
+  // Deep link: ?thread=... or ?unread=1 opens the newest unread conversation.
+  const search = Route.useSearch();
+  const [jumped, setJumped] = useState(false);
+  useEffect(() => {
+    if (jumped || !meId || !(data.messages ?? []).length) return;
+    let target = search.thread ?? "";
+    if (!target && search.unread) {
+      const unread = (data.messages ?? [])
+        .filter((x) => x.authorId !== meId && !x.readBy.includes(meId))
+        .sort((a, b) => (`${a.date} ${a.at}` < `${b.date} ${b.at}` ? 1 : -1));
+      target = unread[0]?.thread ?? "";
+    }
+    setJumped(true);
+    if (target.startsWith("ticket:")) {
+      setTab("tickets");
+      setStatusFilter("all");
+      setSelectedTicket(target.slice(7));
+    } else if (target.startsWith("plant:")) {
+      setTab("plants");
+      setCatFilter("total");
+      setSelectedPlant(target.slice(6));
+    }
+  }, [jumped, meId, data.messages, search.thread, search.unread]);
 
   const set = (k: keyof typeof emptyTicket, v: string) => setForm((f) => ({ ...f, [k]: v }));
   const flash = (msg: string) => {
@@ -507,6 +535,17 @@ function DiscussionsPage() {
                               {engineerName(data, x.authorId)} · <span className="num">{fmtDate(x.date)} {x.at}</span>
                             </div>
                             <div className="mt-0.5 whitespace-pre-wrap">{x.text}</div>
+                            {mine ? (() => {
+                              const seen = x.readBy.filter((u) => u !== meId);
+                              return (
+                                <div
+                                  className={cn("mt-1 text-right text-[10px]", seen.length ? "font-medium text-sev-low" : "text-mute")}
+                                  title={seen.length ? `Seen by ${seen.map((u) => engineerName(data, u)).join(", ")}` : "Not seen yet"}
+                                >
+                                  {seen.length ? `✓✓ Seen by ${seen.map((u) => engineerName(data, u).split(" ")[0]).join(", ")}` : "✓ Sent · not seen yet"}
+                                </div>
+                              );
+                            })() : null}
                           </div>
                         </div>
                       );

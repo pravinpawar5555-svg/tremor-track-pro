@@ -51,6 +51,10 @@ export const Route = createFileRoute("/_authenticated/reports")({
       },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { timing?: "due" | "overdue"; eng?: string } => ({
+    timing: s.timing === "due" || s.timing === "overdue" ? s.timing : undefined,
+    eng: typeof s.eng === "string" ? s.eng : undefined,
+  }),
   component: ReportsPage,
 });
 
@@ -59,6 +63,7 @@ function ReportsPage() {
   const team = analystsOf(data);
   const manager = true; // full access for manager and engineers
   const me = data.currentUserId;
+  const search = Route.useSearch();
   const [view, setView] = useState<"register" | "recurring">("register");
   const [cat, setCat] = useState<"total" | CustomerCategory>("total");
   const categoryCounts = {
