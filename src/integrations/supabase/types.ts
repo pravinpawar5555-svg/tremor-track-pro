@@ -121,6 +121,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          acked_by: string[]
           at: string
           author_id: string
           created_at: string
@@ -131,6 +132,7 @@ export type Database = {
           thread: string
         }
         Insert: {
+          acked_by?: string[]
           at?: string
           author_id?: string
           created_at?: string
@@ -141,6 +143,7 @@ export type Database = {
           thread: string
         }
         Update: {
+          acked_by?: string[]
           at?: string
           author_id?: string
           created_at?: string
