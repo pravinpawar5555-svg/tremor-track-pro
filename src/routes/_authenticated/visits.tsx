@@ -178,7 +178,7 @@ function VisitsPage() {
         <VisitDetail
           v={sel}
           manager={manager}
-          canComplete={manager || sel.engineerIds.includes(me)}
+          canComplete={true}
           onClose={() => setSelected(null)}
           onEdit={() => { setEditing(sel); setSelected(null); }}
           onComplete={() => { setCompleting(sel); setSelected(null); }}
@@ -244,7 +244,7 @@ function VisitsPage() {
                       <Td align="right">
                         <span className="flex justify-end gap-2 text-xs">
                           <button type="button" className="text-signal" onClick={() => setSelected(v.id)}>View</button>
-                          {s !== "completed" && s !== "cancelled" && (manager || v.engineerIds.includes(me)) ? (
+                          {s !== "completed" && s !== "cancelled" && true ? (
                             <button type="button" className="text-signal" onClick={() => setCompleting(v)}>Complete</button>
                           ) : null}
                         </span>
