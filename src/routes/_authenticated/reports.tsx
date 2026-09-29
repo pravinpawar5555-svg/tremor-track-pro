@@ -26,6 +26,7 @@ import {
   frequencyText,
   plantName,
   plantFrequencies,
+  removeReport,
   reportKpis,
   reportTiming,
   saveReport,
