@@ -56,13 +56,23 @@ export function AppShell({ children }: { children: ReactNode }) {
           <RefreshControls />
           <NotificationBell />
           <span className="num hidden md:inline">{fmtDate(TODAY)}</span>
-          <span className="flex items-center gap-1.5">
+          <Link
+            to="/reports"
+            search={{ timing: "overdue", eng: manager ? undefined : meId }}
+            title="Open overdue reports"
+            className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 hover:bg-black/5 hover:text-ink"
+          >
             <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />
-            <span className="num">{kpis.overdue} overdue reports</span>
-          </span>
-          <Link to="/discussions" className="flex items-center gap-1.5">
+            <span className="num underline-offset-2 hover:underline">{kpis.overdue} overdue reports</span>
+          </Link>
+          <Link
+            to="/discussions"
+            search={{ unread: unread ? true : undefined }}
+            title={unread ? "Open the newest unread message" : "Open discussions"}
+            className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 hover:bg-black/5 hover:text-ink"
+          >
             <span className={cn("size-2 rounded-full", unread || tk.waitingOnManager ? "bg-sev-medium" : "bg-sev-low")} />
-            <span className="num">{unread} unread · {tk.waitingOnManager} tickets</span>
+            <span className="num underline-offset-2 hover:underline">{unread} unread · {tk.waitingOnManager} tickets</span>
           </Link>
           <span className="hidden items-center gap-1.5 lg:flex">
             <span className="grid size-6 place-items-center rounded-full bg-base text-[10px] font-semibold text-mute ring-1 ring-line">
