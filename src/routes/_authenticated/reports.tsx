@@ -73,6 +73,9 @@ function ReportsPage() {
   const rk = reportKpis({ ...data, reports: allReports });
   const [type, setType] = useState<"all" | Frequency>("all");
   const [status, setStatus] = useState<"all" | ReportStatus>("all");
+  const [eng, setEng] = useState("all");
+  const [timing, setTiming] = useState<"all" | "due" | "overdue">("all");
+  const [plantQ, setPlantQ] = useState("");
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({
     plantId: "",
@@ -82,9 +85,19 @@ function ReportsPage() {
     byEngineerId: "",
   });
 
+  const q = plantQ.trim().toLowerCase();
+  const dueCount = allReports.filter((r) => r.status !== "sent" && r.dueDate >= TODAY).length;
+  const overdueCount = allReports.filter((r) => r.status !== "sent" && r.dueDate < TODAY).length;
   const rows = allReports
     .filter((r) => (type === "all" ? true : r.type === type))
     .filter((r) => (status === "all" ? true : r.status === status))
+    .filter((r) => (eng === "all" ? true : r.byEngineerId === eng))
+    .filter((r) => (q ? plantName(data, r.plantId).toLowerCase().includes(q) : true))
+    .filter((r) => {
+      if (timing === "all") return true;
+      const isOverdue = r.status !== "sent" && r.dueDate < TODAY;
+      return timing === "overdue" ? isOverdue : r.status !== "sent" && !isOverdue;
+    })
     .sort((a, b) => (a.dueDate > b.dueDate ? -1 : 1));
 
   const add = () => {
