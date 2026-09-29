@@ -182,10 +182,40 @@ function ReportsPage() {
                     cat === c ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"
                   }`}
                 >
-                  {c === "total" ? `Total (${data.plants.length})` : `${c} (${categoryCounts[c]})`}
+                  {c === "total" ? `Total (${data.plants.length})` : `${c} (${categoryCounts[c])}`}
                 </button>
               ))}
             </span>
+            <span className="inline-flex items-center gap-1 rounded-full ring-1 ring-line/80 p-1">
+              {([
+                ["all", `All (${allReports.length})`],
+                ["due", `Due (${dueCount})`],
+                ["overdue", `Overdue (${overdueCount})`],
+              ] as const).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setTiming(v)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-[background-color] ${
+                    timing === v ? "bg-signal text-signal-foreground" : "text-mute hover:bg-black/5"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </span>
+            <TextInput
+              className="w-44"
+              value={plantQ}
+              onChange={(e) => setPlantQ(e.target.value)}
+              placeholder="Search plant name…"
+            />
+            <Select className="w-40" value={eng} onChange={(e) => setEng(e.target.value)}>
+              <option value="all">All engineers</option>
+              {data.engineers.map((e) => (
+                <option key={e.id} value={e.id}>{e.name}</option>
+              ))}
+            </Select>
             <Select className="w-32" value={type} onChange={(e) => setType(e.target.value as typeof type)}>
               <option value="all">All types</option>
               <option value="weekly">Weekly</option>
