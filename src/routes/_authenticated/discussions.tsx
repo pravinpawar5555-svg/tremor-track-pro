@@ -103,6 +103,15 @@ function DiscussionsPage() {
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
 
+  const lastKey = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const x of data.messages ?? []) {
+      const k = `${x.date} ${x.at}`;
+      if ((m.get(x.thread) ?? "") < k) m.set(x.thread, k);
+    }
+    return m;
+  }, [data.messages]);
+
   const tickets = useMemo(
     () =>
       data.tickets
@@ -111,16 +120,26 @@ function DiscussionsPage() {
           statusFilter === "all" ? true : statusFilter === "open" ? t.status !== "closed" : t.status === statusFilter,
         )
         .filter((t) => (plantFilter === "all" ? true : t.plantId === plantFilter))
-        .sort((a, b) => (a.raisedOn === b.raisedOn ? (a.raisedAt < b.raisedAt ? 1 : -1) : a.raisedOn < b.raisedOn ? 1 : -1)),
-    [data.tickets, statusFilter, plantFilter, manager, meId],
+        .map((t) => {
+          const raised = `${t.raisedOn} ${t.raisedAt}`;
+          const msg = lastKey.get(ticketThread(t.id)) ?? "";
+          return { t, k: msg > raised ? msg : raised };
+        })
+        .sort((a, b) => (a.k < b.k ? 1 : a.k > b.k ? -1 : 0))
+        .map((x) => x.t),
+    [data.tickets, statusFilter, plantFilter, manager, meId, lastKey],
   );
 
   const ticket = data.tickets.find((t) => t.id === selectedTicket) ?? tickets[0];
-  const plantId = selectedPlant ?? data.plants[0]?.id ?? "";
   const chatPlants = useMemo(
-    () => (catFilter === "total" ? data.plants : data.plants.filter((p) => (p.category ?? "order") === catFilter)),
-    [data.plants, catFilter],
+    () =>
+      (catFilter === "total" ? data.plants : data.plants.filter((p) => (p.category ?? "order") === catFilter))
+        .map((p, i) => ({ p, i, k: lastKey.get(plantThread(p.id)) ?? "" }))
+        .sort((a, b) => (a.k < b.k ? 1 : a.k > b.k ? -1 : a.i - b.i))
+        .map((x) => x.p),
+    [data.plants, catFilter, lastKey],
   );
+  const plantId = selectedPlant ?? chatPlants[0]?.id ?? data.plants[0]?.id ?? "";
   const chatCategoryCounts = {
     order: data.plants.filter((p) => (p.category ?? "order") === "order").length,
     demo: data.plants.filter((p) => (p.category ?? "order") === "demo").length,
@@ -302,7 +321,14 @@ function DiscussionsPage() {
                       </div>
                       <div className="mt-1 flex items-center gap-2">
                         <Chip severity={ticketSeverity(t.priority)} label={priorityLabel[t.priority]} />
-                        {unread ? <span className="num text-[10px] text-sev-high">{unread} new</span> : null}
+                        {unread ? (
+                          <span className="num inline-flex items-center gap-1 text-[10px] font-semibold text-sev-high">
+                            <span className="size-2 rounded-full bg-sev-high" aria-label="Unread" />
+                            {unread} new
+                          </span>
+                        ) : lastKey.get(ticketThread(t.id)) ? (
+                          <span className="text-[10px] text-mute" title="All read">✓✓ Read</span>
+                        ) : null}
                       </div>
                     </button>
                   );
@@ -348,14 +374,21 @@ function DiscussionsPage() {
                       )}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-medium">{p.name}</span>
+                        <span className={cn("truncate text-sm", unread ? "font-semibold" : "font-medium")}>{p.name}</span>
                         <span className="ml-2 flex shrink-0 items-center gap-2">
                           <span className="text-[10px] text-mute">{customerCategoryLabel[(p.category ?? "order") as CustomerCategory]}</span>
-                          {unread ? <span className="num text-[10px] text-sev-high">{unread} new</span> : null}
+                          {unread ? (
+                            <span className="num inline-flex items-center gap-1 text-[10px] font-semibold text-sev-high">
+                              <span className="size-2 rounded-full bg-sev-high" aria-label="Unread" />
+                              {unread} new
+                            </span>
+                          ) : last ? (
+                            <span className="text-[10px] text-mute" title="All read">✓✓</span>
+                          ) : null}
                         </span>
                       </div>
                       <div className="truncate text-[11px] text-mute">
-                        {last ? `${engineerName(data, last.authorId)}: ${last.text}` : "No messages yet"}
+                        {last ? `${fmtDate(last.date)} ${last.at} · ${engineerName(data, last.authorId)}: ${last.text}` : "No messages yet"}
                       </div>
                     </button>
                   );
