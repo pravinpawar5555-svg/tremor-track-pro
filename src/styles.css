@@ -51,7 +51,7 @@
   --ink: oklch(0.216 0.019 252);
   --mute: oklch(0.505 0.021 253);
   --line: oklch(0.858 0.017 251);
-  --signal: oklch(0.579 0.089 191.6);
+  --signal: oklch(0.299898 0.07706 262.656);
   --signal-foreground: oklch(1 0 0);
 
   --sev-advisory: oklch(0.505 0.021 253);
