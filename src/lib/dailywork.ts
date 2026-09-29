@@ -26,6 +26,7 @@ export interface Reminder {
   status: "active" | "done";
   createdBy: string;
   completedAt: string | null;
+  seenAt?: string | null;
 }
 
 export interface DayClosure {
@@ -64,6 +65,7 @@ const toReminder = (r: any): Reminder => ({
   status: r.status === "done" ? "done" : "active",
   createdBy: r.created_by ?? "",
   completedAt: r.completed_at ?? null,
+  seenAt: r.seen_at ?? null,
 });
 const fromReminder = (r: Reminder) => ({
   id: r.id,
@@ -148,6 +150,14 @@ export async function deleteReminder(id: string) {
   state = { ...state, reminders: state.reminders.filter((x) => x.id !== id) };
   emit();
   await db.from("reminders").delete().eq("id", id);
+}
+
+export async function markRemindersSeen(ids: string[]) {
+  if (!ids.length) return;
+  const at = new Date().toISOString();
+  state = { ...state, reminders: state.reminders.map((x) => (ids.includes(x.id) ? { ...x, seenAt: at } : x)) };
+  emit();
+  await db.from("reminders").update({ seen_at: at }).in("id", ids);
 }
 
 export async function saveClosure(c: Omit<DayClosure, "id" | "closedAt">) {
