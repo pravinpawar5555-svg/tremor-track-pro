@@ -71,6 +71,13 @@
       "when": 1790661317262,
       "tag": "0009_reminders_seen_at",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790687419049,
+      "tag": "0010_messages_acked_by",
+      "breakpoints": true
     }
   ]
 }

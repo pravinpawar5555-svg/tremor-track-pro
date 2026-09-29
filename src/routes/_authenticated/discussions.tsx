@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/console/AppShell";
+import { Bell, ThumbsUp } from "lucide-react";
 import {
   Button,
   Chip,
@@ -30,6 +31,8 @@ import {
   isManager,
   managersOf,
   markThreadRead,
+  toggleAck,
+  chatUnread,
   plantName,
   plantThread,
   priorityLabel,
@@ -53,8 +56,9 @@ import {
 } from "@/lib/store";
 
 export const Route = createFileRoute("/_authenticated/discussions")({
-  validateSearch: (s: Record<string, unknown>): { unread?: boolean | undefined; thread?: string | undefined } => ({
+  validateSearch: (s: Record<string, unknown>): { unread?: boolean | undefined; thread?: string | undefined; tickets?: boolean | undefined } => ({
     unread: s["unread"] ? true : undefined,
+    tickets: s["tickets"] ? true : undefined,
     thread: typeof s["thread"] === "string" ? s["thread"] : undefined,
   }),
   head: () => ({
@@ -159,11 +163,20 @@ function DiscussionsPage() {
   const search = Route.useSearch();
   const [jumped, setJumped] = useState(false);
   useEffect(() => {
-    if (jumped || !meId || !(data.messages ?? []).length) return;
+    if (jumped || !meId) return;
+    if (search.tickets) {
+      setJumped(true);
+      setTab("tickets");
+      setStatusFilter("all");
+      const t = tickets.find((x) => unreadCount(data, ticketThread(x.id), meId) > 0) ?? tickets[0];
+      if (t) setSelectedTicket(t.id);
+      return;
+    }
+    if (!(data.messages ?? []).length) return;
     let target = search.thread ?? "";
     if (!target && search.unread) {
       const unread = (data.messages ?? [])
-        .filter((x) => x.authorId !== meId && !x.readBy.includes(meId))
+        .filter((x) => x.thread.startsWith("plant:") && x.authorId !== meId && !x.readBy.includes(meId))
         .sort((a, b) => (`${a.date} ${a.at}` < `${b.date} ${b.at}` ? 1 : -1));
       target = unread[0]?.thread ?? "";
     }
@@ -177,7 +190,7 @@ function DiscussionsPage() {
       setCatFilter("total");
       setSelectedPlant(target.slice(6));
     }
-  }, [jumped, meId, data.messages, search.thread, search.unread]);
+  }, [jumped, meId, data.messages, search.thread, search.unread, search.tickets, tickets]);
 
   const set = (k: keyof typeof emptyTicket, v: string) => setForm((f) => ({ ...f, [k]: v }));
   const flash = (msg: string) => {
@@ -235,7 +248,7 @@ function DiscussionsPage() {
           hint="Observation / recommendation pending"
         />
         <Kpi label="High or critical" value={tk.critical} tone={tk.critical ? "high" : "low"} />
-        <Kpi label="Unread messages" value={totalUnread(data, meId)} hint={me ? `for ${me.name}` : ""} />
+        <Kpi label="Unread messages" value={chatUnread(data, meId)} hint={me ? `for ${me.name}` : ""} />
       </div>
 
       {showNew ? (
@@ -354,8 +367,6 @@ function DiscussionsPage() {
                             <span className="size-2 rounded-full bg-sev-high" aria-label="Unread" />
                             {unread} new
                           </span>
-                        ) : lastKey.get(ticketThread(t.id)) ? (
-                          <span className="text-[10px] text-mute" title="All read">✓✓ Read</span>
                         ) : null}
                       </div>
                     </button>
@@ -406,12 +417,10 @@ function DiscussionsPage() {
                         <span className="ml-2 flex shrink-0 items-center gap-2">
                           <span className="text-[10px] text-mute">{customerCategoryLabel[(p.category ?? "order") as CustomerCategory]}</span>
                           {unread ? (
-                            <span className="num inline-flex items-center gap-1 text-[10px] font-semibold text-sev-high">
-                              <span className="size-2 rounded-full bg-sev-high" aria-label="Unread" />
-                              {unread} new
+                            <span className="relative inline-grid size-6 place-items-center text-sev-high" title={`${unread} new message${unread > 1 ? "s" : ""}`}>
+                              <Bell className="size-4" />
+                              <span className="num absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-sev-high px-1 text-[9px] font-semibold text-signal-foreground">{unread}</span>
                             </span>
-                          ) : last ? (
-                            <span className="text-[10px] text-mute" title="All read">✓✓</span>
                           ) : null}
                         </span>
                       </div>
@@ -535,17 +544,33 @@ function DiscussionsPage() {
                               {engineerName(data, x.authorId)} · <span className="num">{fmtDate(x.date)} {x.at}</span>
                             </div>
                             <div className="mt-0.5 whitespace-pre-wrap">{x.text}</div>
-                            {mine ? (() => {
-                              const seen = x.readBy.filter((u) => u !== meId);
+                            {(() => {
+                              const acks = (x.ackedBy ?? []).filter((u) => u !== x.authorId);
+                              const iAcked = acks.includes(meId);
+                              if (mine)
+                                return (
+                                  <div className={cn("mt-1 flex items-center justify-end gap-1 text-[10px]", acks.length ? "font-medium text-sev-low" : "text-mute")}>
+                                    {acks.length ? (
+                                      <><ThumbsUp className="size-3" /> Acknowledged by {acks.map((u) => engineerName(data, u).split(" ")[0]).join(", ")}</>
+                                    ) : "Sent"}
+                                  </div>
+                                );
                               return (
-                                <div
-                                  className={cn("mt-1 text-right text-[10px]", seen.length ? "font-medium text-sev-low" : "text-mute")}
-                                  title={seen.length ? `Seen by ${seen.map((u) => engineerName(data, u)).join(", ")}` : "Not seen yet"}
-                                >
-                                  {seen.length ? `✓✓ Seen by ${seen.map((u) => engineerName(data, u).split(" ")[0]).join(", ")}` : "✓ Sent · not seen yet"}
+                                <div className="mt-1 flex justify-end">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleAck(x.id, meId)}
+                                    title={iAcked ? "You acknowledged this — tap to undo" : "Acknowledge with a thumbs up"}
+                                    className={cn(
+                                      "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] ring-1",
+                                      iAcked ? "bg-sev-low/10 font-medium text-sev-low ring-sev-low/40" : "text-mute ring-line hover:bg-black/5",
+                                    )}
+                                  >
+                                    <ThumbsUp className="size-3" /> {iAcked ? "Acknowledged" : "Acknowledge"}
+                                  </button>
                                 </div>
                               );
-                            })() : null}
+                            })()}
                           </div>
                         </div>
                       );

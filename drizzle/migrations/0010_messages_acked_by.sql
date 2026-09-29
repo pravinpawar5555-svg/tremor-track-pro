@@ -1,0 +1,1 @@
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS acked_by text[] NOT NULL DEFAULT '{}'::text[];
