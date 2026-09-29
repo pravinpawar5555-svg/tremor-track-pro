@@ -325,7 +325,6 @@ function ReportsPage() {
                           <Button
                             variant="ghost"
                             className="text-red-600 hover:bg-red-50"
-                            title="Delete this report"
                             onClick={() => {
                               if (window.confirm(`Delete this report (${plantName(data, r.plantId)} · ${r.period || r.docNo})? This cannot be undone.`)) {
                                 removeReport(r.id);
