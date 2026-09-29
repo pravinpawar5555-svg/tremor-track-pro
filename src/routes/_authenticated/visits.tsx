@@ -580,7 +580,7 @@ function VisitDetail({ v, manager, canComplete, onClose, onEdit, onComplete }: {
         ) : null}
         <div className="flex flex-wrap items-end gap-2 md:col-span-4">
           {openStatus && canComplete ? <Button onClick={onComplete}>Complete visit</Button> : null}
-          {s === "completed" ? <Button variant="solid" onClick={() => setMom(true)}>MOM · preview / edit / PDF</Button> : null}
+          {s === "completed" ? <Button variant="solid" onClick={() => setMom(true)}><FileText className="size-4" /> Open MOM — preview, edit &amp; PDF</Button> : null}
           {manager && openStatus ? (
             <>
               <TextInput type="date" className="w-40" value={date} onChange={(e) => setDate(e.target.value)} />
