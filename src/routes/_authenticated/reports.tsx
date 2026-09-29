@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/console/AppShell";
 import { RecurringReports } from "@/components/console/RecurringReports";
 import {
@@ -79,8 +79,12 @@ function ReportsPage() {
   const rk = reportKpis({ ...data, reports: allReports });
   const [type, setType] = useState<"all" | Frequency>("all");
   const [status, setStatus] = useState<"all" | ReportStatus>("all");
-  const [eng, setEng] = useState("all");
-  const [timing, setTiming] = useState<"all" | "due" | "overdue">("all");
+  const [eng, setEng] = useState(search.eng ?? "all");
+  const [timing, setTiming] = useState<"all" | "due" | "overdue">(search.timing ?? "all");
+  useEffect(() => {
+    if (search.timing) { setTiming(search.timing); setView("register"); }
+    if (search.eng) setEng(search.eng);
+  }, [search.timing, search.eng]);
   const [plantQ, setPlantQ] = useState("");
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({
