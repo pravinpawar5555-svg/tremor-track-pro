@@ -54,8 +54,8 @@ import {
 
 export const Route = createFileRoute("/_authenticated/discussions")({
   validateSearch: (s: Record<string, unknown>): { unread?: boolean | undefined; thread?: string | undefined } => ({
-    unread: s.unread ? true : undefined,
-    thread: typeof s.thread === "string" ? s.thread : undefined,
+    unread: s["unread"] ? true : undefined,
+    thread: typeof s["thread"] === "string" ? s["thread"] : undefined,
   }),
   head: () => ({
     meta: [

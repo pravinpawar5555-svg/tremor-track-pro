@@ -52,8 +52,8 @@ export const Route = createFileRoute("/_authenticated/reports")({
     ],
   }),
   validateSearch: (s: Record<string, unknown>): { timing?: "due" | "overdue" | undefined; eng?: string | undefined } => ({
-    timing: s.timing === "due" || s.timing === "overdue" ? s.timing : undefined,
-    eng: typeof s.eng === "string" ? s.eng : undefined,
+    timing: s["timing"] === "due" || s["timing"] === "overdue" ? s["timing"] : undefined,
+    eng: typeof s["eng"] === "string" ? s["eng"] : undefined,
   }),
   component: ReportsPage,
 });
