@@ -179,7 +179,21 @@ async function downloadMom(data: AppData, v: Visit) {
     drawSignatureBlock(margin, `For Customer: ${plant?.customer ?? ""}`);
     drawSignatureBlock(margin + blockWidth + gap, "For Forbes Marshall");
   }
-  doc.save(`MOM_${v.momNo ? v.momNo.replace(/\//g, "-") + "_" : ""}${plantName(data, v.plantId).replace(/[^\w]+/g, "_")}_${v.completedDate ?? v.plannedDate}.pdf`);
+  const fileName = `MOM_${v.momNo ? v.momNo.replace(/\//g, "-") + "_" : ""}${plantName(data, v.plantId).replace(/[^\w]+/g, "_")}_${v.completedDate ?? v.plannedDate}.pdf`;
+  const blob = doc.output("blob");
+  const url = URL.createObjectURL(blob);
+  try {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch {
+    window.open(url, "_blank");
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 /** Minutes of Meeting: edit, preview and download as PDF (completed visits). */
