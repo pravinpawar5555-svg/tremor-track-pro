@@ -1159,6 +1159,10 @@ export function setReportStatus(id: string, status: ReportStatus, sentDate?: str
   });
 }
 
+export function removeReport(id: string) {
+  commit({ ...data, reports: data.reports.filter((r) => r.id !== id) });
+}
+
 export function resetDemoData() {
   commit(seed());
 }

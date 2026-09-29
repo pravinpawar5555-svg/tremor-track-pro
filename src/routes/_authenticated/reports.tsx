@@ -26,6 +26,7 @@ import {
   frequencyText,
   plantName,
   plantFrequencies,
+  removeReport,
   reportKpis,
   reportTiming,
   saveReport,
@@ -321,6 +322,17 @@ function ReportsPage() {
                           ) : (
                             <Button variant="ghost" onClick={() => setReportStatus(r.id, "prepared")}>Undo</Button>
                           )}
+                          <Button
+                            variant="ghost"
+                            className="text-red-600 hover:bg-red-50"
+                            onClick={() => {
+                              if (window.confirm(`Delete this report (${plantName(data, r.plantId)} · ${r.period || r.docNo})? This cannot be undone.`)) {
+                                removeReport(r.id);
+                              }
+                            }}
+                          >
+                            Delete
+                          </Button>
                         </span>
                       </Td>
                     </Tr>
