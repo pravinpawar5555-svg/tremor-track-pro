@@ -412,6 +412,7 @@ function ReportsPage() {
               </tbody>
             </table>
           </div>
+          </>
         ) : (
           <Empty>No reports match these filters.</Empty>
         )}
