@@ -1,6 +1,9 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { CalendarDays, Factory, FileText, LayoutDashboard, ListChecks, Menu, MessageSquare, Users } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { RefreshControls } from "@/components/console/RefreshControls";
 import { NotificationBell } from "@/components/console/NotificationBell";
@@ -39,6 +42,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const tickets = ticketAttention(data);
   const navigate = useNavigate();
   const items = nav.filter((n) => manager || n.to !== "/engineers");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
+  const primary = [
+    { to: "/", short: "Home", icon: LayoutDashboard },
+    { to: "/tasks", short: "Daily Work", icon: ListChecks },
+    { to: "/reports", short: "Reports", icon: FileText },
+  ] as const;
+  const moreIcons = { "/discussions": MessageSquare, "/visits": CalendarDays, "/plants": Factory, "/engineers": Users } as Record<string, typeof Menu>;
+  const more = items.filter((n) => !primary.some((p) => p.to === n.to)).map((n) => ({ ...n, icon: moreIcons[n.to] ?? Menu }));
+  const moreActive = more.some((m) => isActive(m.to));
   const signOut = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
