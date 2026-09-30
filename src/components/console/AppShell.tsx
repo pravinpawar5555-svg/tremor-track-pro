@@ -46,7 +46,47 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-base text-ink">
-      <header className="sticky top-0 z-30 flex h-11 items-center gap-4 bg-panel/70 px-4 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)] backdrop-blur-md">
+      <header className="sticky top-0 z-30 bg-panel/90 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)] backdrop-blur-md md:hidden">
+        <div className="flex h-12 items-center gap-2 px-4">
+          <div className="grid size-7 shrink-0 place-items-center rounded-md bg-signal text-[11px] font-semibold text-signal-foreground">FM</div>
+          <span className="min-w-0 truncate text-[15px] font-semibold tracking-tight">Forbes Marshall</span>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <NotificationBell />
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" aria-label="Profile and alerts" className="relative grid size-9 place-items-center rounded-full bg-base text-xs font-semibold text-mute ring-1 ring-line">
+                  {me?.initials ?? "—"}
+                  {kpis.overdue || unread || tickets ? <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-sev-high ring-2 ring-panel" /> : null}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72 p-2">
+                <div className="px-2 py-1.5">
+                  <div className="text-sm font-semibold">{me?.name ?? ""}</div>
+                  <div className="text-xs text-mute">{manager ? "Manager" : "Engineer"}</div>
+                </div>
+                <div className="mt-1 flex flex-col gap-1">
+                  <Link to="/reports" search={{ timing: "overdue", eng: manager ? undefined : meId }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
+                    <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />Overdue reports<span className="num ml-auto">{kpis.overdue}</span>
+                  </Link>
+                  <Link to="/discussions" search={{ unread: unread ? true : undefined }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
+                    <span className={cn("size-2 rounded-full", unread ? "bg-sev-medium" : "bg-sev-low")} />Unread messages<span className="num ml-auto">{unread}</span>
+                  </Link>
+                  <Link to="/discussions" search={{ tickets: true }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
+                    <span className={cn("size-2 rounded-full", tickets ? "bg-sev-high" : "bg-sev-low")} />Tickets<span className="num ml-auto">{tickets}</span>
+                  </Link>
+                  <button onClick={() => void signOut()} className="mt-1 min-h-11 rounded-md text-sm font-medium text-signal ring-1 ring-signal/40">Sign out</button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+        <div className="flex h-10 items-center justify-between gap-2 border-t border-line/50 px-4 text-xs text-mute">
+          <span className="num">{fmtDate(TODAY)}</span>
+          <RefreshControls />
+        </div>
+      </header>
+
+      <header className="sticky top-0 z-30 hidden h-11 items-center gap-4 bg-panel/70 px-4 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)] backdrop-blur-md md:flex">
         <div className="flex items-center gap-2">
           <div className="grid size-6 place-items-center rounded-md bg-signal text-[10px] font-semibold text-signal-foreground">FM</div>
           <span className="font-semibold tracking-tight">Forbes Marshall</span>
