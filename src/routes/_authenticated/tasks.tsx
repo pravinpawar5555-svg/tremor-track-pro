@@ -153,7 +153,10 @@ function DailyWorkPage() {
   const team = analystsOf(data);
   const user = currentUser(data);
 
-  const [date, setDate] = useState(TODAY);
+  const today = useToday();
+  const [date, setDate] = useState(todayIso);
+  // When the day rolls over while the page is open, jump the view to the new day.
+  useEffect(() => { setDate((d) => (d < today ? today : d)); }, [today]);
   const [engFilter, setEngFilter] = useState("all");
   const [tab, setTab] = useState<Tab>("all");
   const [q, setQ] = useState("");
@@ -190,14 +193,14 @@ function DailyWorkPage() {
     completed: doneToday.length,
     remaining: active.length,
     carried: active.filter((t) => ageDays(t) > 0).length,
-    overdue: active.filter(isOverdue).length,
+    overdue: active.filter((t) => isOverdue(t, today)).length,
     waiting: active.filter((t) => t.status === "waiting").length,
   };
   const pct = kpi.assigned ? Math.round((kpi.completed / kpi.assigned) * 100) : 0;
 
   const matchAttention = (t: Task) => {
     switch (attention) {
-      case "overdue": return isOverdue(t);
+      case "overdue": return isOverdue(t, today);
       case "carried": return ageDays(t) > (manager ? 1 : 0);
       case "wait_customer": return t.status === "waiting" && t.waitingReason === "Waiting for Customer";
       case "wait_manager": return t.status === "waiting" && t.waitingReason === "Waiting for Manager";
@@ -211,7 +214,7 @@ function DailyWorkPage() {
     .filter(matchAttention)
     .filter((t) => !needle || `${t.title} ${t.description} ${plantName(data, t.plantId)} ${engineerName(data, t.engineerId)}`.toLowerCase().includes(needle));
   const tabCount = (s: Tab) => (s === "all" ? filtered.length : filtered.filter((t) => t.status === s).length);
-  const shown = filtered.filter((t) => tab === "all" || t.status === tab).sort(sortActive);
+  const shown = filtered.filter((t) => tab === "all" || t.status === tab).sort((a, b) => sortActive(a, b, today));
 
   const groups = useMemo(() => {
     if (groupBy === "none") return [{ key: "", label: "", tasks: shown }];
@@ -242,9 +245,9 @@ function DailyWorkPage() {
   const complete = (t: Task) => { setTaskStatus(t.id, "completed"); toast.success("Moved to Completed Today"); };
 
   const attentionItems: { id: Attention; label: string; hint: string; n: number; tone: string }[] = [
-    { id: "overdue", n: active.filter(isOverdue).length, label: "Overdue", hint: (() => { const o = active.filter(isOverdue).map((t) => dayDiff(t.dueDate, TODAY)); return o.length ? `Oldest: ${Math.max(...o)} days` : "Nothing overdue"; })(), tone: "text-sev-critical" },
+    { id: "overdue", n: active.filter((t) => isOverdue(t, today)).length, label: "Overdue", hint: (() => { const o = active.filter((t) => isOverdue(t, today)).map((t) => dayDiff(t.dueDate, today)); return o.length ? `Oldest: ${Math.max(...o)} days` : "Nothing overdue"; })(), tone: "text-sev-critical" },
     { id: "carried", n: active.filter((t) => ageDays(t) > (manager ? 1 : 0)).length, label: manager ? "Carried Forward >1 Day" : "Carried Forward", hint: "From previous working days", tone: "text-sev-high" },
-    { id: "wait_customer", n: active.filter((t) => t.waitingReason === "Waiting for Customer" && t.status === "waiting").length, label: "Waiting for Customer", hint: (() => { const w = active.filter((t) => t.waitingReason === "Waiting for Customer" && t.status === "waiting").map(waitDays); return w.length ? `Oldest waiting: ${Math.max(...w)} days` : "None waiting"; })(), tone: "text-sev-medium" },
+    { id: "wait_customer", n: active.filter((t) => t.waitingReason === "Waiting for Customer" && t.status === "waiting").length, label: "Waiting for Customer", hint: (() => { const w = active.filter((t) => t.waitingReason === "Waiting for Customer" && t.status === "waiting").map((t) => waitDays(t, today)); return w.length ? `Oldest waiting: ${Math.max(...w)} days` : "None waiting"; })(), tone: "text-sev-medium" },
     { id: "wait_manager", n: active.filter((t) => t.waitingReason === "Waiting for Manager" && t.status === "waiting").length, label: "Waiting for Manager", hint: "Approval / input required", tone: "text-signal" },
     ...(manager ? [{ id: "stale" as Attention, n: active.filter((t) => t.activity.length <= 1 && ageDays(t) > 0).length, label: "Tasks Without Update", hint: "Carried with no activity", tone: "text-mute" }] : []),
   ];
@@ -266,7 +269,7 @@ function DailyWorkPage() {
             <input type="date" className="absolute inset-0 opacity-0" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
           </label>
           <button type="button" aria-label="Next day" className="rounded px-2 py-1 hover:bg-base" onClick={() => setDate(shiftDate(date, 1))}>›</button>
-          {date !== TODAY ? <Button variant="ghost" onClick={() => setDate(TODAY)}>Today</Button> : null}
+          {date !== today ? <Button variant="ghost" onClick={() => setDate(today)}>Today</Button> : null}
         </div>
         <div className="flex items-center gap-3">
           {manager ? (
@@ -328,7 +331,7 @@ function DailyWorkPage() {
             ) : null}
             <div className="flex items-center justify-between gap-2 px-4 py-3">
               <h2 className="font-semibold">
-                {date === TODAY ? "Today's Active Work" : `Active Work · ${fmtDate(date)}`} ({shown.length})
+                {date === today ? "Today's Active Work" : `Active Work · ${fmtDate(date)}`} ({shown.length})
                 {attention ? (
                   <button type="button" className="ml-2 rounded-md bg-signal/10 px-2 py-0.5 text-[11px] text-signal" onClick={() => setAttention("")}>
                     {attentionItems.find((a) => a.id === attention)?.label} ✕
@@ -355,7 +358,7 @@ function DailyWorkPage() {
             <button type="button" className="flex w-full items-center justify-between px-4 py-3 text-left" onClick={() => setShowDone((v) => !v)}>
               <span className="flex items-center gap-2 font-semibold">
                 <span className="grid size-5 place-items-center rounded bg-sev-low text-[11px] text-signal-foreground">✓</span>
-                Completed {date === TODAY ? "Today" : fmtDate(date)} ({doneToday.length})
+                Completed {date === today ? "Today" : fmtDate(date)} ({doneToday.length})
                 {doneToday[0] ? <span className="text-xs font-normal text-mute">Last completed: {timeOf(doneToday[0].completedAt)}</span> : null}
               </span>
               <span className="text-xs text-signal">{showDone ? "Hide" : "Show"}</span>
@@ -385,7 +388,7 @@ function DailyWorkPage() {
             <ul className="divide-y divide-line/60">
               {attentionItems.map((a) => (
                 <li key={a.id}>
-                  <button type="button" onClick={() => { setAttention(a.id); setTab("all"); setDate(TODAY); }} className={cn("flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left hover:bg-base", attention === a.id && "bg-signal/5")}>
+                  <button type="button" onClick={() => { setAttention(a.id); setTab("all"); setDate(today); }} className={cn("flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left hover:bg-base", attention === a.id && "bg-signal/5")}>
                     <span>
                       <span className={cn("text-sm font-medium", a.n ? a.tone : "text-mute")}>{a.n} {a.label}</span>
                       <span className="block text-[11px] text-mute">{a.hint}</span>
@@ -405,7 +408,7 @@ function DailyWorkPage() {
       {/* Dialogs */}
       <AddTaskDialog open={adding} onClose={() => setAdding(false)} data={data} manager={manager} me={me} date={date} defaultEngineer={engFilter !== "all" ? engFilter : team[0]?.id ?? ""} />
       <WaitingDialog id={waitFor} onClose={() => setWaitFor(null)} />
-      <TaskDrawer task={task} data={data} manager={manager} me={me} onClose={() => setOpenTask(null)} onWait={(id) => setWaitFor(id)} onRemind={(t) => setReminder({ ...blankReminder(t.engineerId, TODAY), title: t.title, plantId: t.plantId, taskId: t.id, createdBy: me })} />
+      <TaskDrawer task={task} data={data} manager={manager} me={me} onClose={() => setOpenTask(null)} onWait={(id) => setWaitFor(id)} onRemind={(t) => setReminder({ ...blankReminder(t.engineerId, today), title: t.title, plantId: t.plantId, taskId: t.id, createdBy: me })} />
       <ReminderDialog r={reminder} data={data} manager={manager} onClose={() => setReminder(null)} tasks={active} />
       <CloseDayDialog open={closing} onClose={() => setClosing(false)} data={data} me={manager && engFilter !== "all" ? engFilter : me} date={date} />
     </AppShell>
