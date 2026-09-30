@@ -85,9 +85,6 @@ function ReportsPage() {
       const p = plantById.get(r.plantId);
       return !p || plantFrequencies(p).includes(r.type);
     });
-  // KPI cards: engineers see their own counts; manager sees the full team
-  const kpiReports = data.role === "manager" ? allReports : allReports.filter((r) => r.byEngineerId === me);
-  const rk = reportKpis({ ...data, reports: kpiReports });
   const [type, setType] = useState<"all" | Frequency>("all");
   const [status, setStatus] = useState<"all" | ReportStatus>("all");
   const [eng, setEng] = useState(search.eng ?? "all");
@@ -116,6 +113,14 @@ function ReportsPage() {
   const allCount = scoped.length;
   const dueCount = scoped.filter((r) => r.status !== "sent" && r.dueDate >= TODAY).length;
   const overdueCount = scoped.filter((r) => r.status !== "sent" && r.dueDate < TODAY).length;
+  // Keep the summary cards aligned with the engineer selection on every login.
+  // With no selection, managers see the team and engineers see their own totals.
+  const kpiReports = eng !== "all"
+    ? allReports.filter((r) => r.byEngineerId === eng)
+    : data.role === "manager"
+      ? allReports
+      : allReports.filter((r) => r.byEngineerId === me);
+  const rk = reportKpis({ ...data, reports: kpiReports });
   const rows = scoped
     .filter((r) => {
       if (timing === "all") return true;
