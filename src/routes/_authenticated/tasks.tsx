@@ -909,6 +909,7 @@ function TaskHistory({ data, manager, scopeIds, onOpen }: { data: AppData; manag
             </tbody>
           </table>
         </div>
+        </>
       ) : <Empty>No tasks match these filters.</Empty>}
     </Panel>
   );
