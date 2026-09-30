@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
-  TODAY,
+  todayIso,
   addTask,
   addTaskNote,
   analystsOf,
@@ -85,19 +85,45 @@ const timeOf = (iso: string | null) => {
 };
 const longDate = (iso: string) =>
   new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", weekday: "long" }).replace(/^(\w+), (.*)$/, "$2, $1");
+// Live "today" — stays correct even when the app/tab was opened on a previous day.
+let liveToday = todayIso();
+const todayListeners = new Set<() => void>();
+function refreshLiveToday() {
+  const t = todayIso();
+  if (t !== liveToday) {
+    liveToday = t;
+    todayListeners.forEach((l) => l());
+  }
+}
+if (typeof window !== "undefined") {
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refreshLiveToday();
+  });
+  window.setInterval(refreshLiveToday, 60_000);
+}
+function useToday() {
+  return useSyncExternalStore(
+    (cb) => {
+      todayListeners.add(cb);
+      return () => todayListeners.delete(cb);
+    },
+    () => liveToday,
+  );
+}
+
 const nextWorkingDay = (iso: string) => {
   let d = shiftDate(iso, 1);
   if (new Date(d + "T00:00:00").getDay() === 0) d = shiftDate(d, 1);
   return d;
 };
 const ageDays = (t: Task) => Math.max(0, dayDiff(t.originalDate, t.taskDate));
-const isOverdue = (t: Task) => t.status !== "completed" && !!t.dueDate && t.dueDate < TODAY;
-const waitDays = (t: Task) => {
+const isOverdue = (t: Task, today: string) => t.status !== "completed" && !!t.dueDate && t.dueDate < today;
+const waitDays = (t: Task, today: string) => {
   const last = [...t.activity].reverse().find((a) => a.text.startsWith("Waiting"));
-  return last ? Math.max(0, dayDiff(last.at.slice(0, 10), TODAY)) : 0;
+  return last ? Math.max(0, dayDiff(last.at.slice(0, 10), today)) : 0;
 };
-function sortActive(a: Task, b: Task) {
-  const o = Number(isOverdue(b)) - Number(isOverdue(a));
+function sortActive(a: Task, b: Task, today: string) {
+  const o = Number(isOverdue(b, today)) - Number(isOverdue(a, today));
   if (o) return o;
   const p = prioRank[a.priority] - prioRank[b.priority];
   if (p) return p;
@@ -127,7 +153,10 @@ function DailyWorkPage() {
   const team = analystsOf(data);
   const user = currentUser(data);
 
-  const [date, setDate] = useState(TODAY);
+  const today = useToday();
+  const [date, setDate] = useState(todayIso);
+  // When the day rolls over while the page is open, jump the view to the new day.
+  useEffect(() => { setDate((d) => (d < today ? today : d)); }, [today]);
   const [engFilter, setEngFilter] = useState("all");
   const [tab, setTab] = useState<Tab>("all");
   const [q, setQ] = useState("");
@@ -164,14 +193,14 @@ function DailyWorkPage() {
     completed: doneToday.length,
     remaining: active.length,
     carried: active.filter((t) => ageDays(t) > 0).length,
-    overdue: active.filter(isOverdue).length,
+    overdue: active.filter((t) => isOverdue(t, today)).length,
     waiting: active.filter((t) => t.status === "waiting").length,
   };
   const pct = kpi.assigned ? Math.round((kpi.completed / kpi.assigned) * 100) : 0;
 
   const matchAttention = (t: Task) => {
     switch (attention) {
-      case "overdue": return isOverdue(t);
+      case "overdue": return isOverdue(t, today);
       case "carried": return ageDays(t) > (manager ? 1 : 0);
       case "wait_customer": return t.status === "waiting" && t.waitingReason === "Waiting for Customer";
       case "wait_manager": return t.status === "waiting" && t.waitingReason === "Waiting for Manager";
@@ -185,7 +214,7 @@ function DailyWorkPage() {
     .filter(matchAttention)
     .filter((t) => !needle || `${t.title} ${t.description} ${plantName(data, t.plantId)} ${engineerName(data, t.engineerId)}`.toLowerCase().includes(needle));
   const tabCount = (s: Tab) => (s === "all" ? filtered.length : filtered.filter((t) => t.status === s).length);
-  const shown = filtered.filter((t) => tab === "all" || t.status === tab).sort(sortActive);
+  const shown = filtered.filter((t) => tab === "all" || t.status === tab).sort((a, b) => sortActive(a, b, today));
 
   const groups = useMemo(() => {
     if (groupBy === "none") return [{ key: "", label: "", tasks: shown }];
@@ -216,9 +245,9 @@ function DailyWorkPage() {
   const complete = (t: Task) => { setTaskStatus(t.id, "completed"); toast.success("Moved to Completed Today"); };
 
   const attentionItems: { id: Attention; label: string; hint: string; n: number; tone: string }[] = [
-    { id: "overdue", n: active.filter(isOverdue).length, label: "Overdue", hint: (() => { const o = active.filter(isOverdue).map((t) => dayDiff(t.dueDate, TODAY)); return o.length ? `Oldest: ${Math.max(...o)} days` : "Nothing overdue"; })(), tone: "text-sev-critical" },
+    { id: "overdue", n: active.filter((t) => isOverdue(t, today)).length, label: "Overdue", hint: (() => { const o = active.filter((t) => isOverdue(t, today)).map((t) => dayDiff(t.dueDate, today)); return o.length ? `Oldest: ${Math.max(...o)} days` : "Nothing overdue"; })(), tone: "text-sev-critical" },
     { id: "carried", n: active.filter((t) => ageDays(t) > (manager ? 1 : 0)).length, label: manager ? "Carried Forward >1 Day" : "Carried Forward", hint: "From previous working days", tone: "text-sev-high" },
-    { id: "wait_customer", n: active.filter((t) => t.waitingReason === "Waiting for Customer" && t.status === "waiting").length, label: "Waiting for Customer", hint: (() => { const w = active.filter((t) => t.waitingReason === "Waiting for Customer" && t.status === "waiting").map(waitDays); return w.length ? `Oldest waiting: ${Math.max(...w)} days` : "None waiting"; })(), tone: "text-sev-medium" },
+    { id: "wait_customer", n: active.filter((t) => t.waitingReason === "Waiting for Customer" && t.status === "waiting").length, label: "Waiting for Customer", hint: (() => { const w = active.filter((t) => t.waitingReason === "Waiting for Customer" && t.status === "waiting").map((t) => waitDays(t, today)); return w.length ? `Oldest waiting: ${Math.max(...w)} days` : "None waiting"; })(), tone: "text-sev-medium" },
     { id: "wait_manager", n: active.filter((t) => t.waitingReason === "Waiting for Manager" && t.status === "waiting").length, label: "Waiting for Manager", hint: "Approval / input required", tone: "text-signal" },
     ...(manager ? [{ id: "stale" as Attention, n: active.filter((t) => t.activity.length <= 1 && ageDays(t) > 0).length, label: "Tasks Without Update", hint: "Carried with no activity", tone: "text-mute" }] : []),
   ];
@@ -240,7 +269,7 @@ function DailyWorkPage() {
             <input type="date" className="absolute inset-0 opacity-0" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
           </label>
           <button type="button" aria-label="Next day" className="rounded px-2 py-1 hover:bg-base" onClick={() => setDate(shiftDate(date, 1))}>›</button>
-          {date !== TODAY ? <Button variant="ghost" onClick={() => setDate(TODAY)}>Today</Button> : null}
+          {date !== today ? <Button variant="ghost" onClick={() => setDate(today)}>Today</Button> : null}
         </div>
         <div className="flex items-center gap-3">
           {manager ? (
@@ -302,7 +331,7 @@ function DailyWorkPage() {
             ) : null}
             <div className="flex items-center justify-between gap-2 px-4 py-3">
               <h2 className="font-semibold">
-                {date === TODAY ? "Today's Active Work" : `Active Work · ${fmtDate(date)}`} ({shown.length})
+                {date === today ? "Today's Active Work" : `Active Work · ${fmtDate(date)}`} ({shown.length})
                 {attention ? (
                   <button type="button" className="ml-2 rounded-md bg-signal/10 px-2 py-0.5 text-[11px] text-signal" onClick={() => setAttention("")}>
                     {attentionItems.find((a) => a.id === attention)?.label} ✕
@@ -329,7 +358,7 @@ function DailyWorkPage() {
             <button type="button" className="flex w-full items-center justify-between px-4 py-3 text-left" onClick={() => setShowDone((v) => !v)}>
               <span className="flex items-center gap-2 font-semibold">
                 <span className="grid size-5 place-items-center rounded bg-sev-low text-[11px] text-signal-foreground">✓</span>
-                Completed {date === TODAY ? "Today" : fmtDate(date)} ({doneToday.length})
+                Completed {date === today ? "Today" : fmtDate(date)} ({doneToday.length})
                 {doneToday[0] ? <span className="text-xs font-normal text-mute">Last completed: {timeOf(doneToday[0].completedAt)}</span> : null}
               </span>
               <span className="text-xs text-signal">{showDone ? "Hide" : "Show"}</span>
@@ -359,7 +388,7 @@ function DailyWorkPage() {
             <ul className="divide-y divide-line/60">
               {attentionItems.map((a) => (
                 <li key={a.id}>
-                  <button type="button" onClick={() => { setAttention(a.id); setTab("all"); setDate(TODAY); }} className={cn("flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left hover:bg-base", attention === a.id && "bg-signal/5")}>
+                  <button type="button" onClick={() => { setAttention(a.id); setTab("all"); setDate(today); }} className={cn("flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left hover:bg-base", attention === a.id && "bg-signal/5")}>
                     <span>
                       <span className={cn("text-sm font-medium", a.n ? a.tone : "text-mute")}>{a.n} {a.label}</span>
                       <span className="block text-[11px] text-mute">{a.hint}</span>
@@ -379,7 +408,7 @@ function DailyWorkPage() {
       {/* Dialogs */}
       <AddTaskDialog open={adding} onClose={() => setAdding(false)} data={data} manager={manager} me={me} date={date} defaultEngineer={engFilter !== "all" ? engFilter : team[0]?.id ?? ""} />
       <WaitingDialog id={waitFor} onClose={() => setWaitFor(null)} />
-      <TaskDrawer task={task} data={data} manager={manager} me={me} onClose={() => setOpenTask(null)} onWait={(id) => setWaitFor(id)} onRemind={(t) => setReminder({ ...blankReminder(t.engineerId, TODAY), title: t.title, plantId: t.plantId, taskId: t.id, createdBy: me })} />
+      <TaskDrawer task={task} data={data} manager={manager} me={me} onClose={() => setOpenTask(null)} onWait={(id) => setWaitFor(id)} onRemind={(t) => setReminder({ ...blankReminder(t.engineerId, today), title: t.title, plantId: t.plantId, taskId: t.id, createdBy: me })} />
       <ReminderDialog r={reminder} data={data} manager={manager} onClose={() => setReminder(null)} tasks={active} />
       <CloseDayDialog open={closing} onClose={() => setClosing(false)} data={data} me={manager && engFilter !== "all" ? engFilter : me} date={date} />
     </AppShell>
@@ -418,7 +447,8 @@ function TaskGroup({ label, children, tasks, doneCount, totalCount, data: _d }: 
 }
 
 function TaskRow({ t, data, manager, onOpen, onComplete, onStart, onWait }: { t: Task; data: AppData; manager: boolean; onOpen: () => void; onComplete: () => void; onStart: () => void; onWait: () => void }) {
-  const overdue = isOverdue(t);
+  const today = useToday();
+  const overdue = isOverdue(t, today);
   const primary =
     t.status === "pending" ? <Button onClick={onStart}>Start</Button> : t.status === "in_progress" ? <Button variant="solid" onClick={onComplete}>Complete</Button> : <Button onClick={onStart}>Resume</Button>;
   return (
@@ -434,7 +464,7 @@ function TaskRow({ t, data, manager, onOpen, onComplete, onStart, onWait }: { t:
             taskTypeLabel[t.taskType],
             t.status === "waiting" ? t.waitingReason : "",
           ].filter(Boolean).join(" · ")}
-          {t.dueDate ? <span className={cn(overdue && "font-medium text-sev-critical")}> · Due {t.dueDate === TODAY ? "Today" : fmtDate(t.dueDate).slice(0, 6)}{t.dueTime ? ` ${t.dueTime}` : ""}</span> : null}
+          {t.dueDate ? <span className={cn(overdue && "font-medium text-sev-critical")}> · Due {t.dueDate === today ? "Today" : fmtDate(t.dueDate).slice(0, 6)}{t.dueTime ? ` ${t.dueTime}` : ""}</span> : null}
         </div>
         {/* mobile meta */}
         <div className="mt-1 flex flex-wrap gap-1.5 md:hidden">
@@ -456,15 +486,16 @@ function TaskRow({ t, data, manager, onOpen, onComplete, onStart, onWait }: { t:
 // ------------------------------------------------------------------ dialogs
 
 function AddTaskDialog({ open, onClose, data, manager, me, date, defaultEngineer }: { open: boolean; onClose: () => void; data: AppData; manager: boolean; me: string; date: string; defaultEngineer: string }) {
+  const today = useToday();
   const team = analystsOf(data);
   const [f, setF] = useState({ title: "", description: "", engineerId: "", plantId: "", taskType: "report" as TaskType, priority: "normal" as TaskPriority, dueDate: "", dueTime: "" });
   useEffect(() => {
-    if (open) setF({ title: "", description: "", engineerId: manager ? defaultEngineer : me, plantId: "", taskType: "report", priority: "normal", dueDate: date < TODAY ? TODAY : date, dueTime: "" });
+    if (open) setF({ title: "", description: "", engineerId: manager ? defaultEngineer : me, plantId: "", taskType: "report", priority: "normal", dueDate: date < today ? today : date, dueTime: "" });
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   const plants = data.plants.filter((p) => manager || p.engineerId === me || true);
   const submit = () => {
     if (!f.title.trim() || !f.engineerId) return;
-    const workDate = date < TODAY ? TODAY : date;
+    const workDate = date < today ? today : date;
     addTask({ ...f, taskDate: workDate, dueDate: f.dueDate || workDate });
     toast.success("Task added");
     onClose();
@@ -600,13 +631,14 @@ function TaskDrawer({ task: t, data, manager, me, onClose, onWait, onRemind }: {
 // ------------------------------------------------------------------ right rail
 
 function CloseDayCard({ data: _d, manager, me, date, dayTasks, closures, onClose }: { data: AppData; manager: boolean; me: string; date: string; dayTasks: Task[]; closures: { engineerId: string; workDate: string; closedAt: string; note: string; completed: number; assigned: number }[]; onClose: () => void }) {
+  const today = useToday();
   if (manager) {
-    const today = closures.filter((c) => c.workDate === date);
+    const todayClosures = closures.filter((c) => c.workDate === date);
     return (
       <Panel title="Close-day summaries" meta={fmtDate(date)}>
-        {today.length ? (
+        {todayClosures.length ? (
           <ul className="divide-y divide-line/60">
-            {today.map((c) => (
+            {todayClosures.map((c) => (
               <li key={c.engineerId} className="px-4 py-2 text-xs">
                 <div className="flex justify-between"><span className="font-medium">{engineerName(_d, c.engineerId)}</span><span className="num text-mute">{c.completed}/{c.assigned} · {timeOf(c.closedAt)}</span></div>
                 {c.note ? <p className="mt-1 text-mute">{c.note}</p> : null}
@@ -626,7 +658,7 @@ function CloseDayCard({ data: _d, manager, me, date, dayTasks, closures, onClose
           <div className="font-semibold">Close Day</div>
           <div className="text-xs opacity-80">{closed ? `Closed at ${timeOf(closed.closedAt)}` : "Review and close today's work"}</div>
         </div>
-        <button type="button" onClick={onClose} disabled={date > TODAY} className="rounded-md bg-signal-foreground/15 px-3 py-1.5 text-xs font-medium hover:bg-signal-foreground/25 disabled:opacity-40">
+        <button type="button" onClick={onClose} disabled={date > today} className="rounded-md bg-signal-foreground/15 px-3 py-1.5 text-xs font-medium hover:bg-signal-foreground/25 disabled:opacity-40">
           {closed ? "Update" : "Close Day"}
         </button>
       </div>
@@ -687,15 +719,16 @@ function CloseDayDialog({ open, onClose, data, me, date }: { open: boolean; onCl
 }
 
 function ReminderCenter({ data, me, manager, reminders, onEdit }: { data: AppData; me: string; manager: boolean; reminders: Reminder[]; onEdit: (r: Reminder) => void }) {
+  const today = useToday();
   const [tab, setTab] = useState<"today" | "upcoming" | "overdue">("today");
   const now = new Date();
   const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   // Everyone (manager included) sees only reminders assigned to them or created by them.
   const mine = reminders.filter((r) => r.status === "active" && (r.userId === me || r.createdBy === me));
-  const late = (r: Reminder) => r.date < TODAY || (r.date === TODAY && !!r.time && r.time < hhmm);
+  const late = (r: Reminder) => r.date < today || (r.date === today && !!r.time && r.time < hhmm);
   const lists = {
-    today: mine.filter((r) => r.date === TODAY && !late(r)),
-    upcoming: mine.filter((r) => r.date > TODAY),
+    today: mine.filter((r) => r.date === today && !late(r)),
+    upcoming: mine.filter((r) => r.date > today),
     overdue: mine.filter(late),
   };
   const list = [...lists[tab]].sort((a, b) => (a.date + a.time < b.date + b.time ? -1 : 1));
@@ -707,7 +740,7 @@ function ReminderCenter({ data, me, manager, reminders, onEdit }: { data: AppDat
     void saveReminder({ ...r, date: iso, time: `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}` });
   };
   return (
-    <Panel title="Reminder" meta={<Button onClick={() => onEdit({ ...blankReminder(me, TODAY), createdBy: me })}>+ Add Reminder</Button>}>
+    <Panel title="Reminder" meta={<Button onClick={() => onEdit({ ...blankReminder(me, today), createdBy: me })}>+ Add Reminder</Button>}>
       <div className="flex gap-1 px-4 pt-3">
         {(["today", "upcoming", "overdue"] as const).map((k) => (
           <button key={k} type="button" onClick={() => setTab(k)} className={cn("flex-1 rounded-md py-1 text-xs capitalize", tab === k ? "bg-signal/10 font-medium text-signal" : "text-mute hover:bg-base", k === "overdue" && lists.overdue.length && tab !== k && "text-sev-critical")}>
@@ -720,7 +753,7 @@ function ReminderCenter({ data, me, manager, reminders, onEdit }: { data: AppDat
           {list.map((r) => (
             <li key={r.id} className={cn("border-l-2 px-4 py-2", late(r) ? "border-sev-critical" : "border-signal")}>
               <div className="flex items-start gap-3">
-                <span className={cn("num w-14 shrink-0 text-xs font-medium", late(r) ? "text-sev-critical" : "text-signal")}>{r.date !== TODAY ? fmtDate(r.date).slice(0, 6) : ""}{r.time ? ` ${r.time}` : r.date === TODAY ? "Today" : ""}</span>
+                <span className={cn("num w-14 shrink-0 text-xs font-medium", late(r) ? "text-sev-critical" : "text-signal")}>{r.date !== today ? fmtDate(r.date).slice(0, 6) : ""}{r.time ? ` ${r.time}` : r.date === today ? "Today" : ""}</span>
                 <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onEdit(r)}>
                   <div className="text-sm font-medium">{r.title}</div>
                   <div className="text-[11px] text-mute">{[r.description, r.plantId ? plantName(data, r.plantId) : "", r.userId !== me ? `For ${engineerName(data, r.userId)}` : "", r.userId === me && r.createdBy && r.createdBy !== me ? `From ${engineerName(data, r.createdBy)}` : ""].filter(Boolean).join(" · ")}</div>
@@ -768,7 +801,8 @@ function ReminderDialog({ r, data, manager, onClose, tasks }: { r: Reminder | nu
 }
 
 function SevenDay({ data, scopeIds }: { data: AppData; scopeIds: string[] }) {
-  const days = Array.from({ length: 7 }, (_, i) => shiftDate(TODAY, i - 6));
+  const today = useToday();
+  const days = Array.from({ length: 7 }, (_, i) => shiftDate(today, i - 6));
   const rows = days.map((d) => {
     const assigned = data.tasks.filter((t) => scopeIds.includes(t.engineerId) && (t.originalDate === d || (t.originalDate < d && (t.completedAt ? t.completedAt.slice(0, 10) >= d : t.taskDate >= d)))).length;
     const completed = data.tasks.filter((t) => scopeIds.includes(t.engineerId) && t.completedAt?.slice(0, 10) === d).length;
@@ -803,6 +837,7 @@ function SevenDay({ data, scopeIds }: { data: AppData; scopeIds: string[] }) {
 // ------------------------------------------------------------------ history
 
 function TaskHistory({ data, manager, scopeIds, onOpen }: { data: AppData; manager: boolean; scopeIds: string[]; onOpen: (id: string) => void }) {
+  const today = useToday();
   const team = analystsOf(data);
   const [range, setRange] = useState("7");
   const [eng, setEng] = useState("");
@@ -812,7 +847,7 @@ function TaskHistory({ data, manager, scopeIds, onOpen }: { data: AppData; manag
   const [prio, setPrio] = useState("");
   const [carry, setCarry] = useState("");
   const [q, setQ] = useState("");
-  const from = range === "all" ? "0000" : shiftDate(TODAY, -Number(range));
+  const from = range === "all" ? "0000" : shiftDate(today, -Number(range));
   const needle = q.trim().toLowerCase();
   const rows = data.tasks
     .filter((t) => scopeIds.includes(t.engineerId) && (!eng || t.engineerId === eng))
