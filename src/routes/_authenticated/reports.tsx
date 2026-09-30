@@ -107,13 +107,16 @@ function ReportsPage() {
   });
 
   const q = plantQ.trim().toLowerCase();
-  const dueCount = allReports.filter((r) => r.status !== "sent" && r.dueDate >= TODAY).length;
-  const overdueCount = allReports.filter((r) => r.status !== "sent" && r.dueDate < TODAY).length;
-  const rows = allReports
+  // counts reflect every active filter except the timing pills themselves
+  const scoped = allReports
     .filter((r) => (type === "all" ? true : r.type === type))
     .filter((r) => (status === "all" ? true : r.status === status))
     .filter((r) => (eng === "all" ? true : r.byEngineerId === eng))
-    .filter((r) => (q ? plantName(data, r.plantId).toLowerCase().includes(q) : true))
+    .filter((r) => (q ? plantName(data, r.plantId).toLowerCase().includes(q) : true));
+  const allCount = scoped.length;
+  const dueCount = scoped.filter((r) => r.status !== "sent" && r.dueDate >= TODAY).length;
+  const overdueCount = scoped.filter((r) => r.status !== "sent" && r.dueDate < TODAY).length;
+  const rows = scoped
     .filter((r) => {
       if (timing === "all") return true;
       const isOverdue = r.status !== "sent" && r.dueDate < TODAY;
