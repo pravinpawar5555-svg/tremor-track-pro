@@ -870,7 +870,25 @@ function TaskHistory({ data, manager, scopeIds, onOpen }: { data: AppData; manag
         <TextInput placeholder="Search history…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       {rows.length ? (
-        <div className="overflow-x-auto">
+        <>
+        <ul className="divide-y divide-line/60 md:hidden">
+          {rows.map((t) => (
+            <li key={t.id}>
+              <button type="button" onClick={() => onOpen(t.id)} className="block w-full px-4 py-3 text-left">
+                <div className="flex items-center justify-between gap-2 text-sm text-mute">
+                  <span className="num">{fmtDate(t.taskDate)}</span>
+                  <Badge className={statusCls[t.status]}>{taskStatusLabel[t.status]}</Badge>
+                </div>
+                <div className="mt-0.5 text-[15px] font-medium">{t.title}</div>
+                <div className="text-sm text-mute">
+                  {t.plantId ? plantName(data, t.plantId) : "—"} · {taskTypeLabel[t.taskType]}
+                  {manager ? ` · ${engineerName(data, t.engineerId)}` : ""}
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[820px] text-sm">
             <thead><tr className="text-left">{["Date", ...(manager ? ["Engineer"] : []), "Plant", "Task", "Type", "Created", "Original due", "Completed at", "Carry days", "Status"].map((h) => <th key={h} className="label-caps px-2 py-2 font-medium first:pl-4">{h}</th>)}</tr></thead>
             <tbody>

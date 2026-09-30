@@ -281,6 +281,7 @@ function VisitsPage() {
             </table>
             {!shown.length ? <Empty>No visits match these filters.</Empty> : null}
           </div>
+          </>
         ) : (
           <VisitCalendar month={month} setMonth={setMonth} visits={shown} onPick={setSelected} />
         )}
