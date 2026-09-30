@@ -244,7 +244,7 @@ function ReportsPage() {
             </span>
             <span className="inline-flex items-center gap-1 rounded-full ring-1 ring-line/80 p-1">
               {([
-                ["all", `All (${allReports.length})`],
+                ["all", `All (${allCount})`],
                 ["due", `Due (${dueCount})`],
                 ["overdue", `Overdue (${overdueCount})`],
               ] as const).map(([v, label]) => (
