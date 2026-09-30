@@ -447,7 +447,8 @@ function TaskGroup({ label, children, tasks, doneCount, totalCount, data: _d }: 
 }
 
 function TaskRow({ t, data, manager, onOpen, onComplete, onStart, onWait }: { t: Task; data: AppData; manager: boolean; onOpen: () => void; onComplete: () => void; onStart: () => void; onWait: () => void }) {
-  const overdue = isOverdue(t);
+  const today = useToday();
+  const overdue = isOverdue(t, today);
   const primary =
     t.status === "pending" ? <Button onClick={onStart}>Start</Button> : t.status === "in_progress" ? <Button variant="solid" onClick={onComplete}>Complete</Button> : <Button onClick={onStart}>Resume</Button>;
   return (
@@ -463,7 +464,7 @@ function TaskRow({ t, data, manager, onOpen, onComplete, onStart, onWait }: { t:
             taskTypeLabel[t.taskType],
             t.status === "waiting" ? t.waitingReason : "",
           ].filter(Boolean).join(" · ")}
-          {t.dueDate ? <span className={cn(overdue && "font-medium text-sev-critical")}> · Due {t.dueDate === TODAY ? "Today" : fmtDate(t.dueDate).slice(0, 6)}{t.dueTime ? ` ${t.dueTime}` : ""}</span> : null}
+          {t.dueDate ? <span className={cn(overdue && "font-medium text-sev-critical")}> · Due {t.dueDate === today ? "Today" : fmtDate(t.dueDate).slice(0, 6)}{t.dueTime ? ` ${t.dueTime}` : ""}</span> : null}
         </div>
         {/* mobile meta */}
         <div className="mt-1 flex flex-wrap gap-1.5 md:hidden">
@@ -485,15 +486,16 @@ function TaskRow({ t, data, manager, onOpen, onComplete, onStart, onWait }: { t:
 // ------------------------------------------------------------------ dialogs
 
 function AddTaskDialog({ open, onClose, data, manager, me, date, defaultEngineer }: { open: boolean; onClose: () => void; data: AppData; manager: boolean; me: string; date: string; defaultEngineer: string }) {
+  const today = useToday();
   const team = analystsOf(data);
   const [f, setF] = useState({ title: "", description: "", engineerId: "", plantId: "", taskType: "report" as TaskType, priority: "normal" as TaskPriority, dueDate: "", dueTime: "" });
   useEffect(() => {
-    if (open) setF({ title: "", description: "", engineerId: manager ? defaultEngineer : me, plantId: "", taskType: "report", priority: "normal", dueDate: date < TODAY ? TODAY : date, dueTime: "" });
+    if (open) setF({ title: "", description: "", engineerId: manager ? defaultEngineer : me, plantId: "", taskType: "report", priority: "normal", dueDate: date < today ? today : date, dueTime: "" });
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   const plants = data.plants.filter((p) => manager || p.engineerId === me || true);
   const submit = () => {
     if (!f.title.trim() || !f.engineerId) return;
-    const workDate = date < TODAY ? TODAY : date;
+    const workDate = date < today ? today : date;
     addTask({ ...f, taskDate: workDate, dueDate: f.dueDate || workDate });
     toast.success("Task added");
     onClose();
@@ -629,13 +631,14 @@ function TaskDrawer({ task: t, data, manager, me, onClose, onWait, onRemind }: {
 // ------------------------------------------------------------------ right rail
 
 function CloseDayCard({ data: _d, manager, me, date, dayTasks, closures, onClose }: { data: AppData; manager: boolean; me: string; date: string; dayTasks: Task[]; closures: { engineerId: string; workDate: string; closedAt: string; note: string; completed: number; assigned: number }[]; onClose: () => void }) {
+  const today = useToday();
   if (manager) {
-    const today = closures.filter((c) => c.workDate === date);
+    const todayClosures = closures.filter((c) => c.workDate === date);
     return (
       <Panel title="Close-day summaries" meta={fmtDate(date)}>
-        {today.length ? (
+        {todayClosures.length ? (
           <ul className="divide-y divide-line/60">
-            {today.map((c) => (
+            {todayClosures.map((c) => (
               <li key={c.engineerId} className="px-4 py-2 text-xs">
                 <div className="flex justify-between"><span className="font-medium">{engineerName(_d, c.engineerId)}</span><span className="num text-mute">{c.completed}/{c.assigned} · {timeOf(c.closedAt)}</span></div>
                 {c.note ? <p className="mt-1 text-mute">{c.note}</p> : null}
@@ -655,7 +658,7 @@ function CloseDayCard({ data: _d, manager, me, date, dayTasks, closures, onClose
           <div className="font-semibold">Close Day</div>
           <div className="text-xs opacity-80">{closed ? `Closed at ${timeOf(closed.closedAt)}` : "Review and close today's work"}</div>
         </div>
-        <button type="button" onClick={onClose} disabled={date > TODAY} className="rounded-md bg-signal-foreground/15 px-3 py-1.5 text-xs font-medium hover:bg-signal-foreground/25 disabled:opacity-40">
+        <button type="button" onClick={onClose} disabled={date > today} className="rounded-md bg-signal-foreground/15 px-3 py-1.5 text-xs font-medium hover:bg-signal-foreground/25 disabled:opacity-40">
           {closed ? "Update" : "Close Day"}
         </button>
       </div>
@@ -716,15 +719,16 @@ function CloseDayDialog({ open, onClose, data, me, date }: { open: boolean; onCl
 }
 
 function ReminderCenter({ data, me, manager, reminders, onEdit }: { data: AppData; me: string; manager: boolean; reminders: Reminder[]; onEdit: (r: Reminder) => void }) {
+  const today = useToday();
   const [tab, setTab] = useState<"today" | "upcoming" | "overdue">("today");
   const now = new Date();
   const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   // Everyone (manager included) sees only reminders assigned to them or created by them.
   const mine = reminders.filter((r) => r.status === "active" && (r.userId === me || r.createdBy === me));
-  const late = (r: Reminder) => r.date < TODAY || (r.date === TODAY && !!r.time && r.time < hhmm);
+  const late = (r: Reminder) => r.date < today || (r.date === today && !!r.time && r.time < hhmm);
   const lists = {
-    today: mine.filter((r) => r.date === TODAY && !late(r)),
-    upcoming: mine.filter((r) => r.date > TODAY),
+    today: mine.filter((r) => r.date === today && !late(r)),
+    upcoming: mine.filter((r) => r.date > today),
     overdue: mine.filter(late),
   };
   const list = [...lists[tab]].sort((a, b) => (a.date + a.time < b.date + b.time ? -1 : 1));
@@ -736,7 +740,7 @@ function ReminderCenter({ data, me, manager, reminders, onEdit }: { data: AppDat
     void saveReminder({ ...r, date: iso, time: `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}` });
   };
   return (
-    <Panel title="Reminder" meta={<Button onClick={() => onEdit({ ...blankReminder(me, TODAY), createdBy: me })}>+ Add Reminder</Button>}>
+    <Panel title="Reminder" meta={<Button onClick={() => onEdit({ ...blankReminder(me, today), createdBy: me })}>+ Add Reminder</Button>}>
       <div className="flex gap-1 px-4 pt-3">
         {(["today", "upcoming", "overdue"] as const).map((k) => (
           <button key={k} type="button" onClick={() => setTab(k)} className={cn("flex-1 rounded-md py-1 text-xs capitalize", tab === k ? "bg-signal/10 font-medium text-signal" : "text-mute hover:bg-base", k === "overdue" && lists.overdue.length && tab !== k && "text-sev-critical")}>
@@ -749,7 +753,7 @@ function ReminderCenter({ data, me, manager, reminders, onEdit }: { data: AppDat
           {list.map((r) => (
             <li key={r.id} className={cn("border-l-2 px-4 py-2", late(r) ? "border-sev-critical" : "border-signal")}>
               <div className="flex items-start gap-3">
-                <span className={cn("num w-14 shrink-0 text-xs font-medium", late(r) ? "text-sev-critical" : "text-signal")}>{r.date !== TODAY ? fmtDate(r.date).slice(0, 6) : ""}{r.time ? ` ${r.time}` : r.date === TODAY ? "Today" : ""}</span>
+                <span className={cn("num w-14 shrink-0 text-xs font-medium", late(r) ? "text-sev-critical" : "text-signal")}>{r.date !== today ? fmtDate(r.date).slice(0, 6) : ""}{r.time ? ` ${r.time}` : r.date === today ? "Today" : ""}</span>
                 <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onEdit(r)}>
                   <div className="text-sm font-medium">{r.title}</div>
                   <div className="text-[11px] text-mute">{[r.description, r.plantId ? plantName(data, r.plantId) : "", r.userId !== me ? `For ${engineerName(data, r.userId)}` : "", r.userId === me && r.createdBy && r.createdBy !== me ? `From ${engineerName(data, r.createdBy)}` : ""].filter(Boolean).join(" · ")}</div>
@@ -797,7 +801,8 @@ function ReminderDialog({ r, data, manager, onClose, tasks }: { r: Reminder | nu
 }
 
 function SevenDay({ data, scopeIds }: { data: AppData; scopeIds: string[] }) {
-  const days = Array.from({ length: 7 }, (_, i) => shiftDate(TODAY, i - 6));
+  const today = useToday();
+  const days = Array.from({ length: 7 }, (_, i) => shiftDate(today, i - 6));
   const rows = days.map((d) => {
     const assigned = data.tasks.filter((t) => scopeIds.includes(t.engineerId) && (t.originalDate === d || (t.originalDate < d && (t.completedAt ? t.completedAt.slice(0, 10) >= d : t.taskDate >= d)))).length;
     const completed = data.tasks.filter((t) => scopeIds.includes(t.engineerId) && t.completedAt?.slice(0, 10) === d).length;
@@ -832,6 +837,7 @@ function SevenDay({ data, scopeIds }: { data: AppData; scopeIds: string[] }) {
 // ------------------------------------------------------------------ history
 
 function TaskHistory({ data, manager, scopeIds, onOpen }: { data: AppData; manager: boolean; scopeIds: string[]; onOpen: (id: string) => void }) {
+  const today = useToday();
   const team = analystsOf(data);
   const [range, setRange] = useState("7");
   const [eng, setEng] = useState("");
@@ -841,7 +847,7 @@ function TaskHistory({ data, manager, scopeIds, onOpen }: { data: AppData; manag
   const [prio, setPrio] = useState("");
   const [carry, setCarry] = useState("");
   const [q, setQ] = useState("");
-  const from = range === "all" ? "0000" : shiftDate(TODAY, -Number(range));
+  const from = range === "all" ? "0000" : shiftDate(today, -Number(range));
   const needle = q.trim().toLowerCase();
   const rows = data.tasks
     .filter((t) => scopeIds.includes(t.engineerId) && (!eng || t.engineerId === eng))
