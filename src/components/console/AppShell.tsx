@@ -172,57 +172,83 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
 
         <main className="min-w-0 flex-1">
-          <div className="panel-inset mx-4 mt-3 flex items-center justify-between gap-2 p-2.5 text-xs md:hidden">
-            <span className="label-caps">Today's tasks</span>
-            <button onClick={() => void signOut()} className="text-signal">Sign out</button>
-            <span className="flex items-center gap-2">
-              {(manager ? team : me ? [me] : []).map((a) => {
-                const st = taskStats(data, a.id);
-                const done = st.total > 0 && st.pending === 0;
-                return (
-                  <span
-                    key={a.id}
-                    className={cn(
-                      "num rounded-full px-2 py-0.5 ring-1",
-                      done ? "text-sev-low ring-sev-low/40" : "text-sev-high ring-sev-high/40",
-                    )}
-                  >
-                    {a.name.split(" ").slice(-1)[0]} {st.done}/{st.total}
-                  </span>
-                );
-              })}
-            </span>
+          <div className="mx-4 mt-3 flex items-center gap-2 overflow-x-auto text-xs md:hidden">
+            <span className="label-caps shrink-0">Today's tasks</span>
+            {(manager ? team : me ? [me] : []).map((a) => {
+              const st = taskStats(data, a.id);
+              const done = st.total > 0 && st.pending === 0;
+              return (
+                <span
+                  key={a.id}
+                  className={cn(
+                    "num shrink-0 rounded-full px-2 py-0.5 ring-1",
+                    done ? "text-sev-low ring-sev-low/40" : "text-sev-high ring-sev-high/40",
+                  )}
+                >
+                  {a.name.split(" ")[0]} {st.done}/{st.total}
+                </span>
+              );
+            })}
           </div>
           <div className="px-4 py-4 pb-28 md:px-6 md:pb-4">{children}</div>
         </main>
       </div>
 
-      <nav style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }} className="fixed inset-x-0 bottom-0 z-40 grid grid gap-0.5 border-t border-line/60 bg-panel/90 px-1 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-md md:hidden">
-        {items.map((item) => {
-          const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 gap-1 border-t border-line/60 bg-panel/95 px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-md md:hidden">
+        {primary.map((item) => {
+          const active = isActive(item.to);
           return (
             <Link
               key={item.to}
               to={item.to}
               className={cn(
-                "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-md px-1 text-center text-[10px] leading-tight",
+                "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-md text-xs",
                 active ? "bg-signal/10 font-semibold text-signal" : "text-mute",
               )}
             >
-              <span
-                className={cn(
-                  "size-1.5 rounded-full",
-                  item.to === "/discussions" && unread ? "bg-sev-high" : active ? "bg-signal" : "bg-line",
-                )}
-              />
-              {item.label
-                .replace("Daily Work", "Tasks")
-                .replace("Dashboard", "Home")
-                .replace("Discussion & Tickets", "Chat")
-                .replace("Engineers", "Team")}
+              <item.icon className="size-5" />
+              {item.short}
             </Link>
           );
         })}
+        <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+          <SheetTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                "relative flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-md text-xs",
+                moreActive ? "bg-signal/10 font-semibold text-signal" : "text-mute",
+              )}
+            >
+              <Menu className="size-5" />
+              More
+              {unread || tickets ? <span className="absolute right-[30%] top-1 size-2 rounded-full bg-sev-high" /> : null}
+            </button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <SheetHeader><SheetTitle>More</SheetTitle></SheetHeader>
+            <div className="mt-3 flex flex-col gap-1">
+              {more.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMoreOpen(false)}
+                  className={cn(
+                    "flex min-h-12 items-center gap-3 rounded-md px-3 text-[15px]",
+                    isActive(item.to) ? "bg-signal/10 font-semibold text-signal" : "hover:bg-base",
+                  )}
+                >
+                  <item.icon className="size-5" />
+                  {item.label}
+                  {item.to === "/discussions" && unread + tickets ? (
+                    <span className="num ml-auto rounded-full bg-sev-high px-2 text-xs font-semibold text-signal-foreground">{unread + tickets}</span>
+                  ) : null}
+                </Link>
+              ))}
+              <button onClick={() => void signOut()} className="mt-2 min-h-12 rounded-md text-sm font-medium text-signal ring-1 ring-signal/40">Sign out</button>
+            </div>
+          </SheetContent>
+        </Sheet>
       </nav>
     </div>
   );
