@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/console/AppShell";
 import { RecurringReports } from "@/components/console/RecurringReports";
@@ -293,7 +294,65 @@ function ReportsPage() {
         }
       >
         {rows.length ? (
-          <div className="overflow-x-auto">
+          <>
+          <ul className="divide-y divide-line/60 md:hidden">
+            {rows.map((r) => {
+              const t = reportTiming(r);
+              return (
+                <li key={r.id} className="px-4 py-3">
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[15px] font-semibold">{plantName(data, r.plantId)}</div>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm">
+                        <FrequencyChip frequency={r.type} />
+                        <span className="text-mute">{r.period}</span>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger aria-label="More actions" className="grid size-11 shrink-0 place-items-center rounded-md text-mute ring-1 ring-line">
+                        <MoreHorizontal size={18} />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {r.status !== "prepared" && r.status !== "sent" ? (
+                          <DropdownMenuItem onSelect={() => setReportStatus(r.id, "prepared")}>Mark prepared</DropdownMenuItem>
+                        ) : null}
+                        {r.status === "sent" ? (
+                          <DropdownMenuItem onSelect={() => setReportStatus(r.id, "prepared")}>Undo sent</DropdownMenuItem>
+                        ) : null}
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onSelect={() => {
+                            if (window.confirm(`Delete this report (${plantName(data, r.plantId)} · ${r.period || r.docNo})? This cannot be undone.`)) removeReport(r.id);
+                          }}
+                        >
+                          <Trash2 size={14} /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                    <StatusChip status={r.status} />
+                    <TimingChip late={t.late} label={t.label} />
+                    <span className="num text-mute">Due {fmtDate(r.dueDate)}</span>
+                  </div>
+                  {data.role === "manager" ? (
+                    <div className="mt-1 text-sm text-mute">Owner: {engineerName(data, r.byEngineerId)}</div>
+                  ) : null}
+                  {r.status !== "sent" ? (
+                    <button
+                      onClick={() => setReportStatus(r.id, "sent")}
+                      className="mt-3 h-11 w-full rounded-md bg-signal text-sm font-medium text-signal-foreground"
+                    >
+                      Mark sent
+                    </button>
+                  ) : (
+                    <div className="num mt-2 text-sm text-mute">Sent {fmtDate(r.sentDate)}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr>
@@ -353,6 +412,7 @@ function ReportsPage() {
               </tbody>
             </table>
           </div>
+          </>
         ) : (
           <Empty>No reports match these filters.</Empty>
         )}

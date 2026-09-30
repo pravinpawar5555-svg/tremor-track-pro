@@ -220,7 +220,32 @@ function VisitsPage() {
         </div>
 
         {view === "list" ? (
-          <div className="overflow-x-auto">
+          <>
+          <ul className="divide-y divide-line/60 md:hidden">
+            {shown.map((v) => {
+              const s = visitStatus(v);
+              return (
+                <li key={v.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-[15px] font-semibold">{plantName(data, v.plantId)}</div>
+                      <div className="text-sm text-mute">{visitTypeLabel[v.visitType]} · <span className="num">{fmtDate(v.plannedDate)}</span></div>
+                    </div>
+                    <StatusPill v={v} />
+                  </div>
+                  <div className="mt-1 text-sm text-mute">Owner: {v.engineerIds.map((id) => engineerName(data, id)).join(" + ") || "—"}{v.momNo ? <> · <span className="num">{v.momNo}</span></> : null}</div>
+                  <div className="mt-3 flex gap-2">
+                    <button type="button" onClick={() => setSelected(v.id)} className="h-11 flex-1 rounded-md bg-signal text-sm font-medium text-signal-foreground">Open visit</button>
+                    {s !== "completed" && s !== "cancelled" ? (
+                      <button type="button" onClick={() => setCompleting(v)} className="h-11 rounded-md px-4 text-sm ring-1 ring-line">Complete</button>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+            {!shown.length ? <Empty>No visits match these filters.</Empty> : null}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr>
@@ -256,6 +281,7 @@ function VisitsPage() {
             </table>
             {!shown.length ? <Empty>No visits match these filters.</Empty> : null}
           </div>
+          </>
         ) : (
           <VisitCalendar month={month} setMonth={setMonth} visits={shown} onPick={setSelected} />
         )}
