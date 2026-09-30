@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
-  TODAY,
+  todayIso,
   addTask,
   addTaskNote,
   analystsOf,
@@ -85,19 +85,45 @@ const timeOf = (iso: string | null) => {
 };
 const longDate = (iso: string) =>
   new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", weekday: "long" }).replace(/^(\w+), (.*)$/, "$2, $1");
+// Live "today" — stays correct even when the app/tab was opened on a previous day.
+let liveToday = todayIso();
+const todayListeners = new Set<() => void>();
+function refreshLiveToday() {
+  const t = todayIso();
+  if (t !== liveToday) {
+    liveToday = t;
+    todayListeners.forEach((l) => l());
+  }
+}
+if (typeof window !== "undefined") {
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refreshLiveToday();
+  });
+  window.setInterval(refreshLiveToday, 60_000);
+}
+function useToday() {
+  return useSyncExternalStore(
+    (cb) => {
+      todayListeners.add(cb);
+      return () => todayListeners.delete(cb);
+    },
+    () => liveToday,
+  );
+}
+
 const nextWorkingDay = (iso: string) => {
   let d = shiftDate(iso, 1);
   if (new Date(d + "T00:00:00").getDay() === 0) d = shiftDate(d, 1);
   return d;
 };
 const ageDays = (t: Task) => Math.max(0, dayDiff(t.originalDate, t.taskDate));
-const isOverdue = (t: Task) => t.status !== "completed" && !!t.dueDate && t.dueDate < TODAY;
-const waitDays = (t: Task) => {
+const isOverdue = (t: Task, today: string) => t.status !== "completed" && !!t.dueDate && t.dueDate < today;
+const waitDays = (t: Task, today: string) => {
   const last = [...t.activity].reverse().find((a) => a.text.startsWith("Waiting"));
-  return last ? Math.max(0, dayDiff(last.at.slice(0, 10), TODAY)) : 0;
+  return last ? Math.max(0, dayDiff(last.at.slice(0, 10), today)) : 0;
 };
-function sortActive(a: Task, b: Task) {
-  const o = Number(isOverdue(b)) - Number(isOverdue(a));
+function sortActive(a: Task, b: Task, today: string) {
+  const o = Number(isOverdue(b, today)) - Number(isOverdue(a, today));
   if (o) return o;
   const p = prioRank[a.priority] - prioRank[b.priority];
   if (p) return p;
