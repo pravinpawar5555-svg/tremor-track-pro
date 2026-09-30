@@ -344,6 +344,7 @@ function PlantsPage() {
               </tbody>
             </table>
           </div>
+          </>
         ) : (
           <Empty>No plants yet. Add your first plant.</Empty>
         )}
