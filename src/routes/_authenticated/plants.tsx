@@ -253,7 +253,38 @@ function PlantsPage() {
         }
       >
         {shownPlants.length ? (
-          <div className="overflow-x-auto">
+          <>
+          <ul className="divide-y divide-line/60 md:hidden">
+            {shownPlants.map((p) => {
+              const s = plantSummary(data, p.id);
+              const cycles = plantFrequencies(p);
+              return (
+                <li key={p.id} className="px-4 py-3">
+                  <div className="text-[15px] font-semibold">{p.name}</div>
+                  <div className="text-sm text-mute">{p.customer || "—"} · {p.machines} machines</div>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : <span className="text-sm text-mute">No report cycle</span>}
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+                    <span className="text-mute">Engineer</span><span>{engineerName(data, p.engineerId)}</span>
+                    <span className="text-mute">Contact</span><span className="truncate">{p.contact || "—"} {p.contactPhone ? <a className="num text-signal" href={`tel:${p.contactPhone}`}>{p.contactPhone}</a> : null}</span>
+                    <span className="text-mute">Last report</span><span className="num">{fmtDate(s.lastReportSent)}</span>
+                    <span className="text-mute">Sensors</span><span className="num">N6 {p.node6 ?? 0} · NX {p.nodeX ?? 0} · VA {p.vibassist ?? 0}</span>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <Link to="/visits" search={{ plant: p.id }} className="grid h-11 flex-1 place-items-center rounded-md bg-signal text-sm font-medium text-signal-foreground">Visit history</Link>
+                    {manager ? (
+                      <>
+                        <button onClick={() => edit(p)} className="h-11 rounded-md px-4 text-sm ring-1 ring-line">Edit</button>
+                        <button onClick={() => { if (window.confirm(`Delete ${p.name}?`)) removePlant(p.id); }} className="h-11 rounded-md px-4 text-sm text-red-600 ring-1 ring-line">Delete</button>
+                      </>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr>
