@@ -134,6 +134,7 @@ function ExecutionPage() {
               byUser={myName}
               canEdit={manager || !mineOnly || open.assignedEngineerId === meExec?.id || open.secondaryEngineerId === meExec?.id}
               onEdit={() => setEditing({ job: open, isNew: false })}
+              onDelete={() => setOpenId(null)}
             />
           ) : null}
         </SheetContent>
