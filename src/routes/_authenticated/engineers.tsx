@@ -16,8 +16,11 @@ import {
   useData,
   type Engineer,
 } from "@/lib/store";
+import { useExecution, ensureExecEngineer, execRecordFor } from "@/lib/execution";
 import { Button } from "@/components/console/ui";
 import { reviewUser } from "@/lib/store";
+
+const roleLabel: Record<Engineer["role"], string> = { analyst: "Engineer", manager: "Manager", execution: "Execution Engineer" };
 
 export const Route = createFileRoute("/_authenticated/engineers")({
   head: () => ({
@@ -40,7 +43,9 @@ export const Route = createFileRoute("/_authenticated/engineers")({
 
 function EngineersPage() {
   const data = useData();
+  const ex = useExecution();
   const team = analystsOf(data);
+  const executionTeam = data.engineers.filter((e) => e.role === "execution");
   const from = shiftDate(TODAY, -6);
   const days = Array.from({ length: 7 }, (_, i) => shiftDate(TODAY, -6 + i));
 
@@ -53,6 +58,7 @@ function EngineersPage() {
   const submit = () => {
     const res = saveEngineer(form.id ? { id: form.id, name: form.name, role: form.role } : { name: form.name, role: form.role });
     setNote(res);
+    if (res.ok && form.role === "execution") void ensureExecEngineer(res.id, form.name, res.id);
     if (res.ok) setForm(blank);
   };
 
@@ -155,6 +161,7 @@ function EngineersPage() {
             <Select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Engineer["role"] })}>
               <option value="analyst">Engineer</option>
               <option value="manager">Manager</option>
+              <option value="execution">Execution Engineer</option>
             </Select>
           </Field>
           <div className="flex items-end gap-2">
@@ -185,7 +192,7 @@ function EngineersPage() {
                 return (
                   <Tr key={e.id}>
                     <Td>{e.name}</Td>
-                    <Td>{e.role === "analyst" ? "Engineer" : "Manager"}</Td>
+                    <Td>{roleLabel[e.role]}</Td>
                     <Td align="right" mono>{usage.plants}</Td>
                     <Td align="right" mono>{data.tasks.filter((t) => t.engineerId === e.id).length}</Td>
                     <Td align="right" mono>{usage.reports}</Td>
@@ -261,6 +268,39 @@ function EngineersPage() {
           );
         })}
       </div>
+
+      {executionTeam.length ? (
+        <div className="grid items-start gap-4 xl:grid-cols-2">
+          {executionTeam.map((e) => {
+            const rec = execRecordFor(e.id);
+            const j = rec ? ex.jobs.filter((x) => x.assignedEngineerId === rec.id || x.secondaryEngineerId === rec.id) : [];
+            const byType = (t: string) => j.filter((x) => x.installationType === t).length;
+            const done = j.filter((x) => x.status === "completed").length;
+            const open = j.filter((x) => !["completed", "cancelled"].includes(x.status)).length;
+            const sensors = j.reduce((s, x) => s + x.sensorsInstalled, 0);
+            const machines = j.reduce((s, x) => s + x.machinesCovered, 0);
+            const visits = rec ? ex.updates.filter((u) => j.some((x) => x.id === u.jobId)).length : 0;
+            return (
+              <Panel key={e.id} title={e.name} meta={<Chip severity="low" label="Execution Engineer" />}>
+                <div className="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
+                  <Kpi label="Installation sensors" value={sensors} />
+                  <Kpi label="Machines covered" value={machines} />
+                  <Kpi label="Site visits" value={visits} hint="daily updates" />
+                  <Kpi label="Jobs completed" value={done} tone="low" hint={`${j.length} total`} />
+                  <Kpi label="Demo jobs" value={byType("demo")} />
+                  <Kpi label="Order jobs" value={byType("order")} />
+                  <Kpi label="Troubleshooting jobs" value={byType("troubleshooting")} />
+                  <Kpi label="Open jobs" value={open} />
+                </div>
+                <div className="px-4 pb-3">
+                  <SpecRow label="Pending / follow-up" value={j.filter((x) => x.status === "pending").length} />
+                  <SpecRow label="On hold" value={j.filter((x) => x.status === "on_hold").length} />
+                </div>
+              </Panel>
+            );
+          })}
+        </div>
+      ) : null}
     </AppShell>
   );
 }

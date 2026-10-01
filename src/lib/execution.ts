@@ -400,6 +400,20 @@ export async function saveEngineer(e: ExecEngineer) {
   }
 }
 
+/** Make sure an Engineers-tab member with the Execution Engineer role has a matching execution team record. */
+export async function ensureExecEngineer(id: string, name: string, linkedUserId: string) {
+  const existing = engineers.find((x) => x.id === id || x.linkedUserId === linkedUserId);
+  if (!existing) {
+    await saveEngineer({ id, name, employeeId: "", email: "", mobile: "", branch: "", role: "engineer", status: "active", linkedUserId });
+  } else if (existing.name !== name || existing.linkedUserId !== linkedUserId) {
+    await saveEngineer({ ...existing, name, linkedUserId });
+  }
+}
+
+export function execRecordFor(userId: string) {
+  return engineers.find((x) => x.linkedUserId === userId || x.id === userId);
+}
+
 export async function reassignJobs(fromId: string, toId: string) {
   const moved = jobs.filter((j) => (j.assignedEngineerId === fromId || j.secondaryEngineerId === fromId) && !["completed", "cancelled"].includes(j.status));
   if (moved.length) {
