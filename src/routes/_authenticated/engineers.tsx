@@ -16,8 +16,11 @@ import {
   useData,
   type Engineer,
 } from "@/lib/store";
+import { useExecution, ensureExecEngineer, execRecordFor } from "@/lib/execution";
 import { Button } from "@/components/console/ui";
 import { reviewUser } from "@/lib/store";
+
+const roleLabel: Record<Engineer["role"], string> = { analyst: "Engineer", manager: "Manager", execution: "Execution Engineer" };
 
 export const Route = createFileRoute("/_authenticated/engineers")({
   head: () => ({
