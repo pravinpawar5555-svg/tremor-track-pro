@@ -468,10 +468,11 @@ function Info({ label, value }: { label: string; value: ReactNode }) {
   return <div><div className="text-[11px] text-mute">{label}</div><div className="text-sm">{value || "—"}</div></div>;
 }
 
-function JobDetail({ job, byUser, canEdit, onEdit }: { job: ExecJob; byUser: string; canEdit: boolean; onEdit: () => void }) {
+function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; byUser: string; canEdit: boolean; onEdit: () => void; onDelete: () => void }) {
   useExecution();
   const [j, setJ] = useState(job);
   const [confirm, setConfirm] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
   const [upd, setUpd] = useState({ workDate: todayIso(), remark: "", workCompleted: "", pendingNextAction: "", attachmentLink: "" });
   const [comment, setComment] = useState("");
   const [link, setLink] = useState({ label: "", url: "" });
