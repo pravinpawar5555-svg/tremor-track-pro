@@ -1048,16 +1048,17 @@ export async function reviewUser(userId: string, approve: boolean) {
   return { ok: true, message: approve ? "Approved." : "Rejected." };
 }
 
-export function saveEngineer(input: { id?: string; name: string; role: Engineer["role"] }) {
+export function saveEngineer(input: { id?: string; name: string; role: Engineer["role"] }): { ok: boolean; message: string; id: string } {
   const name = input.name.trim();
-  if (!name) return { ok: false, message: "Enter a name." };
+  if (!name) return { ok: false, message: "Enter a name.", id: "" };
   const clash = data.engineers.some((e) => e.id !== input.id && e.name.toLowerCase() === name.toLowerCase());
-  if (clash) return { ok: false, message: "An engineer with this name already exists." };
+  if (clash) return { ok: false, message: "An engineer with this name already exists.", id: "" };
+  const id = input.id ?? uid("eng");
   const engineers = input.id
     ? data.engineers.map((e) => (e.id === input.id ? { ...e, name, role: input.role, initials: initialsOf(name) } : e))
-    : [...data.engineers, { id: uid("eng"), name, role: input.role, initials: initialsOf(name) }];
+    : [...data.engineers, { id, name, role: input.role, initials: initialsOf(name) }];
   commit({ ...data, engineers });
-  return { ok: true, message: input.id ? "Name updated." : "Engineer added." };
+  return { ok: true, message: input.id ? "Name updated." : "Engineer added.", id };
 }
 
 /** Work already recorded against an engineer, to warn before deletion. */
