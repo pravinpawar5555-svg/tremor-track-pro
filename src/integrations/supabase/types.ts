@@ -119,6 +119,241 @@ export type Database = {
         }
         Relationships: []
       }
+      execution_activity: {
+        Row: {
+          by_user: string
+          created_at: string
+          id: string
+          job_id: string
+          kind: string
+          text: string
+        }
+        Insert: {
+          by_user?: string
+          created_at?: string
+          id?: string
+          job_id: string
+          kind?: string
+          text?: string
+        }
+        Update: {
+          by_user?: string
+          created_at?: string
+          id?: string
+          job_id?: string
+          kind?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "execution_activity_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "execution_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      execution_daily_updates: {
+        Row: {
+          attachment_link: string
+          created_at: string
+          created_by: string
+          id: string
+          job_id: string
+          pending_next_action: string
+          remark: string
+          work_completed: string
+          work_date: string
+        }
+        Insert: {
+          attachment_link?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          job_id: string
+          pending_next_action?: string
+          remark?: string
+          work_completed?: string
+          work_date: string
+        }
+        Update: {
+          attachment_link?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          job_id?: string
+          pending_next_action?: string
+          remark?: string
+          work_completed?: string
+          work_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "execution_daily_updates_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "execution_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      execution_engineers: {
+        Row: {
+          branch: string
+          created_at: string
+          email: string
+          employee_id: string
+          id: string
+          linked_user_id: string
+          mobile: string
+          name: string
+          role: string
+          status: string
+        }
+        Insert: {
+          branch?: string
+          created_at?: string
+          email?: string
+          employee_id?: string
+          id?: string
+          linked_user_id?: string
+          mobile?: string
+          name: string
+          role?: string
+          status?: string
+        }
+        Update: {
+          branch?: string
+          created_at?: string
+          email?: string
+          employee_id?: string
+          id?: string
+          linked_user_id?: string
+          mobile?: string
+          name?: string
+          role?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      execution_jobs: {
+        Row: {
+          actual_end_date: string | null
+          actual_start_date: string | null
+          aip_generated: string
+          assigned_engineer_id: string
+          comments: string
+          completed_at: string | null
+          completed_by: string
+          configuration_completed: string
+          contact_number: string
+          contact_person: string
+          created_at: string
+          created_by: string
+          customer_name: string
+          email: string
+          expected_execution_date: string | null
+          id: string
+          installation_type: string
+          kickoff_completed: string
+          links: Json
+          location: string
+          machines_covered: number
+          next_planned_date: string | null
+          notes: string
+          pending_reason: string
+          pending_remark: string
+          planned_end_date: string | null
+          planned_start_date: string | null
+          plant_id: string
+          plant_name: string
+          priority: string
+          report_link: string
+          schedule_notes: string
+          secondary_engineer_id: string
+          sensors_installed: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          aip_generated?: string
+          assigned_engineer_id?: string
+          comments?: string
+          completed_at?: string | null
+          completed_by?: string
+          configuration_completed?: string
+          contact_number?: string
+          contact_person?: string
+          created_at?: string
+          created_by?: string
+          customer_name?: string
+          email?: string
+          expected_execution_date?: string | null
+          id?: string
+          installation_type?: string
+          kickoff_completed?: string
+          links?: Json
+          location?: string
+          machines_covered?: number
+          next_planned_date?: string | null
+          notes?: string
+          pending_reason?: string
+          pending_remark?: string
+          planned_end_date?: string | null
+          planned_start_date?: string | null
+          plant_id?: string
+          plant_name?: string
+          priority?: string
+          report_link?: string
+          schedule_notes?: string
+          secondary_engineer_id?: string
+          sensors_installed?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          aip_generated?: string
+          assigned_engineer_id?: string
+          comments?: string
+          completed_at?: string | null
+          completed_by?: string
+          configuration_completed?: string
+          contact_number?: string
+          contact_person?: string
+          created_at?: string
+          created_by?: string
+          customer_name?: string
+          email?: string
+          expected_execution_date?: string | null
+          id?: string
+          installation_type?: string
+          kickoff_completed?: string
+          links?: Json
+          location?: string
+          machines_covered?: number
+          next_planned_date?: string | null
+          notes?: string
+          pending_reason?: string
+          pending_remark?: string
+          planned_end_date?: string | null
+          planned_start_date?: string | null
+          plant_id?: string
+          plant_name?: string
+          priority?: string
+          report_link?: string
+          schedule_notes?: string
+          secondary_engineer_id?: string
+          sensors_installed?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           acked_by: string[]

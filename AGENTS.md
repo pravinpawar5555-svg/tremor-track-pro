@@ -14,3 +14,4 @@
 - MOM sign-off is a per-visit cloud field and is opt-in; PDF generation keeps its two-party signature section together on one page — preserves each MOM's approval requirement and print layout.
 - Visits, Reports and Plants screens give engineers the same full access as the manager (user request); Engineers screen and approvals stay manager-only.
 - Daily Work reminders and close-day summaries live in public.reminders / public.day_closures via src/lib/dailywork.ts (own small store); tasks keep one record across days (task_date moves, original_date and carry_forward_count preserved) — avoids duplicate carry-forward rows.
+- Execution module data lives in public.execution_* tables via src/lib/execution.ts (own small store); daily updates and activity are separate rows per job — keeps multi-day history accurate.

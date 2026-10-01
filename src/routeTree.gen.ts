@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedDiscussionsRouteImport } from './routes/_authenticated/discussions'
 import { Route as AuthenticatedEngineersRouteImport } from './routes/_authenticated/engineers'
+import { Route as AuthenticatedExecutionRouteImport } from './routes/_authenticated/execution'
 import { Route as AuthenticatedPlantsRouteImport } from './routes/_authenticated/plants'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
@@ -44,6 +45,11 @@ const AuthenticatedEngineersRoute = AuthenticatedEngineersRouteImport.update({
   path: '/engineers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedExecutionRoute = AuthenticatedExecutionRouteImport.update({
+  id: '/execution',
+  path: '/execution',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPlantsRoute = AuthenticatedPlantsRouteImport.update({
   id: '/plants',
   path: '/plants',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/discussions': typeof AuthenticatedDiscussionsRoute
   '/engineers': typeof AuthenticatedEngineersRoute
+  '/execution': typeof AuthenticatedExecutionRoute
   '/plants': typeof AuthenticatedPlantsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/tasks': typeof AuthenticatedTasksRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/discussions': typeof AuthenticatedDiscussionsRoute
   '/engineers': typeof AuthenticatedEngineersRoute
+  '/execution': typeof AuthenticatedExecutionRoute
   '/plants': typeof AuthenticatedPlantsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/tasks': typeof AuthenticatedTasksRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/discussions': typeof AuthenticatedDiscussionsRoute
   '/_authenticated/engineers': typeof AuthenticatedEngineersRoute
+  '/_authenticated/execution': typeof AuthenticatedExecutionRoute
   '/_authenticated/plants': typeof AuthenticatedPlantsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/discussions'
     | '/engineers'
+    | '/execution'
     | '/plants'
     | '/reports'
     | '/tasks'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/discussions'
     | '/engineers'
+    | '/execution'
     | '/plants'
     | '/reports'
     | '/tasks'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/discussions'
     | '/_authenticated/engineers'
+    | '/_authenticated/execution'
     | '/_authenticated/plants'
     | '/_authenticated/reports'
     | '/_authenticated/tasks'
@@ -173,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEngineersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/execution': {
+      id: '/_authenticated/execution'
+      path: '/execution'
+      fullPath: '/execution'
+      preLoaderRoute: typeof AuthenticatedExecutionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/plants': {
       id: '/_authenticated/plants'
       path: '/plants'
@@ -207,6 +226,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDiscussionsRoute: typeof AuthenticatedDiscussionsRoute
   AuthenticatedEngineersRoute: typeof AuthenticatedEngineersRoute
+  AuthenticatedExecutionRoute: typeof AuthenticatedExecutionRoute
   AuthenticatedPlantsRoute: typeof AuthenticatedPlantsRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
@@ -217,6 +237,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDiscussionsRoute: AuthenticatedDiscussionsRoute,
   AuthenticatedEngineersRoute: AuthenticatedEngineersRoute,
+  AuthenticatedExecutionRoute: AuthenticatedExecutionRoute,
   AuthenticatedPlantsRoute: AuthenticatedPlantsRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
