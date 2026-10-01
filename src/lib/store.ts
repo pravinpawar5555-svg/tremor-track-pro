@@ -10,7 +10,7 @@ export interface Engineer {
   id: string;
   name: string;
   initials: string;
-  role: "analyst" | "manager";
+  role: "analyst" | "manager" | "execution";
 }
 
 export interface Plant {
@@ -522,7 +522,7 @@ const rowToEngineer = (r: any): Engineer => ({
   id: r.id,
   name: r.name,
   initials: r.initials || initialsOf(r.name),
-  role: r.role === "manager" ? "manager" : "analyst",
+  role: r.role === "manager" ? "manager" : r.role === "execution" ? "execution" : "analyst",
 });
 const engineerToRow = (e: Engineer) => ({ id: e.id, name: e.name, initials: e.initials, role: e.role });
 
