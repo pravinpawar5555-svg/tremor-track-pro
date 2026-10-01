@@ -356,20 +356,34 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
           </label>
           <div className="label-caps">Next actions</div>
           {v.actions.map((a, i) => (
-            <div key={i} className="grid gap-2 md:grid-cols-[2fr_1fr_1fr_1fr_2fr]">
-              <TextInput value={a.action} onChange={(e) => setAction(i, { action: e.target.value })} />
+            <div key={i} className="grid gap-2 rounded-md border border-line p-2 md:grid-cols-[2fr_1fr_1fr_1fr_2fr_auto] md:border-0 md:p-0">
+              <TextInput placeholder="Action" value={a.action} onChange={(e) => setAction(i, { action: e.target.value })} />
               <Select value={a.responsible} onChange={(e) => setAction(i, { responsible: e.target.value })}>
+                <option value="">Responsible</option>
                 {data.engineers.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
                 <option value="customer">Customer</option>
               </Select>
-              <TextInput type="date" value={a.dueDate} onChange={(e) => setAction(i, { dueDate: e.target.value })} />
+              <TextInput type="date" value={a.dueDate ?? ""} onChange={(e) => setAction(i, { dueDate: e.target.value })} />
               <Select value={a.status} onChange={(e) => setAction(i, { status: e.target.value as VisitAction["status"] })}>
                 <option value="open">Open</option>
                 <option value="closed">Closed</option>
               </Select>
-              <TextInput value={a.remarks} onChange={(e) => setAction(i, { remarks: e.target.value })} />
+              <TextInput placeholder="Remarks" value={a.remarks ?? ""} onChange={(e) => setAction(i, { remarks: e.target.value })} />
+              <button type="button" className="justify-self-start py-1 text-xs text-mute" onClick={() => setV((x) => ({ ...x, actions: x.actions.filter((_, j) => j !== i) }))}>Remove</button>
             </div>
           ))}
+          <button
+            type="button"
+            className="w-fit py-1 text-xs text-signal"
+            onClick={() => {
+              const d = new Date();
+              d.setDate(d.getDate() + 7);
+              const due = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+              setV((x) => ({ ...x, actions: [...x.actions, { action: "", responsible: data.engineers[0]?.id ?? "", dueDate: due, status: "open", remarks: "" }] }));
+            }}
+          >
+            + Add action
+          </button>
           <div><Button onClick={() => void save()}>Save MOM</Button></div>
         </div>
       )}

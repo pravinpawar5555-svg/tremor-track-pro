@@ -496,7 +496,7 @@ function CompleteForm({ visit, manager, onClose }: { visit: Visit; manager: bool
         <div className="md:col-span-4">
           <div className="label-caps mb-1">Next actions</div>
           {actions.map((a, i) => (
-            <div key={i} className="mb-2 grid gap-2 md:grid-cols-[2fr_1fr_1fr_1fr_2fr_auto]">
+            <div key={i} className="mb-2 grid gap-2 rounded-md border border-line p-2 md:grid-cols-[2fr_1fr_1fr_1fr_2fr_auto] md:border-0 md:p-0">
               <TextInput placeholder="Action" value={a.action} onChange={(e) => setAction(i, { action: e.target.value })} />
               <Select value={a.responsible} onChange={(e) => setAction(i, { responsible: e.target.value })}>
                 <option value="">Responsible</option>
