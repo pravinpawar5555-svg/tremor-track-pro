@@ -14,6 +14,7 @@ import {
   blankJob,
   dateRange,
   deleteDailyUpdate,
+  deleteJob,
   execEngineerName,
   execStatusLabel,
   execStatusTone,
@@ -133,6 +134,7 @@ function ExecutionPage() {
               byUser={myName}
               canEdit={manager || !mineOnly || open.assignedEngineerId === meExec?.id || open.secondaryEngineerId === meExec?.id}
               onEdit={() => setEditing({ job: open, isNew: false })}
+              onDelete={() => setOpenId(null)}
             />
           ) : null}
         </SheetContent>
@@ -467,10 +469,11 @@ function Info({ label, value }: { label: string; value: ReactNode }) {
   return <div><div className="text-[11px] text-mute">{label}</div><div className="text-sm">{value || "—"}</div></div>;
 }
 
-function JobDetail({ job, byUser, canEdit, onEdit }: { job: ExecJob; byUser: string; canEdit: boolean; onEdit: () => void }) {
+function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; byUser: string; canEdit: boolean; onEdit: () => void; onDelete: () => void }) {
   useExecution();
   const [j, setJ] = useState(job);
   const [confirm, setConfirm] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
   const [upd, setUpd] = useState({ workDate: todayIso(), remark: "", workCompleted: "", pendingNextAction: "", attachmentLink: "" });
   const [comment, setComment] = useState("");
   const [link, setLink] = useState({ label: "", url: "" });
@@ -514,6 +517,31 @@ function JobDetail({ job, byUser, canEdit, onEdit }: { job: ExecJob; byUser: str
           {job.status === "completed" || job.status === "cancelled" ? (
             <Button onClick={() => void persist({ ...j, status: "in_progress", completedAt: null, completedBy: "" }, "Job reopened")}>Reopen</Button>
           ) : null}
+          {confirmDel ? (
+            <>
+              <Button
+                variant="solid"
+                className="bg-sev-high text-white ring-sev-high/40 hover:bg-sev-high/90"
+                onClick={() => {
+                  void (async () => {
+                    try {
+                      await deleteJob(job.id);
+                      toast.success("Job deleted");
+                      onDelete();
+                    } catch {
+                      toast.error("Could not delete");
+                      setConfirmDel(false);
+                    }
+                  })();
+                }}
+              >
+                Confirm delete
+              </Button>
+              <Button onClick={() => setConfirmDel(false)}>Cancel</Button>
+            </>
+          ) : (
+            <Button className="text-sev-high ring-sev-high/40 hover:bg-sev-high/10" onClick={() => setConfirmDel(true)}>Delete job</Button>
+          )}
         </div>
       ) : null}
 
