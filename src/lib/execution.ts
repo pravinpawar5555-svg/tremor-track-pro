@@ -343,6 +343,20 @@ export async function saveJob(next: ExecJob, prev: ExecJob | undefined, byUser: 
   }
 }
 
+export async function deleteJob(id: string) {
+  jobs = jobs.filter((j) => j.id !== id);
+  updates = updates.filter((u) => u.jobId !== id);
+  activity = activity.filter((a) => a.jobId !== id);
+  emit();
+  await db.from("execution_daily_updates").delete().eq("job_id", id);
+  await db.from("execution_activity").delete().eq("job_id", id);
+  const { error } = await db.from("execution_jobs").delete().eq("id", id);
+  if (error) {
+    console.error("execution job delete failed", error);
+    throw error;
+  }
+}
+
 export async function addDailyUpdate(u: Omit<ExecUpdate, "id" | "createdAt">, byUser: string) {
   const row = { ...u, id: crypto.randomUUID() };
   updates = [...updates, { ...row, createdAt: new Date().toISOString() }].sort((a, b) => (a.workDate < b.workDate ? -1 : 1));
