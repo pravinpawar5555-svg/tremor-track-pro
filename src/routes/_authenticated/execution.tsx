@@ -324,7 +324,7 @@ function ScheduleView({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) 
   const [view, setView] = useState<"list" | "calendar">("list");
   const [month, setMonth] = useState(todayIso().slice(0, 7));
   const scheduled = jobs.filter((j) => j.plannedStart && !["cancelled"].includes(j.status)).sort((a, b) => (a.plannedStart! < b.plannedStart! ? -1 : 1));
-  const [y, m] = month.split("-").map(Number);
+  const [y = 2026, m = 1] = month.split("-").map(Number);
   const first = new Date(y, m - 1, 1);
   const days = new Date(y, m, 0).getDate();
   const lead = (first.getDay() + 6) % 7;
@@ -380,8 +380,8 @@ function JobForm({ job, isNew, onClose, onSave }: { job: ExecJob; isNew: boolean
   const active = ex.engineers.filter((e) => e.status === "active" || e.id === j.assignedEngineerId || e.id === j.secondaryEngineerId);
   const pickPlant = (id: string) => {
     const p = data.plants.find((x) => x.id === id);
-    if (!p) return set({ plantId: "" });
-    set({ plantId: id, customerName: p.customer, plantName: p.name, location: p.location, contactPerson: p.contact ?? "", contactNumber: (p as any).contactPhone ?? "" });
+    if (!p) { set({ plantId: "" }); return; }
+    set({ plantId: id, customerName: p.customer, plantName: p.name, location: p.location, contactPerson: p.contact ?? "", contactNumber: p.contactPhone ?? "" });
   };
   const submit = () => {
     if (!j.customerName.trim()) return toast.error("Customer name is required");
@@ -702,7 +702,7 @@ function TeamPanel() {
   const blank = (): ExecEngineer => ({ id: crypto.randomUUID(), name: "", employeeId: "", email: "", mobile: "", branch: "", role: "engineer", status: "active", linkedUserId: "" });
   const openCount = (id: string) => ex.jobs.filter((j) => !closed(j.status) && (j.assignedEngineerId === id || j.secondaryEngineerId === id)).length;
   const save = async (e: ExecEngineer) => {
-    if (!e.name.trim()) return toast.error("Name is required");
+    if (!e.name.trim()) { toast.error("Name is required"); return; }
     try {
       await saveEngineer({ ...e, name: e.name.trim() });
       toast.success("Engineer saved");
