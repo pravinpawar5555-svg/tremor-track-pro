@@ -384,7 +384,7 @@ function JobForm({ job, isNew, onClose, onSave }: { job: ExecJob; isNew: boolean
     set({ plantId: id, customerName: p.customer, plantName: p.name, location: p.location, contactPerson: p.contact ?? "", contactNumber: p.contactPhone ?? "" });
   };
   const submit = () => {
-    if (!j.customerName.trim()) return toast.error("Customer name is required");
+    if (!j.customerName.trim()) { toast.error("Customer name is required"); return; }
     let status = j.status;
     if (status === "lead" && j.plannedStart && j.assignedEngineerId) status = "scheduled";
     onSave({ ...j, status, plannedEnd: j.plannedEnd || j.plannedStart });
@@ -563,7 +563,7 @@ function JobDetail({ job, byUser, canEdit, onEdit }: { job: ExecJob; byUser: str
               <Button
                 variant="solid"
                 onClick={async () => {
-                  if (!upd.remark.trim()) return toast.error("Add a short work remark");
+                  if (!upd.remark.trim()) { toast.error("Add a short work remark"); return; }
                   try {
                     await addDailyUpdate({ ...upd, jobId: job.id, createdBy: byUser }, byUser);
                     setUpd({ workDate: todayIso(), remark: "", workCompleted: "", pendingNextAction: "", attachmentLink: "" });
