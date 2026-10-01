@@ -516,6 +516,31 @@ function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; b
           {job.status === "completed" || job.status === "cancelled" ? (
             <Button onClick={() => void persist({ ...j, status: "in_progress", completedAt: null, completedBy: "" }, "Job reopened")}>Reopen</Button>
           ) : null}
+          {confirmDel ? (
+            <>
+              <Button
+                variant="solid"
+                className="bg-sev-high text-white ring-sev-high/40 hover:bg-sev-high/90"
+                onClick={() => {
+                  void (async () => {
+                    try {
+                      await deleteJob(job.id);
+                      toast.success("Job deleted");
+                      onDelete();
+                    } catch {
+                      toast.error("Could not delete");
+                      setConfirmDel(false);
+                    }
+                  })();
+                }}
+              >
+                Confirm delete
+              </Button>
+              <Button onClick={() => setConfirmDel(false)}>Cancel</Button>
+            </>
+          ) : (
+            <Button className="text-sev-high ring-sev-high/40 hover:bg-sev-high/10" onClick={() => setConfirmDel(true)}>Delete job</Button>
+          )}
         </div>
       ) : null}
 
