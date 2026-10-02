@@ -18,7 +18,8 @@ import {
 } from "@/lib/store";
 import { useExecution, ensureExecEngineer, execRecordFor } from "@/lib/execution";
 import { Button } from "@/components/console/ui";
-import { reviewUser } from "@/lib/store";
+import { reviewUser, deleteAccount } from "@/lib/store";
+import { Trash2 } from "lucide-react";
 
 const roleLabel: Record<Engineer["role"], string> = { analyst: "Engineer", manager: "Manager", execution: "Execution Engineer" };
 
@@ -128,6 +129,17 @@ function EngineersPage() {
                         <span className="flex justify-end gap-2">
                           {p.status !== "approved" ? <Button variant="solid" onClick={() => void review(p.id, true)}>Approve</Button> : null}
                           {p.status !== "rejected" ? <Button variant="ghost" onClick={() => void review(p.id, false)}>{p.status === "approved" ? "Revoke" : "Reject"}</Button> : null}
+                          <button
+                            type="button"
+                            aria-label="Delete account"
+                            className="grid size-8 place-items-center rounded-md text-sev-high hover:bg-sev-high/10"
+                            onClick={async () => {
+                              if (!window.confirm(`Delete the account of ${p.fullName || p.email}? They will no longer be able to log in. Their past work stays in the portal.`)) return;
+                              setNote(await deleteAccount(p.id));
+                            }}
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
                         </span>
                       )}
                     </Td>

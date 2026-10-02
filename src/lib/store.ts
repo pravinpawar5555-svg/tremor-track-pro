@@ -1048,6 +1048,14 @@ export async function reviewUser(userId: string, approve: boolean) {
   return { ok: true, message: approve ? "Approved." : "Rejected." };
 }
 
+/** Remove an account request/approval. The person can no longer sign in; their past work records stay. */
+export async function deleteAccount(userId: string) {
+  const { error } = await db.from("profiles").delete().eq("id", userId);
+  if (error) return { ok: false, message: error.message as string };
+  await loadFromCloud();
+  return { ok: true, message: "Account deleted." };
+}
+
 export function saveEngineer(input: { id?: string; name: string; role: Engineer["role"] }): { ok: boolean; message: string; id: string } {
   const name = input.name.trim();
   if (!name) return { ok: false, message: "Enter a name.", id: "" };
