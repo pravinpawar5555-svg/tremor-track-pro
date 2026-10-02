@@ -775,7 +775,6 @@ function ReminderCenter({ data, me, manager, reminders, onEdit }: { data: AppDat
 function ReminderDialog({ r, data, manager, onClose, tasks }: { r: Reminder | null; data: AppData; manager: boolean; onClose: () => void; tasks: Task[] }) {
   const [f, setF] = useState<Reminder | null>(r);
   useEffect(() => setF(r), [r]);
-  const team = analystsOf(data);
   if (!f) return null;
   return (
     <Dialog open={!!r} onOpenChange={(o) => !o && onClose()}>
