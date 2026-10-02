@@ -721,6 +721,7 @@ function CloseDayDialog({ open, onClose, data, me, date }: { open: boolean; onCl
 function ReminderCenter({ data, me, manager, reminders, onEdit }: { data: AppData; me: string; manager: boolean; reminders: Reminder[]; onEdit: (r: Reminder) => void }) {
   const today = useToday();
   const [tab, setTab] = useState<"today" | "upcoming" | "overdue">("today");
+  const [snoozeOpenId, setSnoozeOpenId] = useState<string | null>(null);
   const now = new Date();
   const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   // Everyone (manager included) sees only reminders assigned to them or created by them.
