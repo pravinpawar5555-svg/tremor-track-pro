@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
