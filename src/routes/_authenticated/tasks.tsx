@@ -721,6 +721,7 @@ function CloseDayDialog({ open, onClose, data, me, date }: { open: boolean; onCl
 function ReminderCenter({ data, me, manager, reminders, onEdit }: { data: AppData; me: string; manager: boolean; reminders: Reminder[]; onEdit: (r: Reminder) => void }) {
   const today = useToday();
   const [tab, setTab] = useState<"today" | "upcoming" | "overdue">("today");
+  const [snoozeOpenId, setSnoozeOpenId] = useState<string | null>(null);
   const now = new Date();
   const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   // Everyone (manager included) sees only reminders assigned to them or created by them.
@@ -759,12 +760,20 @@ function ReminderCenter({ data, me, manager, reminders, onEdit }: { data: AppDat
                   <div className="text-[11px] text-mute">{[r.description, r.plantId ? plantName(data, r.plantId) : "", r.userId !== me ? `For ${engineerName(data, r.userId)}` : "", r.userId === me && r.createdBy && r.createdBy !== me ? `From ${engineerName(data, r.createdBy)}` : ""].filter(Boolean).join(" · ")}</div>
                 </button>
               </div>
-              <div className="mt-1 flex justify-end gap-1">
-                <Button variant="ghost" className="px-2 py-1" onClick={() => void saveReminder({ ...r, status: "done", completedAt: new Date().toISOString() })}>Done</Button>
-                <Button variant="ghost" className="px-2 py-1" onClick={() => snooze(r, 60)}>Snooze 1h</Button>
-                <Button variant="ghost" className="px-2 py-1" onClick={() => snooze(r, 60 * 24)}>Snooze 1d</Button>
-                <Button variant="ghost" className="px-2 py-1" onClick={() => void deleteReminder(r.id)}>Delete</Button>
-              </div>
+              {snoozeOpenId === r.id ? (
+                <div className="mt-1 flex items-center justify-end gap-1">
+                  <span className="text-[11px] text-mute">Snooze for</span>
+                  <Button variant="ghost" className="px-2 py-1" onClick={() => { snooze(r, 60); setSnoozeOpenId(null); }}>1 hour</Button>
+                  <Button variant="ghost" className="px-2 py-1" onClick={() => { snooze(r, 60 * 24); setSnoozeOpenId(null); }}>1 day</Button>
+                  <Button variant="ghost" className="px-2 py-1" onClick={() => setSnoozeOpenId(null)}>Cancel</Button>
+                </div>
+              ) : (
+                <div className="mt-1 flex justify-end gap-1">
+                  <Button variant="ghost" className="px-2 py-1" onClick={() => void saveReminder({ ...r, status: "done", completedAt: new Date().toISOString() })}>Done</Button>
+                  <Button variant="ghost" className="px-2 py-1" onClick={() => setSnoozeOpenId(r.id)}>Snooze</Button>
+                  <Button variant="ghost" className="px-2 py-1" onClick={() => void deleteReminder(r.id)}>Delete</Button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
