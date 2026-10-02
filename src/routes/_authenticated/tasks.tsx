@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
@@ -762,15 +761,8 @@ function ReminderCenter({ data, me, manager, reminders, onEdit }: { data: AppDat
               </div>
               <div className="mt-1 flex justify-end gap-1">
                 <Button variant="ghost" className="px-2 py-1" onClick={() => void saveReminder({ ...r, status: "done", completedAt: new Date().toISOString() })}>Done</Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="px-2 py-1">Snooze</Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => snooze(r, 60)}>1 hour</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => snooze(r, 60 * 24)}>1 day</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button variant="ghost" className="px-2 py-1" onClick={() => snooze(r, 60)}>Snooze 1h</Button>
+                <Button variant="ghost" className="px-2 py-1" onClick={() => snooze(r, 60 * 24)}>Snooze 1d</Button>
                 <Button variant="ghost" className="px-2 py-1" onClick={() => void deleteReminder(r.id)}>Delete</Button>
               </div>
             </li>
