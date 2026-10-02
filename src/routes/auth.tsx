@@ -34,14 +34,25 @@ function AuthPage() {
         : null,
   );
   const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState(false);
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const login = async () => {
     setBusy(true);
     setMsg(null);
-    const { error } = await supabase.auth.signInWithPassword({ email: form.email.trim(), password: form.password });
+    const { error } = await supabase.auth.signInWithPassword({ email: form.email.trim().toLowerCase(), password: form.password });
     setBusy(false);
-    if (error) return setMsg({ tone: "err", text: error.message });
+    if (error) {
+      const m = error.message.toLowerCase();
+      return setMsg({
+        tone: "err",
+        text: m.includes("confirm")
+          ? "Please confirm your email first — open the link we sent to your inbox, then log in."
+          : m.includes("invalid")
+            ? "Email or password is wrong. Check capital letters, or use \"Forgot password\" below."
+            : error.message,
+      });
+    }
     navigate({ to: "/", replace: true });
   };
 
@@ -52,7 +63,7 @@ function AuthPage() {
     setBusy(true);
     setMsg(null);
     const { error } = await supabase.auth.signUp({
-      email: form.email.trim(),
+      email: form.email.trim().toLowerCase(),
       password: form.password,
       options: {
         emailRedirectTo: window.location.origin + "/auth",
@@ -68,6 +79,15 @@ function AuthPage() {
       tone: "ok",
       text: "Your account has been created successfully. Please confirm your email, then your account is waiting for manager approval.",
     });
+  };
+
+  const forgot = async () => {
+    const email = form.email.trim().toLowerCase();
+    if (!email) return setMsg({ tone: "err", text: "Type your email above first, then tap Forgot password." });
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+    setBusy(false);
+    setMsg(error ? { tone: "err", text: error.message } : { tone: "ok", text: "A password reset link has been sent to your email." });
   };
 
   return (
@@ -101,13 +121,17 @@ function AuthPage() {
               <Field label="Mobile number"><TextInput type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} /></Field>
             </>
           ) : null}
-          <Field label="Email"><TextInput type="email" autoComplete="email" value={form.email} onChange={(e) => set("email", e.target.value)} required /></Field>
+          <Field label="Email"><TextInput type="email" autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={form.email} onChange={(e) => set("email", e.target.value)} required /></Field>
           <Field label="Password">
-            <TextInput type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={form.password} onChange={(e) => set("password", e.target.value)} required />
+            <TextInput type={show ? "text" : "password"} autoCapitalize="none" autoCorrect="off" autoComplete={mode === "login" ? "current-password" : "new-password"} value={form.password} onChange={(e) => set("password", e.target.value)} required />
           </Field>
           {mode === "signup" ? (
-            <Field label="Confirm password"><TextInput type="password" autoComplete="new-password" value={form.confirm} onChange={(e) => set("confirm", e.target.value)} required /></Field>
+            <Field label="Confirm password"><TextInput type={show ? "text" : "password"} autoCapitalize="none" autoCorrect="off" autoComplete="new-password" value={form.confirm} onChange={(e) => set("confirm", e.target.value)} required /></Field>
           ) : null}
+          <div className="flex items-center justify-between text-xs">
+            <label className="flex items-center gap-1.5 text-mute"><input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} /> Show password</label>
+            {mode === "login" ? <button type="button" className="text-signal" onClick={() => void forgot()}>Forgot password?</button> : null}
+          </div>
           {msg ? <p className={msg.tone === "ok" ? "text-sm text-sev-low" : "text-sm text-sev-high"}>{msg.text}</p> : null}
           <Button variant="solid" type="submit" disabled={busy}>
             {busy ? "Please wait…" : mode === "login" ? "Log in" : "Create account"}
