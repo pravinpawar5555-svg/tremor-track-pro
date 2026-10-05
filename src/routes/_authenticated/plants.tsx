@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { ownershipOf, useBranches } from "@/lib/branches";
+import { useDomain } from "@/lib/domain";
 import { AppShell } from "@/components/console/AppShell";
 import {
   Button,
@@ -65,6 +67,8 @@ const blank = {
   contactPhone: "",
   engineerId: "",
   category: "order" as CustomerCategory,
+  branchId: "",
+  salesEngineerId: "",
 };
 
 function PlantsPage() {
@@ -74,7 +78,28 @@ function PlantsPage() {
   const me = data.currentUserId;
   const plants = manager ? data.plants : data.plants.filter((p) => p.engineerId === me);
   const [catFilter, setCatFilter] = useState<"total" | CustomerCategory>("total");
-  const shownPlants = catFilter === "total" ? plants : plants.filter((p) => (p.category ?? "order") === catFilter);
+  const bs = useBranches();
+  const isManager = useDomain() === "manager";
+  const [kamF, setKamF] = useState("");
+  const [branchF, setBranchF] = useState("");
+  const [salesF, setSalesF] = useState("");
+  const [csF, setCsF] = useState("");
+  const [q, setQ] = useState("");
+  const branchOpts = bs.branches.filter((b) => !kamF || b.kamId === kamF);
+  const salesOpts = bs.sales.filter((x) => !branchF || x.branchId === branchF);
+  const shownPlants = (catFilter === "total" ? plants : plants.filter((p) => (p.category ?? "order") === catFilter)).filter((p) => {
+    const o = ownershipOf(bs, p);
+    if (kamF && o.kam?.id !== kamF) return false;
+    if (branchF && p.branchId !== branchF) return false;
+    if (salesF && p.salesEngineerId !== salesF) return false;
+    if (csF && p.engineerId !== csF) return false;
+    if (!q.trim()) return true;
+    const hay = [p.name, p.customer, p.location, o.branch?.name, o.branch?.rmName, o.sales?.name, o.kam?.name].join(" ").toLowerCase();
+    return hay.includes(q.trim().toLowerCase());
+  });
+  const formBranch = bs.branches.find((b) => b.id === form.branchId);
+  const formKam = bs.kams.find((k) => k.id === formBranch?.kamId);
+  const formSales = [...bs.sales].filter((x) => x.status === "active" || x.id === form.salesEngineerId).sort((a, b) => Number(b.branchId === form.branchId) - Number(a.branchId === form.branchId));
   const catCounts = {
     order: plants.filter((p) => (p.category ?? "order") === "order").length,
     demo: plants.filter((p) => (p.category ?? "order") === "demo").length,
@@ -98,6 +123,8 @@ function PlantsPage() {
       contactPhone: p.contactPhone ?? "",
       engineerId: p.engineerId,
       category: (p.category ?? "order") as CustomerCategory,
+      branchId: p.branchId ?? "",
+      salesEngineerId: p.salesEngineerId ?? "",
     });
     setOpen(true);
   };
@@ -127,6 +154,8 @@ function PlantsPage() {
       contactPhone: form.contactPhone.trim(),
       engineerId: form.engineerId || team[0]?.id || "",
       category: form.category,
+      branchId: form.branchId,
+      salesEngineerId: form.salesEngineerId,
     });
     setForm(blank);
     setOpen(false);
@@ -203,6 +232,24 @@ function PlantsPage() {
                 ))}
               </Select>
             </Field>
+            <div className="panel-inset grid gap-3 p-3 sm:col-span-2 sm:grid-cols-2 xl:col-span-4 xl:grid-cols-4">
+              <div className="label-caps sm:col-span-2 xl:col-span-4">Branch & commercial ownership</div>
+              <Field label="Branch">
+                <Select value={form.branchId} onChange={(e) => setForm({ ...form, branchId: e.target.value })}>
+                  <option value="">Select branch</option>
+                  {bs.branches.filter((b) => b.status === "active" || b.id === form.branchId).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </Select>
+              </Field>
+              <Field label="Sales Engineer">
+                <Select value={form.salesEngineerId} onChange={(e) => setForm({ ...form, salesEngineerId: e.target.value })}>
+                  <option value="">Select Sales Engineer</option>
+                  {formSales.map((x) => <option key={x.id} value={x.id}>{x.name}{x.branchId === form.branchId ? "" : ` (${bs.branches.find((b) => b.id === x.branchId)?.name ?? "—"})`}{x.status === "inactive" ? " — inactive" : ""}</option>)}
+                </Select>
+              </Field>
+              <div className="text-xs"><div className="label-caps">HO Division KAM</div><div className="mt-1">{formKam?.name ?? "—"}</div></div>
+              <div className="text-xs"><div className="label-caps">Branch RM</div><div className="mt-1">{formBranch?.rmName || "—"}</div><div className="num text-mute">{formBranch?.rmContact}</div><div className="text-mute">{formBranch?.rmEmail}</div></div>
+              {isManager ? <Link to="/settings" className="text-xs text-signal sm:col-span-2 xl:col-span-4">Edit branch mapping</Link> : null}
+            </div>
             <div className="sm:col-span-2 xl:col-span-4">
               <Field label="Report cycle" hint="Choose every cycle agreed with this customer.">
                 <span className="flex flex-wrap gap-2">
@@ -230,6 +277,22 @@ function PlantsPage() {
         </Panel>
       ) : null}
 
+      <div className="mb-3 grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
+        <TextInput placeholder="Search plant, branch, RM, KAM, sales…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Select value={kamF} onChange={(e) => { setKamF(e.target.value); setBranchF(""); setSalesF(""); }}>
+          <option value="">All HO Division KAMs</option>{bs.kams.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
+        </Select>
+        <Select value={branchF} onChange={(e) => { setBranchF(e.target.value); setSalesF(""); }}>
+          <option value="">All branches</option>{branchOpts.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </Select>
+        <Select value={salesF} onChange={(e) => setSalesF(e.target.value)}>
+          <option value="">All Sales Engineers</option>{salesOpts.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+        </Select>
+        <Select value={csF} onChange={(e) => setCsF(e.target.value)}>
+          <option value="">All CS engineers</option>{team.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </Select>
+        {(q || kamF || branchF || salesF || csF) ? <Button variant="ghost" onClick={() => { setQ(""); setKamF(""); setBranchF(""); setSalesF(""); setCsF(""); }}>Clear filters</Button> : null}
+      </div>
       <Panel
         title="Plant master"
         meta={
@@ -266,11 +329,16 @@ function PlantsPage() {
                     {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : <span className="text-sm text-mute">No report cycle</span>}
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-                    <span className="text-mute">Engineer</span><span>{engineerName(data, p.engineerId)}</span>
+                    <span className="text-mute">CS Engineer</span><span>{engineerName(data, p.engineerId)}</span>
+                    <span className="text-mute">Branch</span><span>{ownershipOf(bs, p).branch?.name ?? "—"}</span>
+                    <span className="text-mute">HO Division KAM</span><span>{ownershipOf(bs, p).kam?.name ?? "—"}</span>
+                    <span className="text-mute">Branch RM</span><span>{ownershipOf(bs, p).branch?.rmName || "—"}</span>
+                    <span className="text-mute">Sales Engineer</span><span>{ownershipOf(bs, p).sales?.name ?? "—"}</span>
                     <span className="text-mute">Contact</span><span className="truncate">{p.contact || "—"} {p.contactPhone ? <a className="num text-signal" href={`tel:${p.contactPhone}`}>{p.contactPhone}</a> : null}</span>
                     <span className="text-mute">Last report</span><span className="num">{fmtDate(s.lastReportSent)}</span>
                     <span className="text-mute">Sensors</span><span className="num">N6 {p.node6 ?? 0} · NX {p.nodeX ?? 0} · VA {p.vibassist ?? 0}</span>
                   </div>
+                  <Ownership o={ownershipOf(bs, p)} />
                   <div className="mt-3 flex gap-2">
                     <Link to="/visits" search={{ plant: p.id }} className="grid h-11 flex-1 place-items-center rounded-md bg-signal text-sm font-medium text-signal-foreground">Visit history</Link>
                     {manager ? (
@@ -299,6 +367,7 @@ function PlantsPage() {
                   <Th>Report cycle</Th>
                   <Th>Category</Th>
                   <Th>Engineer</Th>
+                  <Th>Branch / Sales</Th>
                   <Th>Last report sent</Th>
                   <Th align="right"> </Th>
                 </tr>
@@ -328,6 +397,14 @@ function PlantsPage() {
                       </Td>
                       <Td className="text-mute">{customerCategoryLabel[(p.category ?? "order") as CustomerCategory]}</Td>
                       <Td>{engineerName(data, p.engineerId)}</Td>
+                      <Td>
+                        {(() => { const o = ownershipOf(bs, p); return o.branch ? (
+                          <details>
+                            <summary className="cursor-pointer text-xs"><span className="font-medium">{o.branch.name}</span> · {o.sales?.name ?? "No sales eng."}</summary>
+                            <OwnershipBody o={o} />
+                          </details>
+                        ) : <span className="text-xs text-mute">—</span>; })()}
+                      </Td>
                       <Td mono>{fmtDate(s.lastReportSent)}</Td>
                       <Td align="right">
                         <Link to="/visits" search={{ plant: p.id }} className="mr-1 text-xs text-signal">Visit history</Link>
@@ -350,5 +427,33 @@ function PlantsPage() {
         )}
       </Panel>
     </AppShell>
+  );
+}
+
+function OwnershipBody({ o }: { o: ReturnType<typeof ownershipOf> }) {
+  return (
+    <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+      <span className="text-mute">Branch</span><span>{o.branch?.name ?? "—"}</span>
+      <span className="text-mute">HO Division KAM</span><span>{o.kam?.name ?? "—"}</span>
+      <span className="text-mute">Branch RM</span><span>{o.branch?.rmName || "—"}</span>
+      <span className="text-mute">RM Contact</span>{o.branch?.rmContact ? <a className="num text-signal" href={`tel:${o.branch.rmContact}`}>{o.branch.rmContact}</a> : <span>—</span>}
+      <span className="text-mute">RM Email</span>{o.branch?.rmEmail ? <a className="truncate text-signal" href={`mailto:${o.branch.rmEmail}`}>{o.branch.rmEmail}</a> : <span>—</span>}
+      <span className="text-mute">Sales Engineer</span><span>{o.sales?.name ?? "—"}</span>
+    </div>
+  );
+}
+
+function Ownership({ o }: { o: ReturnType<typeof ownershipOf> }) {
+  return (
+    <details className="mt-2 rounded-md p-2 ring-1 ring-line/70">
+      <summary className="cursor-pointer text-sm font-medium">Commercial ownership</summary>
+      <OwnershipBody o={o} />
+      {o.branch?.rmContact || o.branch?.rmEmail ? (
+        <div className="mt-2 flex gap-2">
+          {o.branch?.rmContact ? <a href={`tel:${o.branch.rmContact}`} className="grid h-10 flex-1 place-items-center rounded-md text-sm text-signal ring-1 ring-signal/40">Call RM</a> : null}
+          {o.branch?.rmEmail ? <a href={`mailto:${o.branch.rmEmail}`} className="grid h-10 flex-1 place-items-center rounded-md text-sm text-signal ring-1 ring-signal/40">Email RM</a> : null}
+        </div>
+      ) : null}
+    </details>
   );
 }
