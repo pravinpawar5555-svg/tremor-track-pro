@@ -82,15 +82,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <div className="text-xs text-mute">{manager ? "Manager" : exec ? "Execution Engineer" : "Customer Success Engineer"}</div>
                 </div>
                 <div className="mt-1 flex flex-col gap-1">
-                  <Link to="/reports" search={{ timing: "overdue", eng: manager ? undefined : meId }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
-                    <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />Overdue reports<span className="num ml-auto">{kpis.overdue}</span>
-                  </Link>
+                  {!exec && (
+                    <Link to="/reports" search={{ timing: "overdue", eng: manager ? undefined : meId }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
+                      <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />Overdue reports<span className="num ml-auto">{kpis.overdue}</span>
+                    </Link>
+                  )}
                   <Link to="/discussions" search={{ unread: unread ? true : undefined }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
                     <span className={cn("size-2 rounded-full", unread ? "bg-sev-medium" : "bg-sev-low")} />Unread messages<span className="num ml-auto">{unread}</span>
                   </Link>
-                  <Link to="/discussions" search={{ tickets: true }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
-                    <span className={cn("size-2 rounded-full", tickets ? "bg-sev-high" : "bg-sev-low")} />Tickets<span className="num ml-auto">{tickets}</span>
-                  </Link>
+                  {!exec && (
+                    <Link to="/discussions" search={{ tickets: true }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
+                      <span className={cn("size-2 rounded-full", tickets ? "bg-sev-high" : "bg-sev-low")} />Tickets<span className="num ml-auto">{tickets}</span>
+                    </Link>
+                  )}
                   <button onClick={() => void signOut()} className="mt-1 min-h-11 rounded-md text-sm font-medium text-signal ring-1 ring-signal/40">Sign out</button>
                 </div>
               </PopoverContent>
@@ -113,15 +117,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           <RefreshControls />
           <NotificationBell />
           <span className="num hidden md:inline">{fmtDate(TODAY)}</span>
-          <Link
-            to="/reports"
-            search={{ timing: "overdue", eng: manager ? undefined : meId }}
-            title="Open overdue reports"
-            className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-mute ring-1 ring-line hover:bg-base hover:text-ink"
-          >
-            <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />
-            <span className="num">{kpis.overdue} overdue reports</span>
-          </Link>
+          {!exec && (
+            <Link
+              to="/reports"
+              search={{ timing: "overdue", eng: manager ? undefined : meId }}
+              title="Open overdue reports"
+              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-mute ring-1 ring-line hover:bg-base hover:text-ink"
+            >
+              <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />
+              <span className="num">{kpis.overdue} overdue reports</span>
+            </Link>
+          )}
           <Link
             to="/discussions"
             search={{ unread: unread ? true : undefined }}
@@ -131,15 +137,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className={cn("size-2 rounded-full", unread ? "bg-sev-medium" : "bg-sev-low")} />
             <span className="num">{unread} unread</span>
           </Link>
-          <Link
-            to="/discussions"
-            search={{ tickets: true }}
-            title={manager ? "Tickets awaiting your reply" : "Your tickets with new replies"}
-            className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-mute ring-1 ring-line hover:bg-base hover:text-ink"
-          >
-            <span className={cn("size-2 rounded-full", tickets ? "bg-sev-high" : "bg-sev-low")} />
-            <span className="num">{tickets} tickets</span>
-          </Link>
+          {!exec && (
+            <Link
+              to="/discussions"
+              search={{ tickets: true }}
+              title={manager ? "Tickets awaiting your reply" : "Your tickets with new replies"}
+              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-mute ring-1 ring-line hover:bg-base hover:text-ink"
+            >
+              <span className={cn("size-2 rounded-full", tickets ? "bg-sev-high" : "bg-sev-low")} />
+              <span className="num">{tickets} tickets</span>
+            </Link>
+          )}
           <span className="hidden items-center gap-1.5 lg:flex">
             <span className="grid size-6 place-items-center rounded-full bg-base text-[10px] font-semibold text-mute ring-1 ring-line">
               {me?.initials ?? "—"}
