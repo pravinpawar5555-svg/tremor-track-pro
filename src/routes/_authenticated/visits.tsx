@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { peekDomain } from "@/lib/domain";
 import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/console/AppShell";
@@ -29,6 +30,9 @@ import {
 } from "@/lib/visits";
 
 export const Route = createFileRoute("/_authenticated/visits")({
+  beforeLoad: () => {
+    if (peekDomain() === "execution") throw redirect({ to: "/" });
+  },
   validateSearch: (s: Record<string, unknown>): { plant?: string } => (typeof s['plant'] === "string" ? { plant: s['plant'] } : {}),
   head: () => ({
     meta: [

@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { MoreHorizontal, Trash2 } from "lucide-react";
+import { peekDomain } from "@/lib/domain";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/console/AppShell";
@@ -40,6 +41,9 @@ import {
 } from "@/lib/store";
 
 export const Route = createFileRoute("/_authenticated/reports")({
+  beforeLoad: () => {
+    if (peekDomain() === "execution") throw redirect({ to: "/" });
+  },
   head: () => ({
     meta: [
       { title: "Report Delivery Tracker — Forbes Marshall CM Portal" },

@@ -3,6 +3,8 @@ import { useState, type ReactNode } from "react";
 import { AppShell } from "@/components/console/AppShell";
 import { Chip, Empty, Kpi, Panel, PageHeader, Select } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
+import { useDomain } from "@/lib/domain";
+import { ExecutionHome } from "@/components/console/ExecutionHome";
 import { useDailyWork } from "@/lib/dailywork";
 import {
   TODAY,
@@ -239,6 +241,8 @@ function TaskLine({ data, t, right }: { data: AppData; t: Task; right?: ReactNod
 
 function Dashboard() {
   const data = useData();
+  const domain = useDomain();
+  if (domain === "execution") return <AppShell><ExecutionHome /></AppShell>;
   return <AppShell>{data.role === "manager" ? <ManagerDashboard data={data} /> : <EngineerDashboard data={data} />}</AppShell>;
 }
 

@@ -5,6 +5,7 @@ import { CalendarDays, Factory, Wrench, FileText, LayoutDashboard, ListChecks, M
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { useDomain } from "@/lib/domain";
 import { RefreshControls } from "@/components/console/RefreshControls";
 import { NotificationBell } from "@/components/console/NotificationBell";
 import {
@@ -35,6 +36,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const data = useData();
   const meId = data.currentUserId;
   const manager = data.role === "manager";
+  const domain = useDomain() ?? (manager ? "manager" : "customer_success");
+  const exec = domain === "execution";
   const myReports = manager ? data.reports : data.reports.filter((r) => r.byEngineerId === meId);
   const kpis = reportKpis({ ...data, reports: myReports });
   const team = analystsOf(data);
@@ -42,13 +45,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const unread = chatUnread(data);
   const tickets = ticketAttention(data);
   const navigate = useNavigate();
-  const items = nav.filter((n) => manager || n.to !== "/engineers");
+  const items = nav.filter((n) => manager ? true : exec ? n.to !== "/visits" && n.to !== "/reports" && n.to !== "/engineers" : n.to !== "/engineers" && n.to !== "/execution");
   const [moreOpen, setMoreOpen] = useState(false);
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
   const primary = [
     { to: "/", short: "Home", icon: LayoutDashboard },
     { to: "/tasks", short: "Daily Work", icon: ListChecks },
-    { to: "/reports", short: "Reports", icon: FileText },
+    exec ? { to: "/execution", short: "Execution", icon: Wrench } : { to: "/reports", short: "Reports", icon: FileText },
   ] as const;
   const moreIcons = { "/discussions": MessageSquare, "/visits": CalendarDays, "/execution": Wrench, "/plants": Factory, "/engineers": Users } as Record<string, typeof Menu>;
   const more = items.filter((n) => !primary.some((p) => p.to === n.to)).map((n) => ({ ...n, icon: moreIcons[n.to] ?? Menu }));
@@ -76,18 +79,22 @@ export function AppShell({ children }: { children: ReactNode }) {
               <PopoverContent align="end" className="w-72 p-2">
                 <div className="px-2 py-1.5">
                   <div className="text-sm font-semibold">{me?.name ?? ""}</div>
-                  <div className="text-xs text-mute">{manager ? "Manager" : "Customer Success Engineer"}</div>
+                  <div className="text-xs text-mute">{manager ? "Manager" : exec ? "Execution Engineer" : "Customer Success Engineer"}</div>
                 </div>
                 <div className="mt-1 flex flex-col gap-1">
-                  <Link to="/reports" search={{ timing: "overdue", eng: manager ? undefined : meId }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
-                    <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />Overdue reports<span className="num ml-auto">{kpis.overdue}</span>
-                  </Link>
+                  {!exec && (
+                    <Link to="/reports" search={{ timing: "overdue", eng: manager ? undefined : meId }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
+                      <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />Overdue reports<span className="num ml-auto">{kpis.overdue}</span>
+                    </Link>
+                  )}
                   <Link to="/discussions" search={{ unread: unread ? true : undefined }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
                     <span className={cn("size-2 rounded-full", unread ? "bg-sev-medium" : "bg-sev-low")} />Unread messages<span className="num ml-auto">{unread}</span>
                   </Link>
-                  <Link to="/discussions" search={{ tickets: true }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
-                    <span className={cn("size-2 rounded-full", tickets ? "bg-sev-high" : "bg-sev-low")} />Tickets<span className="num ml-auto">{tickets}</span>
-                  </Link>
+                  {!exec && (
+                    <Link to="/discussions" search={{ tickets: true }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
+                      <span className={cn("size-2 rounded-full", tickets ? "bg-sev-high" : "bg-sev-low")} />Tickets<span className="num ml-auto">{tickets}</span>
+                    </Link>
+                  )}
                   <button onClick={() => void signOut()} className="mt-1 min-h-11 rounded-md text-sm font-medium text-signal ring-1 ring-signal/40">Sign out</button>
                 </div>
               </PopoverContent>
@@ -110,15 +117,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           <RefreshControls />
           <NotificationBell />
           <span className="num hidden md:inline">{fmtDate(TODAY)}</span>
-          <Link
-            to="/reports"
-            search={{ timing: "overdue", eng: manager ? undefined : meId }}
-            title="Open overdue reports"
-            className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-mute ring-1 ring-line hover:bg-base hover:text-ink"
-          >
-            <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />
-            <span className="num">{kpis.overdue} overdue reports</span>
-          </Link>
+          {!exec && (
+            <Link
+              to="/reports"
+              search={{ timing: "overdue", eng: manager ? undefined : meId }}
+              title="Open overdue reports"
+              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-mute ring-1 ring-line hover:bg-base hover:text-ink"
+            >
+              <span className={cn("size-2 rounded-full", kpis.overdue ? "bg-sev-high" : "bg-sev-low")} />
+              <span className="num">{kpis.overdue} overdue reports</span>
+            </Link>
+          )}
           <Link
             to="/discussions"
             search={{ unread: unread ? true : undefined }}
@@ -128,20 +137,22 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className={cn("size-2 rounded-full", unread ? "bg-sev-medium" : "bg-sev-low")} />
             <span className="num">{unread} unread</span>
           </Link>
-          <Link
-            to="/discussions"
-            search={{ tickets: true }}
-            title={manager ? "Tickets awaiting your reply" : "Your tickets with new replies"}
-            className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-mute ring-1 ring-line hover:bg-base hover:text-ink"
-          >
-            <span className={cn("size-2 rounded-full", tickets ? "bg-sev-high" : "bg-sev-low")} />
-            <span className="num">{tickets} tickets</span>
-          </Link>
+          {!exec && (
+            <Link
+              to="/discussions"
+              search={{ tickets: true }}
+              title={manager ? "Tickets awaiting your reply" : "Your tickets with new replies"}
+              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-mute ring-1 ring-line hover:bg-base hover:text-ink"
+            >
+              <span className={cn("size-2 rounded-full", tickets ? "bg-sev-high" : "bg-sev-low")} />
+              <span className="num">{tickets} tickets</span>
+            </Link>
+          )}
           <span className="hidden items-center gap-1.5 lg:flex">
             <span className="grid size-6 place-items-center rounded-full bg-base text-[10px] font-semibold text-mute ring-1 ring-line">
               {me?.initials ?? "—"}
             </span>
-            <span className="text-xs text-mute">{me?.name ?? ""} · {manager ? "Manager" : "Customer Success Engineer"}</span>
+            <span className="text-xs text-mute">{me?.name ?? ""} · {manager ? "Manager" : exec ? "Execution Engineer" : "Customer Success Engineer"}</span>
           </span>
           <button onClick={() => void signOut()} className="rounded-md px-2 py-1 text-xs text-signal ring-1 ring-signal/40">
             Sign out

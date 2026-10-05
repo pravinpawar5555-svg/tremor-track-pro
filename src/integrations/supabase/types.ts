@@ -68,6 +68,7 @@ export type Database = {
           remaining: number
           waiting: number
           work_date: string
+          work_domain: string
         }
         Insert: {
           assigned?: number
@@ -80,6 +81,7 @@ export type Database = {
           remaining?: number
           waiting?: number
           work_date: string
+          work_domain?: string
         }
         Update: {
           assigned?: number
@@ -92,6 +94,7 @@ export type Database = {
           remaining?: number
           waiting?: number
           work_date?: string
+          work_domain?: string
         }
         Relationships: []
       }
@@ -365,6 +368,7 @@ export type Database = {
           read_by: string[]
           text: string
           thread: string
+          work_domain: string
         }
         Insert: {
           acked_by?: string[]
@@ -376,6 +380,7 @@ export type Database = {
           read_by?: string[]
           text?: string
           thread: string
+          work_domain?: string
         }
         Update: {
           acked_by?: string[]
@@ -387,6 +392,7 @@ export type Database = {
           read_by?: string[]
           text?: string
           thread?: string
+          work_domain?: string
         }
         Relationships: []
       }
@@ -520,6 +526,7 @@ export type Database = {
           task_id: string
           title: string
           user_id: string
+          work_domain: string
         }
         Insert: {
           completed_at?: string | null
@@ -536,6 +543,7 @@ export type Database = {
           task_id?: string
           title: string
           user_id: string
+          work_domain?: string
         }
         Update: {
           completed_at?: string | null
@@ -552,6 +560,7 @@ export type Database = {
           task_id?: string
           title?: string
           user_id?: string
+          work_domain?: string
         }
         Relationships: []
       }
@@ -617,6 +626,7 @@ export type Database = {
           title: string
           updated_at: string
           waiting_reason: string
+          work_domain: string
         }
         Insert: {
           activity?: Json
@@ -640,6 +650,7 @@ export type Database = {
           title: string
           updated_at?: string
           waiting_reason?: string
+          work_domain?: string
         }
         Update: {
           activity?: Json
@@ -663,6 +674,7 @@ export type Database = {
           title?: string
           updated_at?: string
           waiting_reason?: string
+          work_domain?: string
         }
         Relationships: []
       }
@@ -832,10 +844,13 @@ export type Database = {
         Returns: boolean
       }
       is_approved: { Args: { _user_id: string }; Returns: boolean }
+      is_exec_engineer_id: { Args: { _id: string }; Returns: boolean }
+      my_exec_ids: { Args: { _uid: string }; Returns: string[] }
       review_user: {
         Args: { _approve: boolean; _user_id: string }
         Returns: undefined
       }
+      user_domain: { Args: { _uid: string }; Returns: string }
     }
     Enums: {
       app_role: "manager" | "engineer"

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useDomain } from "@/lib/domain";
 import { AppShell } from "@/components/console/AppShell";
 import { Bell, ThumbsUp } from "lucide-react";
 import {
@@ -93,13 +94,14 @@ const emptyTicket = {
 
 function DiscussionsPage() {
   const data = useData();
+  const exec = useDomain() === "execution";
   const me = currentUser(data);
   const meId = me?.id ?? "";
   const manager = isManager(data, meId);
   const team = analystsOf(data);
   const tk = ticketKpis(data, meId);
 
-  const [tab, setTab] = useState<"tickets" | "plants">("tickets");
+  const [tab, setTab] = useState<"tickets" | "plants">(exec ? "plants" : "tickets");
   const [statusFilter, setStatusFilter] = useState<"open" | TicketStatus | "all">("open");
   const [plantFilter, setPlantFilter] = useState("all");
   const [catFilter, setCatFilter] = useState<"total" | CustomerCategory>("total");
@@ -308,9 +310,11 @@ function DiscussionsPage() {
       ) : null}
 
       <div className="mt-4 flex gap-2">
-        <Button variant={tab === "tickets" ? "solid" : "outline"} onClick={() => setTab("tickets")}>
-          Tickets
-        </Button>
+        {!exec && (
+          <Button variant={tab === "tickets" ? "solid" : "outline"} onClick={() => setTab("tickets")}>
+            Tickets
+          </Button>
+        )}
         <Button variant={tab === "plants" ? "solid" : "outline"} onClick={() => setTab("plants")}>
           Plant-wise chat
         </Button>
