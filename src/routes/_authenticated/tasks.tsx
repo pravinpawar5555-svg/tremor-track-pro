@@ -6,6 +6,7 @@ import { Button, Empty, Field, Panel, Select, TextArea, TextInput } from "@/comp
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { useDomain } from "@/lib/domain";
 import {
   todayIso,
   addTask,
@@ -282,7 +283,7 @@ function DailyWorkPage() {
             <span className="grid size-8 place-items-center rounded-full bg-signal text-xs font-semibold text-signal-foreground">{user?.initials ?? "?"}</span>
             <div className="leading-tight">
               <div className="text-sm font-medium">{user?.name ?? ""}</div>
-              <div className="text-[11px] text-mute">{manager ? "Manager" : "Customer Success Engineer"}</div>
+              <div className="text-[11px] text-mute">{manager ? "Manager" : useDomain() === "execution" ? "Execution Engineer" : "Customer Success Engineer"}</div>
             </div>
           </div>
         </div>
