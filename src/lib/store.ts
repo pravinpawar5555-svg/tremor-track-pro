@@ -545,6 +545,8 @@ const rowToPlant = (r: any): Plant => ({
   contactPhone: r.contact_phone ?? "",
   engineerId: r.engineer_id ?? "",
   category: r.category === "demo" ? "demo" : "order",
+  branchId: r.branch_id ?? "",
+  salesEngineerId: r.sales_engineer_id ?? "",
 });
 const plantToRow = (p: Plant) => ({
   id: p.id,
@@ -561,6 +563,8 @@ const plantToRow = (p: Plant) => ({
   contact_phone: p.contactPhone,
   engineer_id: p.engineerId,
   category: p.category ?? "order",
+  branch_id: p.branchId ?? "",
+  sales_engineer_id: p.salesEngineerId ?? "",
 });
 
 const rowToUpdate = (r: any): DailyUpdate => ({
