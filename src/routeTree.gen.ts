@@ -18,6 +18,7 @@ import { Route as AuthenticatedEngineersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedExecutionRouteImport } from './routes/_authenticated/execution'
 import { Route as AuthenticatedPlantsRouteImport } from './routes/_authenticated/plants'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedVisitsRouteImport } from './routes/_authenticated/visits'
 
@@ -66,6 +67,11 @@ const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/execution': typeof AuthenticatedExecutionRoute
   '/plants': typeof AuthenticatedPlantsRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/visits': typeof AuthenticatedVisitsRoute
 }
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/execution': typeof AuthenticatedExecutionRoute
   '/plants': typeof AuthenticatedPlantsRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/visits': typeof AuthenticatedVisitsRoute
   '/': typeof AuthenticatedIndexRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/_authenticated/execution': typeof AuthenticatedExecutionRoute
   '/_authenticated/plants': typeof AuthenticatedPlantsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/visits': typeof AuthenticatedVisitsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/execution'
     | '/plants'
     | '/reports'
+    | '/settings'
     | '/tasks'
     | '/visits'
   fileRoutesByTo: FileRoutesByTo
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/execution'
     | '/plants'
     | '/reports'
+    | '/settings'
     | '/tasks'
     | '/visits'
     | '/'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_authenticated/execution'
     | '/_authenticated/plants'
     | '/_authenticated/reports'
+    | '/_authenticated/settings'
     | '/_authenticated/tasks'
     | '/_authenticated/visits'
     | '/_authenticated/'
@@ -226,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tasks': {
       id: '/_authenticated/tasks'
       path: '/tasks'
@@ -249,6 +268,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedExecutionRoute: typeof AuthenticatedExecutionRoute
   AuthenticatedPlantsRoute: typeof AuthenticatedPlantsRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedVisitsRoute: typeof AuthenticatedVisitsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -260,6 +280,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedExecutionRoute: AuthenticatedExecutionRoute,
   AuthenticatedPlantsRoute: AuthenticatedPlantsRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedVisitsRoute: AuthenticatedVisitsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
