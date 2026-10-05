@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { peekDomain } from "@/lib/domain";
 import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/console/AppShell";
