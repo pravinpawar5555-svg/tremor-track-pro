@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { MoreHorizontal, Trash2 } from "lucide-react";
+import { peekDomain } from "@/lib/domain";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/console/AppShell";
