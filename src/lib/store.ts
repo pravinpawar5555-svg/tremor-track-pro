@@ -30,6 +30,10 @@ export interface Plant {
   /** One or more report cycles agreed with the customer. */
   frequencies: Frequency[];
   contact: string;
+  /** Owning Forbes Marshall branch (branches.id) — RM and HO KAM derive from it. */
+  branchId?: string;
+  /** Assigned Sales Engineer (sales_engineers.id). */
+  salesEngineerId?: string;
   contactPhone: string;
   engineerId: string;
   /** Customer category: order (paying) or demo (trial). */

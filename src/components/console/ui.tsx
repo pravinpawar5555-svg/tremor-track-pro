@@ -199,7 +199,7 @@ export function Button({
 const control =
   "w-full rounded-md bg-panel px-2.5 py-1.5 text-sm text-ink ring-1 ring-line/80 outline-none transition-[box-shadow] focus:ring-2 focus:ring-signal/50";
 
-export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+export function Field({ label, hint, children }: { label: string; hint?: string | undefined; children: ReactNode }) {
   return (
     <label className="block">
       <span className="label-caps">{label}</span>

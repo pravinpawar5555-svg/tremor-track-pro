@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, type ReactNode } from "react";
-import { CalendarDays, Factory, Wrench, FileText, LayoutDashboard, ListChecks, Menu, MessageSquare, Users } from "lucide-react";
+import { Settings as SettingsIcon, CalendarDays, Factory, Wrench, FileText, LayoutDashboard, ListChecks, Menu, MessageSquare, Users } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,7 @@ const nav = [
   { to: "/reports", label: "Reports" },
   { to: "/plants", label: "Plants" },
   { to: "/engineers", label: "Engineers" },
+  { to: "/settings", label: "Settings" },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -45,7 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const unread = chatUnread(data);
   const tickets = ticketAttention(data);
   const navigate = useNavigate();
-  const items = nav.filter((n) => manager ? true : exec ? n.to !== "/visits" && n.to !== "/reports" && n.to !== "/engineers" : n.to !== "/engineers" && n.to !== "/execution");
+  const items = nav.filter((n) => manager ? true : exec ? n.to !== "/visits" && n.to !== "/reports" && n.to !== "/engineers" : n.to !== "/engineers" && n.to !== "/execution").filter((n) => manager || n.to !== "/settings");
   const [moreOpen, setMoreOpen] = useState(false);
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
   const primary = [
@@ -53,7 +54,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/tasks", short: "Daily Work", icon: ListChecks },
     exec ? { to: "/execution", short: "Execution", icon: Wrench } : { to: "/reports", short: "Reports", icon: FileText },
   ] as const;
-  const moreIcons = { "/discussions": MessageSquare, "/visits": CalendarDays, "/execution": Wrench, "/plants": Factory, "/engineers": Users } as Record<string, typeof Menu>;
+  const moreIcons = { "/discussions": MessageSquare, "/visits": CalendarDays, "/execution": Wrench, "/plants": Factory, "/engineers": Users, "/settings": SettingsIcon } as Record<string, typeof Menu>;
   const more = items.filter((n) => !primary.some((p) => p.to === n.to)).map((n) => ({ ...n, icon: moreIcons[n.to] ?? Menu }));
   const moreActive = more.some((m) => isActive(m.to));
   const signOut = async () => {
