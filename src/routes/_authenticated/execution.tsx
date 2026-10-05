@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
 import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +33,10 @@ import {
 } from "@/lib/execution";
 
 export const Route = createFileRoute("/_authenticated/execution")({
+  beforeLoad: () => {
+    const d = peekDomain();
+    if (d !== "manager" && d !== "execution") throw redirect({ to: "/" });
+  },
   head: () => ({
     meta: [
       { title: "Execution — Forbes Marshall CM Portal" },
