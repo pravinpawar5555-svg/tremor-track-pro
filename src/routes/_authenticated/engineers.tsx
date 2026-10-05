@@ -171,7 +171,7 @@ function EngineersPage() {
           </Field>
           <Field label="Role">
             <Select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Engineer["role"] })}>
-              <option value="analyst">Engineer</option>
+              <option value="analyst">Customer Success Engineer</option>
               <option value="manager">Manager</option>
               <option value="execution">Execution Engineer</option>
             </Select>
