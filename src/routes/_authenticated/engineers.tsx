@@ -21,7 +21,7 @@ import { Button } from "@/components/console/ui";
 import { reviewUser, deleteAccount } from "@/lib/store";
 import { Trash2 } from "lucide-react";
 
-const roleLabel: Record<Engineer["role"], string> = { analyst: "Engineer", manager: "Manager", execution: "Execution Engineer" };
+const roleLabel: Record<Engineer["role"], string> = { analyst: "Customer Success Engineer", manager: "Manager", execution: "Execution Engineer" };
 
 export const Route = createFileRoute("/_authenticated/engineers")({
   head: () => ({
@@ -171,7 +171,7 @@ function EngineersPage() {
           </Field>
           <Field label="Role">
             <Select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Engineer["role"] })}>
-              <option value="analyst">Engineer</option>
+              <option value="analyst">Customer Success Engineer</option>
               <option value="manager">Manager</option>
               <option value="execution">Execution Engineer</option>
             </Select>

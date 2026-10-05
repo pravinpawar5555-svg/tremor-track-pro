@@ -76,7 +76,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <PopoverContent align="end" className="w-72 p-2">
                 <div className="px-2 py-1.5">
                   <div className="text-sm font-semibold">{me?.name ?? ""}</div>
-                  <div className="text-xs text-mute">{manager ? "Manager" : "Engineer"}</div>
+                  <div className="text-xs text-mute">{manager ? "Manager" : "Customer Success Engineer"}</div>
                 </div>
                 <div className="mt-1 flex flex-col gap-1">
                   <Link to="/reports" search={{ timing: "overdue", eng: manager ? undefined : meId }} className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-base">
@@ -141,7 +141,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="grid size-6 place-items-center rounded-full bg-base text-[10px] font-semibold text-mute ring-1 ring-line">
               {me?.initials ?? "—"}
             </span>
-            <span className="text-xs text-mute">{me?.name ?? ""} · {manager ? "Manager" : "Engineer"}</span>
+            <span className="text-xs text-mute">{me?.name ?? ""} · {manager ? "Manager" : "Customer Success Engineer"}</span>
           </span>
           <button onClick={() => void signOut()} className="rounded-md px-2 py-1 text-xs text-signal ring-1 ring-signal/40">
             Sign out
