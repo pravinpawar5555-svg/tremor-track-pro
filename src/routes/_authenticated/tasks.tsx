@@ -149,6 +149,7 @@ function CarryBadge({ t }: { t: Task }) {
 function DailyWorkPage() {
   const data = useData();
   const dw = useDailyWork();
+  const execDomain = useDomain() === "execution";
   const manager = data.role === "manager";
   const me = data.currentUserId;
   const team = analystsOf(data);
@@ -283,7 +284,7 @@ function DailyWorkPage() {
             <span className="grid size-8 place-items-center rounded-full bg-signal text-xs font-semibold text-signal-foreground">{user?.initials ?? "?"}</span>
             <div className="leading-tight">
               <div className="text-sm font-medium">{user?.name ?? ""}</div>
-              <div className="text-[11px] text-mute">{manager ? "Manager" : useDomain() === "execution" ? "Execution Engineer" : "Customer Success Engineer"}</div>
+              <div className="text-[11px] text-mute">{manager ? "Manager" : execDomain ? "Execution Engineer" : "Customer Success Engineer"}</div>
             </div>
           </div>
         </div>
