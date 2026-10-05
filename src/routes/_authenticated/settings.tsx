@@ -94,7 +94,7 @@ function Branches() {
   const data = useData();
   const [f, setF] = useState<Partial<Branch> | null>(null);
   return (
-    <Panel title={`Branches (${s.branches.length})`} meta={<Button variant="solid" onClick={() => setF({ status: "active", kamId: s.kams[0]?.id })}>Add branch</Button>}>
+    <Panel title={`Branches (${s.branches.length})`} meta={<Button variant="solid" onClick={() => setF({ status: "active", kamId: s.kams[0]?.id ?? "" })}>Add branch</Button>}>
       {f && (
         <div className="grid gap-3 border-b border-line/60 p-4 sm:grid-cols-3">
           <Field label="Branch name *"><TextInput value={f.name ?? ""} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
@@ -139,7 +139,7 @@ function Sales() {
   const [f, setF] = useState<Partial<SalesEngineer> | null>(null);
   const bn = (id: string) => s.branches.find((b) => b.id === id)?.name ?? "—";
   return (
-    <Panel title={`Sales Engineers (${s.sales.length})`} meta={<Button variant="solid" onClick={() => setF({ status: "active", branchId: s.branches[0]?.id })}>Add Sales Engineer</Button>}>
+    <Panel title={`Sales Engineers (${s.sales.length})`} meta={<Button variant="solid" onClick={() => setF({ status: "active", branchId: s.branches[0]?.id ?? "" })}>Add Sales Engineer</Button>}>
       {f && (
         <div className="grid gap-3 border-b border-line/60 p-4 sm:grid-cols-3">
           <Field label="Name *"><TextInput value={f.name ?? ""} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>

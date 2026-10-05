@@ -83,7 +83,7 @@ export const emailOk = (e: string) => !e || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
 /** Flags values that look incomplete (not corrected — shown for admin review). */
 export const phoneSuspicious = (p: string) => !!p && p.replace(/\D/g, "").length !== 10;
 
-export interface Ownership { branch?: Branch; kam?: Kam; sales?: SalesEngineer }
+export interface Ownership { branch: Branch | undefined; kam: Kam | undefined; sales: SalesEngineer | undefined }
 export function ownershipOf(s: State, plant: { branchId?: string; salesEngineerId?: string }): Ownership {
   const branch = s.branches.find((b) => b.id === plant.branchId);
   return {
