@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      branches: {
+        Row: {
+          branch_name: string
+          branch_rm_contact: string
+          branch_rm_email: string
+          branch_rm_name: string
+          created_at: string
+          ho_division_kam_id: string | null
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          branch_name: string
+          branch_rm_contact?: string
+          branch_rm_email?: string
+          branch_rm_name?: string
+          created_at?: string
+          ho_division_kam_id?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          branch_name?: string
+          branch_rm_contact?: string
+          branch_rm_email?: string
+          branch_rm_name?: string
+          created_at?: string
+          ho_division_kam_id?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branches_ho_division_kam_id_fkey"
+            columns: ["ho_division_kam_id"]
+            isOneToOne: false
+            referencedRelation: "ho_division_kams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_updates: {
         Row: {
           abnormal: number
@@ -357,6 +401,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ho_division_kams: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          mobile: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string
+          id?: string
+          mobile?: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          mobile?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           acked_by: string[]
@@ -396,9 +470,46 @@ export type Database = {
         }
         Relationships: []
       }
+      ownership_audit: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          entity: string
+          entity_id: string
+          entity_name: string
+          field: string
+          id: string
+          new_value: string
+          old_value: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string
+          entity: string
+          entity_id: string
+          entity_name?: string
+          field: string
+          id?: string
+          new_value?: string
+          old_value?: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          entity?: string
+          entity_id?: string
+          entity_name?: string
+          field?: string
+          id?: string
+          new_value?: string
+          old_value?: string
+        }
+        Relationships: []
+      }
       plants: {
         Row: {
           assets: number
+          branch_id: string
           category: string
           contact: string
           contact_phone: string
@@ -412,10 +523,12 @@ export type Database = {
           name: string
           node_x: number
           node6: number
+          sales_engineer_id: string
           vibassist: number
         }
         Insert: {
           assets?: number
+          branch_id?: string
           category?: string
           contact?: string
           contact_phone?: string
@@ -429,10 +542,12 @@ export type Database = {
           name: string
           node_x?: number
           node6?: number
+          sales_engineer_id?: string
           vibassist?: number
         }
         Update: {
           assets?: number
+          branch_id?: string
           category?: string
           contact?: string
           contact_phone?: string
@@ -446,6 +561,7 @@ export type Database = {
           name?: string
           node_x?: number
           node6?: number
+          sales_engineer_id?: string
           vibassist?: number
         }
         Relationships: []
@@ -602,6 +718,50 @@ export type Database = {
           type?: string
         }
         Relationships: []
+      }
+      sales_engineers: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          email: string
+          employee_id: string
+          id: string
+          mobile: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          email?: string
+          employee_id?: string
+          id?: string
+          mobile?: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          email?: string
+          employee_id?: string
+          id?: string
+          mobile?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_engineers_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
@@ -836,6 +996,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      actor_name: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
