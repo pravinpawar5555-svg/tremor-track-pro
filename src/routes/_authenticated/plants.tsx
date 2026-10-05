@@ -78,6 +78,7 @@ function PlantsPage() {
   const me = data.currentUserId;
   const plants = manager ? data.plants : data.plants.filter((p) => p.engineerId === me);
   const [catFilter, setCatFilter] = useState<"total" | CustomerCategory>("total");
+  const [form, setForm] = useState<typeof blank & { id?: string }>(blank);
   const bs = useBranches();
   const isManager = useDomain() === "manager";
   const [kamF, setKamF] = useState("");
@@ -104,7 +105,6 @@ function PlantsPage() {
     order: plants.filter((p) => (p.category ?? "order") === "order").length,
     demo: plants.filter((p) => (p.category ?? "order") === "demo").length,
   };
-  const [form, setForm] = useState<typeof blank & { id?: string }>(blank);
   const [open, setOpen] = useState(false);
 
   const edit = (p: Plant) => {
