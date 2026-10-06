@@ -110,7 +110,7 @@ export function CustomerComms() {
       const date = c.nextFollowUp || TODAY;
       const owner = c.followUpOwner || meId;
       if (mkTask && !c.taskId) {
-        const id = addTask({ title, engineerId: owner, taskDate: date, plantId: c.plantId, taskType: "follow_up" as any, description: c.summary });
+        const id = addTask({ title, engineerId: owner, taskDate: date, plantId: c.plantId, taskType: "followup", description: c.summary });
         if (id) c = { ...c, taskId: id };
       }
       if (mkRem && !c.reminderId) {
