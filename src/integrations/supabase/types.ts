@@ -58,6 +58,114 @@ export type Database = {
           },
         ]
       }
+      customer_communications: {
+        Row: {
+          action_required: boolean
+          actions: Json
+          attachment_links: string
+          comm_date: string
+          comm_time: string
+          comm_type: string
+          contact_email: string
+          contact_number: string
+          contact_person: string
+          created_at: string
+          created_by: string
+          customer_comments: string
+          customer_commitment: string
+          discussion_summary: string
+          fm_representative: string
+          fm_response: string
+          follow_up_owner: string
+          follow_up_status: string
+          history: Json
+          id: string
+          internal_note: string
+          linked_reminder_id: string
+          linked_task_id: string
+          mode: string
+          next_follow_up_date: string | null
+          participants: string
+          plant_id: string
+          related_report_id: string
+          related_ticket_id: string
+          related_visit_id: string
+          subject: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          action_required?: boolean
+          actions?: Json
+          attachment_links?: string
+          comm_date: string
+          comm_time?: string
+          comm_type?: string
+          contact_email?: string
+          contact_number?: string
+          contact_person?: string
+          created_at?: string
+          created_by?: string
+          customer_comments?: string
+          customer_commitment?: string
+          discussion_summary?: string
+          fm_representative?: string
+          fm_response?: string
+          follow_up_owner?: string
+          follow_up_status?: string
+          history?: Json
+          id?: string
+          internal_note?: string
+          linked_reminder_id?: string
+          linked_task_id?: string
+          mode?: string
+          next_follow_up_date?: string | null
+          participants?: string
+          plant_id: string
+          related_report_id?: string
+          related_ticket_id?: string
+          related_visit_id?: string
+          subject?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Update: {
+          action_required?: boolean
+          actions?: Json
+          attachment_links?: string
+          comm_date?: string
+          comm_time?: string
+          comm_type?: string
+          contact_email?: string
+          contact_number?: string
+          contact_person?: string
+          created_at?: string
+          created_by?: string
+          customer_comments?: string
+          customer_commitment?: string
+          discussion_summary?: string
+          fm_representative?: string
+          fm_response?: string
+          follow_up_owner?: string
+          follow_up_status?: string
+          history?: Json
+          id?: string
+          internal_note?: string
+          linked_reminder_id?: string
+          linked_task_id?: string
+          mode?: string
+          next_follow_up_date?: string | null
+          participants?: string
+          plant_id?: string
+          related_report_id?: string
+          related_ticket_id?: string
+          related_visit_id?: string
+          subject?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: []
+      }
       daily_updates: {
         Row: {
           abnormal: number

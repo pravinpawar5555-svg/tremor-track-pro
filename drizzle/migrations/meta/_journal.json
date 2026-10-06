@@ -113,6 +113,13 @@
       "when": 1791219852575,
       "tag": "0015_branch_sales_mapping",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791271206208,
+      "tag": "0016_customer_communications",
+      "breakpoints": true
     }
   ]
 }
