@@ -1,7 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { CalendarDays, SlidersHorizontal } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useBranches } from "@/lib/branches";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button, Empty, Field, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
 import {
@@ -25,7 +29,48 @@ export function FollowBadge({ f }: { f: FollowUp }) {
   return <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium uppercase ring-1", tone[f])}>{followUpLabel[f]}</span>;
 }
 
-type Quick = "all" | "follow" | "actions" | "recent";
+type Quick = "all" | "follow" | "actions" | "waiting" | "recent";
+
+const iso = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+const short = (s: string) => new Date(s + "T00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+
+function DateRange({ from, to, onChange }: { from: string; to: string; onChange: (f: string, t: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const now = new Date();
+  const ago = (n: number) => iso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - n));
+  const presets: [string, string, string][] = [
+    ["Today", ago(0), ago(0)],
+    ["Last 7 Days", ago(6), ago(0)],
+    ["Last 30 Days", ago(29), ago(0)],
+    ["This Month", iso(new Date(now.getFullYear(), now.getMonth(), 1)), iso(new Date(now.getFullYear(), now.getMonth() + 1, 0))],
+  ];
+  const label = from || to ? `${from ? short(from) : "…"} – ${to ? short(to) : "…"}` : "Select date range";
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className={cn("inline-flex w-full min-w-0 items-center gap-1.5 rounded-md bg-panel px-2.5 py-1.5 text-left text-sm ring-1 ring-line/80 md:w-auto md:max-w-[14rem] md:flex-[0_1_13rem]", from || to ? "text-ink" : "text-mute")}>
+          <CalendarDays className="size-4 shrink-0 text-mute" /><span className="truncate">{label}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-72 bg-panel p-3">
+        <div className="grid grid-cols-2 gap-1">
+          {presets.map(([l, f, t]) => (
+            <button key={l} onClick={() => { onChange(f, t); setOpen(false); }} className={cn("rounded-md px-2 py-1.5 text-xs ring-1", from === f && to === t ? "bg-signal/10 text-signal ring-signal/40" : "ring-line/80 hover:bg-black/5")}>{l}</button>
+          ))}
+        </div>
+        <div className="label-caps mt-3">Custom Range</div>
+        <div className="mt-1 grid gap-2">
+          <Field label="From Date"><TextInput type="date" value={from} max={to || undefined} onChange={(e) => onChange(e.target.value, to)} /></Field>
+          <Field label="To Date"><TextInput type="date" value={to} min={from || undefined} onChange={(e) => onChange(from, e.target.value)} /></Field>
+        </div>
+        <div className="mt-3 flex justify-between">
+          <Button variant="ghost" onClick={() => { onChange("", ""); setOpen(false); }}>Clear</Button>
+          <Button variant="solid" onClick={() => setOpen(false)}>Done</Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function CustomerComms() {
   const data = useData();
@@ -52,6 +97,24 @@ export function CustomerComms() {
   const [saveContact, setSaveContact] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const br = useBranches();
+  const isMobile = useIsMobile();
+  const [branchF, setBranchF] = useState("");
+  const [rmF, setRmF] = useState("");
+  const [salesF, setSalesF] = useState("");
+  const [ownerF, setOwnerF] = useState("");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const cur = { plant: plantF, type: typeF, mode: modeF, eng: engF, follow: followF, from, to, branch: branchF, rm: rmF, sales: salesF, owner: ownerF };
+  type Draft = typeof cur;
+  const emptyDraft: Draft = { plant: "", type: "", mode: "", eng: "", follow: "", from: "", to: "", branch: "", rm: "", sales: "", owner: "" };
+  const [d, setD] = useState<Draft>(cur);
+  useEffect(() => { if (moreOpen) setD(cur); }, [moreOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  const applyDraft = (x: Draft) => {
+    setPlantF(x.plant); setTypeF(x.type); setModeF(x.mode); setEngF(x.eng); setFollowF(x.follow);
+    setFrom(x.from); setTo(x.to); setBranchF(x.branch); setRmF(x.rm); setSalesF(x.sales); setOwnerF(x.owner);
+  };
+  const activeCount = [plantF, typeF, modeF, engF, followF, from || to, branchF, rmF, salesF, ownerF].filter(Boolean).length;
+
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString();
@@ -62,18 +125,23 @@ export function CustomerComms() {
         if (modeF && c.mode !== modeF) return false;
         if (engF && c.fmRep !== engF && c.createdBy !== engF) return false;
         if (followF && c.followUp !== followF) return false;
+        if (ownerF && c.followUpOwner !== ownerF) return false;
         if (from && c.date < from) return false;
         if (to && c.date > to) return false;
         if (quick === "follow" && !openFollowUp(c.followUp)) return false;
         if (quick === "actions" && !c.actions.some((a) => a.status === "open")) return false;
+        if (quick === "waiting" && c.followUp !== "waiting_customer") return false;
         if (quick === "recent" && c.updatedAt < weekAgo) return false;
-        if (!s) return true;
         const p = data.plants.find((x) => x.id === c.plantId);
+        if (branchF && p?.branchId !== branchF) return false;
+        if (salesF && p?.salesEngineerId !== salesF) return false;
+        if (rmF && br.branches.find((b) => b.id === p?.branchId)?.rmName !== rmF) return false;
+        if (!s) return true;
         return [p?.name, p?.customer, c.contactPerson, c.subject, c.summary, c.commitment, engineerName(data, c.fmRep), ...c.actions.map((a) => a.text)]
           .join(" ").toLowerCase().includes(s);
       })
       .sort((a, b) => ((a.date + a.time < b.date + b.time ? 1 : -1) * (newest ? 1 : -1)));
-  }, [comms, q, quick, plantF, typeF, modeF, engF, followF, from, to, newest, data]);
+  }, [comms, q, quick, plantF, typeF, modeF, engF, followF, from, to, newest, data, branchF, rmF, salesF, ownerF, br.branches]);
 
   const plantRows = useMemo(() => {
     return data.plants
@@ -146,34 +214,59 @@ export function CustomerComms() {
         <Button variant="solid" onClick={() => startNew()}>+ Add Communication</Button>
       </div>
 
-      <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
-        <TextInput className="sm:col-span-2" placeholder="Search plant, customer, contact or keyword…" value={q} onChange={(e) => setQ(e.target.value)} />
-        <Select value={plantF} onChange={(e) => setPlantF(e.target.value)}>
-          <option value="">All plants</option>{data.plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </Select>
-        <Select value={typeF} onChange={(e) => setTypeF(e.target.value)}>
-          <option value="">All types</option>{commTypes.map((t) => <option key={t}>{t}</option>)}
-        </Select>
-        <Select value={modeF} onChange={(e) => setModeF(e.target.value)}>
-          <option value="">All modes</option>{Object.entries(commModes).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-        </Select>
-        <Select value={engF} onChange={(e) => setEngF(e.target.value)}>
-          <option value="">All engineers</option>{team.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-        </Select>
-        <Select value={followF} onChange={(e) => setFollowF(e.target.value)}>
-          <option value="">Any follow-up</option>{Object.entries(followUpLabel).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-        </Select>
-        <div className="flex gap-1">
-          <TextInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" />
-          <TextInput type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date" />
+      <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
+        <TextInput className="min-w-0 flex-[1_1_260px]" placeholder="Search plant, customer, contact or keyword…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="hidden min-w-0 flex-wrap items-center gap-2 md:contents">
+          <Select className="w-auto min-w-0 max-w-[11rem] flex-[0_1_10rem]" value={plantF} onChange={(e) => setPlantF(e.target.value)} aria-label="Plant">
+            <option value="">All Plants</option>{data.plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </Select>
+          <Select className="w-auto min-w-0 max-w-[9rem] flex-[0_1_9rem]" value={typeF} onChange={(e) => setTypeF(e.target.value)} aria-label="Type">
+            <option value="">All Types</option>{commTypes.map((t) => <option key={t}>{t}</option>)}
+          </Select>
+          <Select className="hidden w-auto min-w-0 max-w-[10.5rem] flex-[0_1_10rem] lg:block" value={engF} onChange={(e) => setEngF(e.target.value)} aria-label="Engineer">
+            <option value="">All Engineers</option>{team.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </Select>
+          <Select className="hidden w-auto min-w-0 max-w-[9.5rem] flex-[0_1_9.5rem] lg:block" value={followF} onChange={(e) => setFollowF(e.target.value)} aria-label="Follow-up status">
+            <option value="">Follow-up Status</option>{Object.entries(followUpLabel).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          </Select>
+          <DateRange from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t); }} />
         </div>
+        <button onClick={() => setMoreOpen(true)} className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-signal ring-1 ring-signal/40 hover:bg-signal/10">
+          <SlidersHorizontal className="size-4" /> Filters{activeCount ? ` (${activeCount})` : ""}
+        </button>
       </div>
-      <div className="mb-3 flex flex-wrap items-center gap-1">
-        {([["all", "All"], ["follow", "Follow-up Required"], ["actions", "Open Actions"], ["recent", "Recently Updated"]] as [Quick, string][]).map(([k, l]) => (
+      <div className="mb-3 flex min-w-0 flex-wrap items-center gap-1">
+        {([["all", "All"], ["follow", "Follow-up Required"], ["actions", "Open Actions"], ["waiting", "Waiting for Customer"], ["recent", "Recently Updated"]] as [Quick, string][]).map(([k, l]) => (
           <button key={k} onClick={() => setQuick(k)} className={cn("rounded-full px-3 py-1 text-xs ring-1", quick === k ? "bg-signal/10 font-medium text-signal ring-signal/40" : "text-mute ring-line/80 hover:bg-black/5")}>{l}</button>
         ))}
-        <button onClick={() => setNewest((n) => !n)} className="ml-auto rounded-full px-3 py-1 text-xs text-mute ring-1 ring-line/80">{newest ? "Newest first" : "Oldest first"}</button>
+        <button onClick={() => setNewest((n) => !n)} className="ml-auto rounded-full px-3 py-1 text-xs text-mute ring-1 ring-line/80">{newest ? "Newest First ▾" : "Oldest First ▾"}</button>
       </div>
+
+      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+        <SheetContent side={isMobile ? "bottom" : "right"} className="max-h-[90vh] overflow-y-auto bg-panel">
+          <SheetHeader><SheetTitle>Filters</SheetTitle></SheetHeader>
+          <div className="mt-3 grid gap-3 px-4 pb-4">
+            <div className="grid gap-3 md:hidden">
+              <Field label="Plant"><Select value={d.plant} onChange={(e) => setD({ ...d, plant: e.target.value })}><option value="">All Plants</option>{data.plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select></Field>
+              <Field label="Communication Type"><Select value={d.type} onChange={(e) => setD({ ...d, type: e.target.value })}><option value="">All Types</option>{commTypes.map((t) => <option key={t}>{t}</option>)}</Select></Field>
+              <Field label="Date Range"><DateRange from={d.from} to={d.to} onChange={(f, t) => setD({ ...d, from: f, to: t })} /></Field>
+            </div>
+            <div className="grid gap-3 lg:hidden">
+              <Field label="Customer Success Engineer"><Select value={d.eng} onChange={(e) => setD({ ...d, eng: e.target.value })}><option value="">All Engineers</option>{team.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
+              <Field label="Follow-up Status"><Select value={d.follow} onChange={(e) => setD({ ...d, follow: e.target.value })}><option value="">Any</option>{Object.entries(followUpLabel).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</Select></Field>
+            </div>
+            <Field label="Communication Mode"><Select value={d.mode} onChange={(e) => setD({ ...d, mode: e.target.value })}><option value="">All Modes</option>{Object.entries(commModes).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</Select></Field>
+            <Field label="Branch"><Select value={d.branch} onChange={(e) => setD({ ...d, branch: e.target.value })}><option value="">All Branches</option>{br.branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</Select></Field>
+            <Field label="Branch RM"><Select value={d.rm} onChange={(e) => setD({ ...d, rm: e.target.value })}><option value="">All RMs</option>{[...new Set(br.branches.map((b) => b.rmName).filter(Boolean))].map((n) => <option key={n}>{n}</option>)}</Select></Field>
+            <Field label="Sales Engineer"><Select value={d.sales} onChange={(e) => setD({ ...d, sales: e.target.value })}><option value="">All Sales Engineers</option>{br.sales.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></Field>
+            <Field label="Follow-up Owner"><Select value={d.owner} onChange={(e) => setD({ ...d, owner: e.target.value })}><option value="">Anyone</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select></Field>
+            <div className="flex gap-2 pt-1">
+              <Button variant="solid" className="flex-1 justify-center py-2" onClick={() => { applyDraft(d); setMoreOpen(false); }}>Apply Filters</Button>
+              <Button className="flex-1 justify-center py-2" onClick={() => { applyDraft(emptyDraft); setMoreOpen(false); }}>Clear All</Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <div className="grid items-start gap-4 xl:grid-cols-[20rem_1fr]">
         <Panel title="Plants">
