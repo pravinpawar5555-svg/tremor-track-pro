@@ -954,7 +954,7 @@ const act = (text: string): TaskActivity => ({ at: new Date().toISOString(), by:
 export function addTask(input: string | TaskInput, engineerIdArg?: string, taskDateArg = TODAY) {
   const i: TaskInput = typeof input === "string" ? { title: input, engineerId: engineerIdArg ?? "", taskDate: taskDateArg } : input;
   const t = i.title.trim();
-  if (!t || !i.engineerId) return;
+  if (!t || !i.engineerId) return "";
   const taskDate = i.taskDate ?? TODAY;
   const task: Task = {
     id: uid("task"),
@@ -978,6 +978,7 @@ export function addTask(input: string | TaskInput, engineerIdArg?: string, taskD
     activity: [act("Task created")],
   };
   commit({ ...data, tasks: [...data.tasks, task] });
+  return task.id;
 }
 
 export function updateTask(id: string, patch: Partial<Task>, note?: string) {
