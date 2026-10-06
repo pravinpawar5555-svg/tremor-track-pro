@@ -1,3 +1,4 @@
+import { CustomerComms } from "@/components/console/CustomerComms";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useDomain } from "@/lib/domain";
@@ -101,7 +102,7 @@ function DiscussionsPage() {
   const team = analystsOf(data);
   const tk = ticketKpis(data, meId);
 
-  const [tab, setTab] = useState<"tickets" | "plants">(exec ? "plants" : "tickets");
+  const [tab, setTab] = useState<"tickets" | "plants" | "comms">(exec ? "plants" : "tickets");
   const [statusFilter, setStatusFilter] = useState<"open" | TicketStatus | "all">("open");
   const [plantFilter, setPlantFilter] = useState("all");
   const [catFilter, setCatFilter] = useState<"total" | CustomerCategory>("total");
@@ -318,7 +319,14 @@ function DiscussionsPage() {
         <Button variant={tab === "plants" ? "solid" : "outline"} onClick={() => setTab("plants")}>
           Plant-wise chat
         </Button>
+        {!exec && (
+          <Button variant={tab === "comms" ? "solid" : "outline"} onClick={() => setTab("comms")}>
+            Customer Communication
+          </Button>
+        )}
       </div>
+
+      {tab === "comms" ? <CustomerComms /> : (
 
       <div className="mt-3 grid items-start gap-4 xl:grid-cols-[20rem_1fr]">
         {tab === "tickets" ? (
@@ -599,6 +607,7 @@ function DiscussionsPage() {
           </Panel>
         </div>
       </div>
+      )}
     </AppShell>
   );
 }
