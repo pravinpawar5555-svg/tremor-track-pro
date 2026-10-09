@@ -16,6 +16,7 @@ import {
   plantName,
   plantFrequencies,
   activeReports,
+  scopedReports,
   reportTiming,
   shiftDate,
   taskPriorityLabel,
@@ -448,15 +449,7 @@ function EngineerDashboard({ data }: { data: AppData }) {
   const completed = today.filter((t) => t.status === "completed");
   const waiting = active.filter((t) => t.status === "waiting");
   const carried = today.filter(isCarried);
-  const mePlants = new Map(data.plants.map((p) => [p.id, p]));
-  const reports = data.reports
-    .filter((r) => r.byEngineerId === me && r.status !== "sent")
-    .filter((r) => {
-      // same visibility rule as the Report register: hide unsent reports whose
-      // type is no longer in the plant's report cycle
-      const p = mePlants.get(r.plantId);
-      return !p || plantFrequencies(p).includes(r.type);
-    });
+  const reports = scopedReports(data).filter((r) => r.byEngineerId === me && r.status !== "sent");
   const weekReports = reports.filter((r) => r.dueDate <= shiftDate(TODAY, 7));
   const pct = today.length ? Math.round((completed.length / today.length) * 100) : 0;
   const next = active.find((t) => t.status !== "waiting");

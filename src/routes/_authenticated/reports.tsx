@@ -28,9 +28,10 @@ import {
   fmtDate,
   frequencyText,
   plantName,
-  plantFrequencies,
   removeReport,
   reportKpis,
+  scopedRecurring,
+  scopedReports,
   reportTiming,
   saveReport,
   setReportStatus,
@@ -81,15 +82,7 @@ function ReportsPage() {
   const catIds = new Set(
     (cat === "total" ? data.plants : data.plants.filter((p) => (p.category ?? "order") === cat)).map((p) => p.id),
   );
-  const plantById = new Map(data.plants.map((p) => [p.id, p]));
-  const allReports = (manager ? data.reports : data.reports.filter((r) => r.byEngineerId === me))
-    .filter((r) => catIds.has(r.plantId))
-    .filter((r) => {
-      // hide unsent reports whose type is no longer in the plant's report cycle
-      if (r.status === "sent") return true;
-      const p = plantById.get(r.plantId);
-      return !p || plantFrequencies(p).includes(r.type);
-    });
+  const allReports = scopedReports(data).filter((r) => catIds.has(r.plantId));
   const [type, setType] = useState<"all" | Frequency>("all");
   const [status, setStatus] = useState<"all" | ReportStatus>("all");
   const [eng, setEng] = useState(search.eng ?? "all");
@@ -187,7 +180,7 @@ function ReportsPage() {
         >
           Recurring Settings
           <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] ${view === "recurring" ? "bg-signal/10" : "bg-canvas"}`}>
-            {manager ? data.recurring.length : data.recurring.filter((r) => r.engineerId === me).length}
+            {scopedRecurring(data).length}
           </span>
           {view === "recurring" ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-signal" /> : null}
         </button>

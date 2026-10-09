@@ -9,6 +9,7 @@ import {
   plantName,
   removeRecurring,
   saveRecurring,
+  scopedRecurring,
   useData,
   type CustomerCategory,
   type RecurringReport,
@@ -34,7 +35,7 @@ export function RecurringReports({
       (p) => p.id,
     ),
   );
-  const inCat = data.recurring.filter((r) => catIds.has(r.plantId) && (data.role === "manager" || r.engineerId === data.currentUserId));
+  const inCat = scopedRecurring(data).filter((r) => catIds.has(r.plantId));
   const [engFilter, setEngFilter] = useState<string>("all");
   const recurring = engFilter === "all" ? inCat : inCat.filter((r) => r.engineerId === engFilter);
   const blank = { plantId: "", type: "weekly" as RecurringReport["type"], nextDue: TODAY, engineerId: "" };
