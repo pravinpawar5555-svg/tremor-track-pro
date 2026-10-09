@@ -847,10 +847,15 @@ function SevenDay({ data, scopeIds }: { data: AppData; scopeIds: string[] }) {
 
 // ------------------------------------------------------------------ history
 
+const dayKey = (t: Task) => t.completedAt?.slice(0, 10) ?? t.taskDate;
+
 function TaskHistory({ data, manager, scopeIds, onOpen }: { data: AppData; manager: boolean; scopeIds: string[]; onOpen: (id: string) => void }) {
   const today = useToday();
   const team = analystsOf(data);
+  const [view, setView] = useState<"list" | "calendar" | "team">("list");
   const [range, setRange] = useState("7");
+  const [day, setDay] = useState("");
+  const [month, setMonth] = useState(today.slice(0, 7));
   const [eng, setEng] = useState("");
   const [plant, setPlant] = useState("");
   const [type, setType] = useState("");
@@ -858,27 +863,73 @@ function TaskHistory({ data, manager, scopeIds, onOpen }: { data: AppData; manag
   const [prio, setPrio] = useState("");
   const [carry, setCarry] = useState("");
   const [q, setQ] = useState("");
-  const from = range === "all" ? "0000" : shiftDate(today, -Number(range));
   const needle = q.trim().toLowerCase();
-  const rows = data.tasks
+  // Everything except date range and status — calendar/team views count per day themselves.
+  const base = data.tasks
     .filter((t) => scopeIds.includes(t.engineerId) && (!eng || t.engineerId === eng))
-    .filter((t) => (t.completedAt?.slice(0, 10) ?? t.taskDate) >= from)
-    .filter((t) => (!plant || t.plantId === plant) && (!type || t.taskType === type) && (!status || t.status === status) && (!prio || t.priority === prio))
+    .filter((t) => (!plant || t.plantId === plant) && (!type || t.taskType === type) && (!prio || t.priority === prio))
     .filter((t) => (carry === "yes" ? t.carryCount > 0 : carry === "no" ? t.carryCount === 0 : true))
-    .filter((t) => !needle || `${t.title} ${plantName(data, t.plantId)}`.toLowerCase().includes(needle))
+    .filter((t) => !needle || `${t.title} ${plantName(data, t.plantId)}`.toLowerCase().includes(needle));
+  const inRange = (k: string) => {
+    if (range === "day") return k === day;
+    if (range === "today") return k === today;
+    if (range === "yesterday") return k === shiftDate(today, -1);
+    if (range === "all") return true;
+    return k >= shiftDate(today, -Number(range));
+  };
+  const rows = base
+    .filter((t) => inRange(dayKey(t)) && (!status || t.status === status))
     .sort((a, b) => ((a.completedAt ?? a.taskDate) < (b.completedAt ?? b.taskDate) ? 1 : -1))
     .slice(0, 200);
+  const doneN = rows.filter((t) => t.status === "completed").length;
+  const carriedN = rows.filter((t) => t.carryCount > 0).length;
+  const openDay = (iso: string, engId?: string) => {
+    setDay(iso);
+    setRange("day");
+    if (engId !== undefined) setEng(engId);
+    setView("list");
+  };
   return (
-    <Panel className="mt-4" title="Task History" meta={`${rows.length} records`}>
+    <Panel
+      className="mt-4"
+      title="Task History"
+      meta={
+        <span className="inline-flex rounded-md p-0.5 ring-1 ring-line/80">
+          {([["list", "List"], ["calendar", "Calendar"], ...(manager ? [["team", "Team grid"]] : [])] as [typeof view, string][]).map(([k, l]) => (
+            <button key={k} type="button" onClick={() => setView(k)} className={cn("rounded px-2.5 py-1 text-xs", view === k ? "bg-signal text-signal-foreground" : "text-mute hover:bg-black/5")}>{l}</button>
+          ))}
+        </span>
+      }
+    >
       <div className="grid grid-cols-2 gap-2 border-b border-line/60 px-4 py-3 sm:grid-cols-4 xl:grid-cols-8">
-        <Select value={range} onChange={(e) => setRange(e.target.value)} aria-label="Date range"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="all">All time</option></Select>
+        <Select value={range} onChange={(e) => setRange(e.target.value)} aria-label="Date range" disabled={view !== "list"}>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="all">All time</option>
+          {range === "day" ? <option value="day">{fmtDate(day)}</option> : null}
+        </Select>
         {manager ? <Select value={eng} onChange={(e) => setEng(e.target.value)} aria-label="Engineer"><option value="">All engineers</option>{team.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select> : null}
         <Select value={plant} onChange={(e) => setPlant(e.target.value)} aria-label="Plant"><option value="">All plants</option>{data.plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select>
         <Select value={type} onChange={(e) => setType(e.target.value)} aria-label="Task type"><option value="">All types</option>{types.map((t) => <option key={t} value={t}>{taskTypeLabel[t]}</option>)}</Select>
-        <Select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status"><option value="">All statuses</option>{(Object.keys(taskStatusLabel) as TaskStatus[]).map((s) => <option key={s} value={s}>{taskStatusLabel[s]}</option>)}</Select>
+        <Select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status" disabled={view !== "list"}><option value="">All statuses</option>{(Object.keys(taskStatusLabel) as TaskStatus[]).map((s) => <option key={s} value={s}>{taskStatusLabel[s]}</option>)}</Select>
         <Select value={prio} onChange={(e) => setPrio(e.target.value)} aria-label="Priority"><option value="">All priorities</option>{prios.map((p) => <option key={p} value={p}>{taskPriorityLabel[p]}</option>)}</Select>
         <Select value={carry} onChange={(e) => setCarry(e.target.value)} aria-label="Carry forward"><option value="">Carry fwd: any</option><option value="yes">Carried</option><option value="no">Not carried</option></Select>
         <TextInput placeholder="Search history…" value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
+      {view === "calendar" ? (
+        <HistoryCalendar tasks={base} month={month} onMonth={setMonth} today={today} onDay={(iso) => openDay(iso)} />
+      ) : view === "team" ? (
+        <TeamGrid tasks={base} team={eng ? team.filter((a) => a.id === eng) : team} today={today} onCell={openDay} />
+      ) : (
+      <>
+      <div className="flex flex-wrap gap-4 border-b border-line/60 px-4 py-2 text-xs text-mute">
+        <span><span className="num font-semibold text-ink">{rows.length}</span> records</span>
+        <span><span className="num font-semibold text-sev-low">{doneN}</span> completed</span>
+        <span><span className="num font-semibold text-sev-medium">{carriedN}</span> carried forward</span>
+        {range === "day" ? <button type="button" className="text-signal" onClick={() => setRange("7")}>Clear day ✕</button> : null}
       </div>
       {rows.length ? (
         <>
@@ -922,6 +973,124 @@ function TaskHistory({ data, manager, scopeIds, onOpen }: { data: AppData; manag
         </div>
         </>
       ) : <Empty>No tasks match these filters.</Empty>}
+      </>
+      )}
     </Panel>
+  );
+}
+
+const cellTone = (done: number, total: number) =>
+  !total ? "bg-base text-mute" : done === total ? "bg-sev-low/25 text-ink" : done / total >= 0.5 ? "bg-sev-medium/25 text-ink" : "bg-sev-high/20 text-ink";
+
+function HistoryCalendar({ tasks, month, onMonth, today, onDay }: { tasks: Task[]; month: string; onMonth: (m: string) => void; today: string; onDay: (iso: string) => void }) {
+  const first = new Date(`${month}-01T00:00:00`);
+  const daysIn = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  const lead = (first.getDay() + 6) % 7; // Monday first
+  const byDay = new Map<string, { total: number; done: number; carried: number }>();
+  for (const t of tasks) {
+    const k = dayKey(t);
+    if (!k.startsWith(month)) continue;
+    const c = byDay.get(k) ?? { total: 0, done: 0, carried: 0 };
+    c.total++;
+    if (t.status === "completed") c.done++;
+    if (t.carryCount > 0) c.carried++;
+    byDay.set(k, c);
+  }
+  const shiftMonth = (n: number) => {
+    const d = new Date(first.getFullYear(), first.getMonth() + n, 1);
+    onMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  };
+  const totals = [...byDay.values()].reduce((a, c) => ({ total: a.total + c.total, done: a.done + c.done }), { total: 0, done: 0 });
+  return (
+    <div className="p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <Button variant="ghost" onClick={() => shiftMonth(-1)}>‹ Prev</Button>
+        <div className="text-center">
+          <div className="text-sm font-semibold">{first.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</div>
+          <div className="text-xs text-mute"><span className="num">{totals.done}/{totals.total}</span> tasks completed</div>
+        </div>
+        <Button variant="ghost" onClick={() => shiftMonth(1)} disabled={month >= today.slice(0, 7)}>Next ›</Button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-mute">
+        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => <div key={d} className="py-1">{d}</div>)}
+        {Array.from({ length: lead }, (_, i) => <div key={`x${i}`} />)}
+        {Array.from({ length: daysIn }, (_, i) => {
+          const iso = `${month}-${String(i + 1).padStart(2, "0")}`;
+          const c = byDay.get(iso) ?? { total: 0, done: 0, carried: 0 };
+          const future = iso > today;
+          return (
+            <button
+              key={iso}
+              type="button"
+              disabled={future || !c.total}
+              onClick={() => onDay(iso)}
+              title={c.total ? `${c.done}/${c.total} completed · ${c.carried} carried` : "No tasks"}
+              className={cn("flex min-h-14 flex-col items-center justify-center rounded-md ring-1 ring-line/50 sm:min-h-16", future ? "opacity-40" : cellTone(c.done, c.total), iso === today && "ring-2 ring-signal")}
+            >
+              <span className="num text-xs font-semibold">{i + 1}</span>
+              {c.total ? <span className="num text-[11px]">{c.done}/{c.total}</span> : null}
+              {c.carried ? <span className="text-[10px] text-sev-medium">↻{c.carried}</span> : null}
+            </button>
+          );
+        })}
+      </div>
+      <Legend />
+    </div>
+  );
+}
+
+function TeamGrid({ tasks, team, today, onCell }: { tasks: Task[]; team: { id: string; name: string }[]; today: string; onCell: (iso: string, engId: string) => void }) {
+  const days = Array.from({ length: 14 }, (_, i) => shiftDate(today, i - 13));
+  const count = (engId: string, iso: string) => {
+    const list = tasks.filter((t) => t.engineerId === engId && dayKey(t) === iso);
+    return { total: list.length, done: list.filter((t) => t.status === "completed").length };
+  };
+  return (
+    <div className="p-4">
+      <div className="mb-2 text-xs text-mute">Last 14 days · each cell shows completed / total tasks · tap a cell to see that day's work</div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] border-separate border-spacing-1 text-center text-[11px]">
+          <thead>
+            <tr>
+              <th className="text-left font-medium text-mute">Engineer</th>
+              {days.map((d) => <th key={d} className={cn("num font-medium", d === today ? "text-signal" : "text-mute")}>{fmtDate(d).slice(0, 6)}</th>)}
+              <th className="font-medium text-mute">14-day</th>
+            </tr>
+          </thead>
+          <tbody>
+            {team.map((a) => {
+              const cells = days.map((d) => count(a.id, d));
+              const tot = cells.reduce((x, c) => ({ total: x.total + c.total, done: x.done + c.done }), { total: 0, done: 0 });
+              return (
+                <tr key={a.id}>
+                  <td className="whitespace-nowrap pr-2 text-left text-xs font-medium">{a.name}</td>
+                  {cells.map((c, i) => (
+                    <td key={days[i]} className="p-0">
+                      <button type="button" disabled={!c.total} onClick={() => onCell(days[i]!, a.id)} className={cn("num h-9 w-full rounded ring-1 ring-line/50", cellTone(c.done, c.total))}>
+                        {c.total ? `${c.done}/${c.total}` : "–"}
+                      </button>
+                    </td>
+                  ))}
+                  <td className="num text-xs font-semibold">{tot.total ? `${Math.round((tot.done / tot.total) * 100)}%` : "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <Legend />
+    </div>
+  );
+}
+
+function Legend() {
+  return (
+    <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-mute">
+      <span className="flex items-center gap-1"><span className="size-3 rounded bg-sev-low/25 ring-1 ring-line/50" />All done</span>
+      <span className="flex items-center gap-1"><span className="size-3 rounded bg-sev-medium/25 ring-1 ring-line/50" />Half or more done</span>
+      <span className="flex items-center gap-1"><span className="size-3 rounded bg-sev-high/20 ring-1 ring-line/50" />Less than half done</span>
+      <span className="flex items-center gap-1"><span className="size-3 rounded bg-base ring-1 ring-line/50" />No tasks</span>
+      <span>↻ carried forward</span>
+    </div>
   );
 }
