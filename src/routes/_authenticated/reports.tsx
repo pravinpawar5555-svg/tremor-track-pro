@@ -68,7 +68,7 @@ export const Route = createFileRoute("/_authenticated/reports")({
 
 function ReportsPage() {
   const data = useData();
-  const team = analystsOf(data);
+  const team = data.role === "manager" ? analystsOf(data) : analystsOf(data).filter((a) => a.id === data.currentUserId);
   const manager = data.role === "manager"; // engineers see only their own reports
   const me = data.currentUserId;
   const search = Route.useSearch();

@@ -24,7 +24,7 @@ export function RecurringReports({
   onCatFilter: (c: CatFilter) => void;
 }) {
   const data = useData();
-  const team = analystsOf(data);
+  const team = data.role === "manager" ? analystsOf(data) : analystsOf(data).filter((a) => a.id === data.currentUserId);
   const categoryCounts = {
     order: data.plants.filter((p) => (p.category ?? "order") === "order").length,
     demo: data.plants.filter((p) => (p.category ?? "order") === "demo").length,
