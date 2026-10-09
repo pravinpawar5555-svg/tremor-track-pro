@@ -271,7 +271,7 @@ function ReportsPage() {
             />
             <Select className="w-40" value={eng} onChange={(e) => setEng(e.target.value)}>
               <option value="all">All engineers</option>
-              {data.engineers.map((e) => (
+              {(manager ? data.engineers : data.engineers.filter((e) => e.id === me)).map((e) => (
                 <option key={e.id} value={e.id}>{e.name}</option>
               ))}
             </Select>
