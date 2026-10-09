@@ -275,6 +275,17 @@ export function activeReports(d: AppData): ReportRow[] {
   });
 }
 
+/** Reports the signed-in person may see/count: manager = everyone, engineer = own only. */
+export function scopedReports(d: AppData): ReportRow[] {
+  const list = activeReports(d);
+  return d.role === "manager" ? list : list.filter((r) => r.byEngineerId === d.currentUserId);
+}
+
+/** Recurring schedules the signed-in person may see: manager = everyone, engineer = own only. */
+export function scopedRecurring(d: AppData): RecurringReport[] {
+  return d.role === "manager" ? d.recurring : d.recurring.filter((r) => r.engineerId === d.currentUserId);
+}
+
 export function frequencyText(p: Plant) {
   const list = plantFrequencies(p);
   return list.length ? list.map((f) => frequencyLabel[f]).join(" · ") : "—";
