@@ -262,6 +262,19 @@ export function plantFrequencies(p: Plant): Frequency[] {
   return legacy ? [legacy] : [];
 }
 
+/**
+ * Reports that still count: everything sent, plus unsent reports whose type is
+ * still in the plant's report cycle. Every screen counts reports through this.
+ */
+export function activeReports(d: AppData): ReportRow[] {
+  const plants = new Map(d.plants.map((p) => [p.id, p]));
+  return d.reports.filter((r) => {
+    if (r.status === "sent") return true;
+    const p = plants.get(r.plantId);
+    return !p || plantFrequencies(p).includes(r.type);
+  });
+}
+
 export function frequencyText(p: Plant) {
   const list = plantFrequencies(p);
   return list.length ? list.map((f) => frequencyLabel[f]).join(" · ") : "—";
@@ -1231,7 +1244,7 @@ export function engineerSummary(d: AppData, engineerId: string, days = 7) {
   const from = shiftDate(TODAY, -(days - 1));
   const list = d.tasks.filter((t) => t.engineerId === engineerId && t.originalDate >= from);
   const done = list.filter((t) => t.status === "completed").length;
-  const reports = d.reports.filter((r) => r.byEngineerId === engineerId);
+  const reports = activeReports(d).filter((r) => r.byEngineerId === engineerId);
   const sent = reports.filter((r) => r.status === "sent");
   const late = sent.filter((r) => reportTiming(r).late);
   const pending = reports.filter((r) => r.status !== "sent");
@@ -1268,6 +1281,7 @@ export function plantSummary(d: AppData, plantId: string) {
 }
 
 export function reportKpis(d: AppData) {
+  d = { ...d, reports: activeReports(d) };
   const sent = d.reports.filter((r) => r.status === "sent");
   const pending = d.reports.filter((r) => r.status !== "sent");
   const overdue = pending.filter((r) => reportTiming(r).late);

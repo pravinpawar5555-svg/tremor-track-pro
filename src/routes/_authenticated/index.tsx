@@ -15,6 +15,7 @@ import {
   frequencyLabel,
   plantName,
   plantFrequencies,
+  activeReports,
   reportTiming,
   shiftDate,
   taskPriorityLabel,
@@ -260,7 +261,7 @@ function ManagerDashboard({ data }: { data: AppData }) {
   const reviewTasks = today.filter((t) => waitFor(t, "manager"));
   const review = reviewTasks.length + tk.waitingOnManager;
   const custWait = today.filter((t) => waitFor(t, "customer"));
-  const reports = data.reports.filter((r) => eng === "all" || r.byEngineerId === eng);
+  const reports = activeReports(data).filter((r) => eng === "all" || r.byEngineerId === eng);
   const rb = reportBuckets(data, reports);
   const noUpdate = team.filter((a) => !today.some((t) => t.engineerId === a.id)).length;
   const oldCarry = carried.filter((t) => carryAge(t) > 2);
@@ -315,7 +316,7 @@ function ManagerDashboard({ data }: { data: AppData }) {
                 const d = mine.filter((t) => t.status === "completed").length;
                 const p = mine.length ? Math.round((d / mine.length) * 100) : 0;
                 const focus = mine.filter((t) => t.status !== "completed").sort((x, y) => score(y) - score(x))[0];
-                const repDue = data.reports.filter((r) => r.byEngineerId === a.id && r.status !== "sent" && r.dueDate <= shiftDate(TODAY, 7)).length;
+                const repDue = activeReports(data).filter((r) => r.byEngineerId === a.id && r.status !== "sent" && r.dueDate <= shiftDate(TODAY, 7)).length;
                 return (
                   <div key={a.id} className="px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
