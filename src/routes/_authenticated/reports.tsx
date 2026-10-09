@@ -28,7 +28,6 @@ import {
   fmtDate,
   frequencyText,
   plantName,
-  plantFrequencies,
   removeReport,
   reportKpis,
   scopedRecurring,
@@ -83,7 +82,6 @@ function ReportsPage() {
   const catIds = new Set(
     (cat === "total" ? data.plants : data.plants.filter((p) => (p.category ?? "order") === cat)).map((p) => p.id),
   );
-  const plantById = new Map(data.plants.map((p) => [p.id, p]));
   const allReports = scopedReports(data).filter((r) => catIds.has(r.plantId));
   const [type, setType] = useState<"all" | Frequency>("all");
   const [status, setStatus] = useState<"all" | ReportStatus>("all");
