@@ -32,6 +32,7 @@ import {
   removeReport,
   reportKpis,
   scopedRecurring,
+  scopedReports,
   reportTiming,
   saveReport,
   setReportStatus,
@@ -83,14 +84,7 @@ function ReportsPage() {
     (cat === "total" ? data.plants : data.plants.filter((p) => (p.category ?? "order") === cat)).map((p) => p.id),
   );
   const plantById = new Map(data.plants.map((p) => [p.id, p]));
-  const allReports = (manager ? data.reports : data.reports.filter((r) => r.byEngineerId === me))
-    .filter((r) => catIds.has(r.plantId))
-    .filter((r) => {
-      // hide unsent reports whose type is no longer in the plant's report cycle
-      if (r.status === "sent") return true;
-      const p = plantById.get(r.plantId);
-      return !p || plantFrequencies(p).includes(r.type);
-    });
+  const allReports = scopedReports(data).filter((r) => catIds.has(r.plantId));
   const [type, setType] = useState<"all" | Frequency>("all");
   const [status, setStatus] = useState<"all" | ReportStatus>("all");
   const [eng, setEng] = useState(search.eng ?? "all");
