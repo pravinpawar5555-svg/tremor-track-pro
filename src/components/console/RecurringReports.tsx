@@ -24,7 +24,7 @@ export function RecurringReports({
   onCatFilter: (c: CatFilter) => void;
 }) {
   const data = useData();
-  const team = analystsOf(data);
+  const team = data.role === "manager" ? analystsOf(data) : analystsOf(data).filter((a) => a.id === data.currentUserId);
   const categoryCounts = {
     order: data.plants.filter((p) => (p.category ?? "order") === "order").length,
     demo: data.plants.filter((p) => (p.category ?? "order") === "demo").length,
@@ -34,7 +34,7 @@ export function RecurringReports({
       (p) => p.id,
     ),
   );
-  const inCat = data.recurring.filter((r) => catIds.has(r.plantId));
+  const inCat = data.recurring.filter((r) => catIds.has(r.plantId) && (data.role === "manager" || r.engineerId === data.currentUserId));
   const [engFilter, setEngFilter] = useState<string>("all");
   const recurring = engFilter === "all" ? inCat : inCat.filter((r) => r.engineerId === engFilter);
   const blank = { plantId: "", type: "weekly" as RecurringReport["type"], nextDue: TODAY, engineerId: "" };
@@ -42,7 +42,7 @@ export function RecurringReports({
 
   const add = () => {
     if (!form.plantId) return;
-    saveRecurring({ ...form, engineerId: form.engineerId || team[0]?.id || "", active: true });
+    saveRecurring({ ...form, engineerId: data.role === "manager" ? form.engineerId || team[0]?.id || "" : data.currentUserId, active: true });
     setForm(blank);
   };
 

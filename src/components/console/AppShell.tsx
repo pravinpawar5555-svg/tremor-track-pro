@@ -14,6 +14,7 @@ import {
   currentUser,
   fmtDate,
   reportKpis,
+  plantFrequencies,
   taskStats,
   chatUnread,
   ticketAttention,
@@ -39,7 +40,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const manager = data.role === "manager";
   const domain = useDomain() ?? (manager ? "manager" : "customer_success");
   const exec = domain === "execution";
-  const myReports = manager ? data.reports : data.reports.filter((r) => r.byEngineerId === meId);
+  const plantMap = new Map(data.plants.map((p) => [p.id, p]));
+  const myReports = (manager ? data.reports : data.reports.filter((r) => r.byEngineerId === meId)).filter((r) => {
+    if (r.status === "sent") return true;
+    const p = plantMap.get(r.plantId);
+    return !p || plantFrequencies(p).includes(r.type);
+  });
   const kpis = reportKpis({ ...data, reports: myReports });
   const team = analystsOf(data);
   const me = currentUser(data);
