@@ -187,7 +187,7 @@ function ReportsPage() {
         >
           Recurring Settings
           <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] ${view === "recurring" ? "bg-signal/10" : "bg-canvas"}`}>
-            {data.recurring.length}
+            {manager ? data.recurring.length : data.recurring.filter((r) => r.engineerId === me).length}
           </span>
           {view === "recurring" ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-signal" /> : null}
         </button>
