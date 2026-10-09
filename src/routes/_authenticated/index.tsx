@@ -15,6 +15,7 @@ import {
   frequencyLabel,
   plantName,
   plantFrequencies,
+  activeReports,
   reportTiming,
   shiftDate,
   taskPriorityLabel,

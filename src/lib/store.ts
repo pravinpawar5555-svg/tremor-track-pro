@@ -266,7 +266,7 @@ export function plantFrequencies(p: Plant): Frequency[] {
  * Reports that still count: everything sent, plus unsent reports whose type is
  * still in the plant's report cycle. Every screen counts reports through this.
  */
-export function activeReports(d: AppData): Report[] {
+export function activeReports(d: AppData): ReportRow[] {
   const plants = new Map(d.plants.map((p) => [p.id, p]));
   return d.reports.filter((r) => {
     if (r.status === "sent") return true;
