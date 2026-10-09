@@ -69,7 +69,7 @@ export const Route = createFileRoute("/_authenticated/reports")({
 function ReportsPage() {
   const data = useData();
   const team = analystsOf(data);
-  const manager = true; // full access for manager and engineers
+  const manager = data.role === "manager"; // engineers see only their own reports
   const me = data.currentUserId;
   const search = Route.useSearch();
   const [view, setView] = useState<"register" | "recurring">("register");
