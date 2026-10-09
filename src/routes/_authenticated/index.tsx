@@ -449,7 +449,6 @@ function EngineerDashboard({ data }: { data: AppData }) {
   const completed = today.filter((t) => t.status === "completed");
   const waiting = active.filter((t) => t.status === "waiting");
   const carried = today.filter(isCarried);
-  const mePlants = new Map(data.plants.map((p) => [p.id, p]));
   const reports = scopedReports(data).filter((r) => r.byEngineerId === me && r.status !== "sent");
   const weekReports = reports.filter((r) => r.dueDate <= shiftDate(TODAY, 7));
   const pct = today.length ? Math.round((completed.length / today.length) * 100) : 0;
