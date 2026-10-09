@@ -14,6 +14,7 @@ import {
   currentUser,
   fmtDate,
   reportKpis,
+  plantFrequencies,
   taskStats,
   chatUnread,
   ticketAttention,
