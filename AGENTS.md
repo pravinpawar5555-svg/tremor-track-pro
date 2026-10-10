@@ -20,3 +20,4 @@
 - Customer Communication records live in public.customer_communications via src/lib/comms.ts (own small store; manager + customer_success only in RLS); edits append to the row's history jsonb and follow-ups reuse Daily Work tasks/reminders by linked id — no parallel task system.
 - Report visibility/counting goes through scopedReports / scopedRecurring / activeReports in src/lib/store.ts, covered by src/lib/__tests__/report-scoping.test.ts (bun run test) — keeps top bar, Dashboard, Register and Recurring Settings in agreement for report counting.
 - End-to-end role-scoping check lives in e2e/report_scoping_e2e.py (bun run test:e2e) and takes accounts from E2E_* env vars or saved session files — credentials never live in the repo.
+- Manager Dashboard has three views (Management Overview / Customer Success / Execution) in src/components/console/ManagerDashboard.tsx, selected via ?view= on /; it only reads existing stores — engineers keep their own dashboards.
