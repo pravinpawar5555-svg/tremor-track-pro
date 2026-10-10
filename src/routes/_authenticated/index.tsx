@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/")({
     ],
   }),
   validateSearch: (s: Record<string, unknown>): { view?: ManagerView | undefined } => ({
-    view: s.view === "cs" || s.view === "execution" || s.view === "overview" ? s.view : undefined,
+    view: s["view"] === "cs" || s["view"] === "execution" || s["view"] === "overview" ? s["view"] : undefined,
   }),
   component: Dashboard,
 });

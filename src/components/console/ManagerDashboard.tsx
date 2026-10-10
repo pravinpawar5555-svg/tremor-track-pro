@@ -62,7 +62,7 @@ function Seg<T extends string>({ value, onChange, options }: { value: T; onChang
   );
 }
 
-function Row({ to, search, children }: { to: string; search?: Record<string, unknown>; children: ReactNode }) {
+function Row({ to, search, children }: { to: string; search?: Record<string, unknown> | undefined; children: ReactNode }) {
   return (
     <Link to={to} search={search as never} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm hover:bg-black/[0.03]">
       {children}
