@@ -5,6 +5,7 @@ import { Chip, Empty, Kpi, Panel, PageHeader, Select } from "@/components/consol
 import { cn } from "@/lib/utils";
 import { useDomain } from "@/lib/domain";
 import { ExecutionHome } from "@/components/console/ExecutionHome";
+import { ManagerDashboard, type ManagerView } from "@/components/console/ManagerDashboard";
 import { useDailyWork } from "@/lib/dailywork";
 import {
   TODAY,
@@ -40,6 +41,9 @@ export const Route = createFileRoute("/_authenticated/")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
+  }),
+  validateSearch: (s: Record<string, unknown>): { view?: ManagerView | undefined } => ({
+    view: s["view"] === "cs" || s["view"] === "execution" || s["view"] === "overview" ? s["view"] : undefined,
   }),
   component: Dashboard,
 });
@@ -127,21 +131,6 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: str
       <div className={cn("text-[10px] text-mute", tone)}>{label}</div>
       <div className={cn("num text-sm font-semibold", tone)}>{value}</div>
     </div>
-  );
-}
-
-function AttentionRow({ to, label, hint, value, tone }: { to: string; label: string; hint: string; value: number; tone: string }) {
-  return (
-    <Link to={to} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-black/[0.03]">
-      <span className="flex items-start gap-2.5">
-        <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", tone.replace("text-", "bg-"))} />
-        <span>
-          <span className="block font-medium">{label}</span>
-          <span className="block text-xs text-mute">{hint}</span>
-        </span>
-      </span>
-      <span className={cn("num text-lg font-semibold", value ? tone : "text-mute")}>{value}</span>
-    </Link>
   );
 }
 
@@ -245,195 +234,19 @@ function Dashboard() {
   const data = useData();
   const domain = useDomain();
   if (domain === "execution") return <AppShell><ExecutionHome /></AppShell>;
-  return <AppShell>{data.role === "manager" ? <ManagerDashboard data={data} /> : <EngineerDashboard data={data} />}</AppShell>;
+  return <AppShell>{data.role === "manager" ? <ManagerHome data={data} /> : <EngineerDashboard data={data} />}</AppShell>;
 }
 
-function ManagerDashboard({ data }: { data: AppData }) {
-  const allTeam = analystsOf(data);
-  const [eng, setEng] = useState("all");
-  const team = eng === "all" ? allTeam : allTeam.filter((a) => a.id === eng);
-  const ids = new Set(team.map((a) => a.id));
-  const tasks = data.tasks.filter((t) => ids.has(t.engineerId));
-  const today = tasks.filter((t) => t.taskDate === TODAY);
-  const done = today.filter((t) => t.status === "completed").length;
-  const carried = today.filter(isCarried);
-  const waiting = today.filter((t) => t.status === "waiting");
-  const tk = ticketKpis(data);
-  const reviewTasks = today.filter((t) => waitFor(t, "manager"));
-  const review = reviewTasks.length + tk.waitingOnManager;
-  const custWait = today.filter((t) => waitFor(t, "customer"));
-  const reports = activeReports(data).filter((r) => eng === "all" || r.byEngineerId === eng);
-  const rb = reportBuckets(data, reports);
-  const noUpdate = team.filter((a) => !today.some((t) => t.engineerId === a.id)).length;
-  const oldCarry = carried.filter((t) => carryAge(t) > 2);
-  const pct = today.length ? Math.round((done / today.length) * 100) : 0;
-
-  const recommended = [
-    ...reviewTasks.map((t) => ({ key: t.id, title: `Review — ${t.title}`, sub: `${engineerName(data, t.engineerId)} · ${t.plantId ? plantName(data, t.plantId) : "Internal"}`, tag: "Manager review", tone: "text-[oklch(0.55_0.18_300)]", to: "/tasks", s: 100 + score(t) })),
-    ...(data.tickets ?? []).filter((t) => t.status === "open" || t.status === "in-discussion").slice(0, 3).map((t) => ({ key: t.id, title: `${t.ticketNo} · ${t.subject}`, sub: `${engineerName(data, t.raisedBy)} · ${plantName(data, t.plantId)}`, tag: "Ticket", tone: "text-[oklch(0.55_0.18_300)]", to: "/discussions", s: 90 })),
-    ...custWait.map((t) => ({ key: t.id, title: `Follow up with customer — ${t.plantId ? plantName(data, t.plantId) : t.title}`, sub: `${engineerName(data, t.engineerId)} · Customer response pending`, tag: "Customer follow-up", tone: "text-sev-high", to: "/tasks", s: 60 + score(t) })),
-    ...rb.overdue.slice(0, 2).map((r) => ({ key: r.id, title: `${frequencyLabel[r.type]} report overdue — ${plantName(data, r.plantId)}`, sub: `${engineerName(data, r.byEngineerId)} · due ${fmtDate(r.dueDate)}`, tag: "Report", tone: "text-sev-critical", to: "/reports", s: 70 })),
-  ]
-    .sort((a, b) => b.s - a.s)
-    .slice(0, 3);
-
-  const plants = data.plants;
-  const orderN = plants.filter((p) => (p.category ?? "order") === "order").length;
-  const recentPlants = new Set(data.reports.filter((r) => r.status === "sent" && r.sentDate && r.sentDate >= shiftDate(TODAY, -30)).map((r) => r.plantId));
-
-  const activity = tasks
-    .flatMap((t) => t.activity.map((a) => ({ ...a, t })))
-    .sort((a, b) => (a.at < b.at ? 1 : -1))
-    .slice(0, 6);
-
+function ManagerHome({ data }: { data: AppData }) {
+  const { view } = Route.useSearch();
+  const navigate = Route.useNavigate();
   return (
-    <>
-      <PageHeader
-        title="Dashboard"
-        subtitle={`Team overview, key updates and actions · ${fmtDate(TODAY)}`}
-        actions={
-          <Select className="w-48" value={eng} onChange={(e) => setEng(e.target.value)} aria-label="Engineer">
-            <option value="all">All engineers</option>
-            {allTeam.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </Select>
-        }
-      />
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <Kpi label="Today's work" value={today.length} hint="Assigned to team" />
-        <Kpi label="Completed" value={done} tone="low" hint={`${pct}% completed`} />
-        <Kpi label="Remaining" value={today.length - done} tone={today.length - done ? "medium" : "low"} hint="Needs action" />
-        <Kpi label="Carried forward" value={carried.length} tone={carried.length ? "medium" : "low"} hint="From previous days" />
-        <Kpi label="Needs my review" value={review} tone={review ? "high" : "low"} hint="Engineer items waiting" />
-        <Kpi label="Reports attention" value={rb.overdue.length} tone={rb.overdue.length ? "critical" : "low"} hint="Overdue / requires action" />
-      </div>
-
-      <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.25fr_1fr]">
-        <div className="grid gap-4">
-          <Section title="Team today" link="View daily work" to="/tasks">
-            <div className="divide-y divide-line/60">
-              {team.map((a) => {
-                const mine = today.filter((t) => t.engineerId === a.id);
-                const d = mine.filter((t) => t.status === "completed").length;
-                const p = mine.length ? Math.round((d / mine.length) * 100) : 0;
-                const focus = mine.filter((t) => t.status !== "completed").sort((x, y) => score(y) - score(x))[0];
-                const repDue = activeReports(data).filter((r) => r.byEngineerId === a.id && r.status !== "sent" && r.dueDate <= shiftDate(TODAY, 7)).length;
-                return (
-                  <div key={a.id} className="px-4 py-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="grid size-7 place-items-center rounded-full bg-signal/10 text-[11px] font-semibold text-signal">{a.initials}</span>
-                        <div>
-                          <div className="font-medium">{a.name}</div>
-                          <div className="text-[11px] text-mute">{focus ? `Current focus: ${focus.plantId ? plantName(data, focus.plantId) : focus.title}` : mine.length ? "All done for today" : "No tasks planned yet"}</div>
-                        </div>
-                      </div>
-                      <div className="text-right text-sm"><span className="num font-semibold">{d} / {mine.length}</span> <span className="text-xs text-mute">completed</span></div>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line/60"><div className="h-full rounded-full bg-sev-low" style={{ width: `${p}%` }} /></div>
-                      <span className="num text-xs text-mute">{p}%</span>
-                    </div>
-                    <div className="mt-2 grid grid-cols-5 gap-1.5">
-                      <Stat label="To Do" value={mine.filter((t) => t.status === "pending").length} />
-                      <Stat label="In Progress" value={mine.filter((t) => t.status === "in_progress").length} tone="text-signal" />
-                      <Stat label="Waiting" value={mine.filter((t) => t.status === "waiting").length} tone="text-sev-high" />
-                      <Stat label="Carried" value={mine.filter(isCarried).length} tone="text-sev-medium" />
-                      <Stat label="Reports due" value={repDue} tone="text-sev-critical" />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Section>
-
-          <Section title="Recommended next (for you)" to="/tasks">
-            <div className="divide-y divide-line/60">
-              {recommended.map((r) => (
-                <Link key={r.key} to={r.to} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm hover:bg-black/[0.03]">
-                  <div>
-                    <div className="font-medium">{r.title}</div>
-                    <div className="text-xs text-mute">{r.sub}</div>
-                  </div>
-                  <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] ring-1 ring-current/30", r.tone)}>{r.tag}</span>
-                </Link>
-              ))}
-              {!recommended.length ? <Empty>Nothing waiting on you right now.</Empty> : null}
-            </div>
-          </Section>
-
-          <TeamFlow data={data} />
-        </div>
-
-        <div className="grid gap-4">
-          <Section title="Needs my attention">
-            <div className="divide-y divide-line/60">
-              <AttentionRow to="/reports" label="Reports overdue" hint={`Across ${rb.plantsOver} plants${rb.oldest ? ` · oldest ${rb.oldest} days` : ""}`} value={rb.overdue.length} tone="text-sev-critical" />
-              <AttentionRow to="/tasks" label="Carried forward > 2 days" hint="Requires re-planning" value={oldCarry.length} tone="text-sev-medium" />
-              <AttentionRow to="/discussions" label="Waiting for my review" hint="Submitted by engineers / tickets" value={review} tone="text-[oklch(0.55_0.18_300)]" />
-              <AttentionRow to="/tasks" label="Waiting for customer" hint="Customer response pending" value={custWait.length} tone="text-sev-high" />
-              <AttentionRow to="/tasks" label="Engineers without tasks today" hint="Daily list not started" value={noUpdate} tone="text-sev-high" />
-            </div>
-          </Section>
-
-          <Section title="Report delivery" to="/reports">
-            <div className="grid grid-cols-4 gap-2 px-4 py-3">
-              <Stat label="Overdue" value={rb.overdue.length} tone="text-sev-critical" />
-              <Stat label="Due today" value={rb.dueToday.length} tone="text-signal" />
-              <Stat label="Next 3 days" value={rb.next3.length} tone="text-sev-medium" />
-              <Stat label="Next 7 days" value={rb.next7.length} />
-            </div>
-            <div className="divide-y divide-line/60 border-t border-line/60">
-              {rb.urgent.map((r) => {
-                const tm = reportTiming(r);
-                return (
-                  <div key={r.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
-                    <div className="min-w-0">
-                      <div className="truncate font-medium">{plantName(data, r.plantId)}</div>
-                      <div className="text-xs text-mute">{frequencyLabel[r.type]} · {engineerName(data, r.byEngineerId)}</div>
-                    </div>
-                    <Chip severity={tm.late ? "critical" : tm.days === 0 ? "medium" : "advisory"} label={tm.late ? "Overdue" : dueWord(r.dueDate)} />
-                  </div>
-                );
-              })}
-              {!rb.urgent.length ? <Empty>No open reports.</Empty> : null}
-            </div>
-          </Section>
-
-          <Section title="Plant coverage" to="/plants">
-            <div className="grid grid-cols-3 gap-2 px-4 py-3">
-              <Stat label="Plants" value={plants.length} />
-              <Stat label="Order" value={orderN} tone="text-signal" />
-              <Stat label="Demo" value={plants.length - orderN} tone="text-sev-medium" />
-            </div>
-            <div className="divide-y divide-line/60 border-t border-line/60 text-sm">
-              {[
-                ["Reports due this week", rb.dueToday.length + rb.next3.length + rb.next7.length],
-                ["No report sent in 30 days", plants.filter((p) => !recentPlants.has(p.id)).length],
-                ["Customer follow-up open", custWait.length],
-              ].map(([l, v]) => (
-                <div key={l as string} className="flex justify-between px-4 py-2"><span className="text-mute">{l}</span><span className="num font-medium">{v}</span></div>
-              ))}
-            </div>
-          </Section>
-
-          <Section title="Recent activity" to="/tasks">
-            <div className="divide-y divide-line/60">
-              {activity.map((a, i) => (
-                <div key={i} className="flex items-start justify-between gap-3 px-4 py-2 text-sm">
-                  <div className="min-w-0">
-                    <div className="truncate">{a.text} — <span className="text-mute">{a.t.title}</span></div>
-                    <div className="text-xs text-mute">{engineerName(data, a.t.engineerId)}{a.t.plantId ? ` · ${plantName(data, a.t.plantId)}` : ""}</div>
-                  </div>
-                  <span className="num shrink-0 text-xs text-mute">{fmtDate(a.at.slice(0, 10))}</span>
-                </div>
-              ))}
-              {!activity.length ? <Empty>No recent activity.</Empty> : null}
-            </div>
-          </Section>
-        </div>
-      </div>
-    </>
+    <ManagerDashboard
+      data={data}
+      view={view ?? "overview"}
+      onView={(v) => void navigate({ search: { view: v === "overview" ? undefined : v }, replace: true })}
+      csExtra={<TeamFlow data={data} />}
+    />
   );
 }
 
