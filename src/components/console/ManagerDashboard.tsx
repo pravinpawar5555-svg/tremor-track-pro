@@ -80,8 +80,8 @@ const ago = (iso: string) => {
 function useModel(data: AppData) {
   const visits = useVisits();
   const ex = useExecution();
-  const { comms } = useComms() as unknown as { comms: ReturnType<typeof useComms> extends { comms: infer C } ? C : never };
-  return { visits, ex, comms: (comms ?? []) as import("@/lib/comms").Comm[], data };
+  const comms = useComms();
+  return { visits, ex, comms, data };
 }
 
 const jobDate = (j: ExecJob) => j.plannedStart || j.expectedDate || j.nextPlannedDate || "";
