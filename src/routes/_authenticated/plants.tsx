@@ -344,6 +344,7 @@ function PlantsPage() {
                     {manager ? (
                       <>
                         <button onClick={() => edit(p)} className="h-11 rounded-md px-4 text-sm ring-1 ring-line">Edit</button>
+                        <Link to="/opportunities" search={{ plant: p.id }} className="grid h-11 place-items-center rounded-md px-3 text-sm text-signal ring-1 ring-line">+ Opportunity</Link>
                         <button onClick={() => { if (window.confirm(`Delete ${p.name}?`)) removePlant(p.id); }} className="h-11 rounded-md px-4 text-sm text-red-600 ring-1 ring-line">Delete</button>
                       </>
                     ) : null}
@@ -411,6 +412,7 @@ function PlantsPage() {
                         {manager ? (
                           <span className="inline-flex justify-end gap-1">
                             <Button variant="ghost" onClick={() => edit(p)}>Edit</Button>
+                            <Link to="/opportunities" search={{ plant: p.id }} className="inline-flex items-center rounded-md px-3 py-1.5 text-xs text-signal hover:bg-signal/10">+ Opportunity</Link>
                             <Button variant="ghost" onClick={() => removePlant(p.id)}>Delete</Button>
                           </span>
                         ) : null}
