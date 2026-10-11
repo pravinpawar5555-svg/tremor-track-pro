@@ -18,6 +18,7 @@ import {
 import { useVisits, visitStatus, visitTypeLabel } from "@/lib/visits";
 import { useExecution, installTypeLabel, execStatusLabel, type ExecJob } from "@/lib/execution";
 import { useComms, openFollowUp } from "@/lib/comms";
+import { useOpps } from "@/lib/opportunities";
 
 export type ManagerView = "overview" | "cs" | "execution";
 type Period = "today" | "7d" | "month";
@@ -222,6 +223,7 @@ function Overview({ m, period }: { m: Model; period: Period }) {
               {!upcoming.length ? <Empty>No commitments in this window.</Empty> : null}
             </div>
           </Panel>
+          <BusinessPipeline />
           <Panel title="Recent Important Updates">
             <div className="divide-y divide-line/60">
               {updates.map((u, i) => (
@@ -525,5 +527,27 @@ function Execution({ m, period }: { m: Model; period: Period }) {
         </div>
       </Panel>
     </>
+  );
+}
+
+function BusinessPipeline() {
+  const { opps } = useOpps();
+  const live = opps.filter((o) => !o.archived);
+  const c = (f: (s: string) => boolean) => live.filter((o) => f(o.stage)).length;
+  const rows: [string, number][] = [
+    ["New", c((s) => s === "new" || s === "contacted")],
+    ["Qualified", c((s) => s === "qualified")],
+    ["Demo", c((s) => s.startsWith("demo"))],
+    ["Proposal", c((s) => s === "proposal")],
+    ["Order Won", c((s) => s === "order_won")],
+    ["Execution", c((s) => s === "handed_exec" || s === "exec_progress")],
+    ["CS Handover", c((s) => s === "cs_handover" || s === "exec_completed")],
+  ];
+  return (
+    <Panel title="Business Pipeline" meta={<Link to="/opportunities" className="text-signal">Open Leads & Opportunities →</Link>}>
+      <div className="grid grid-cols-4 gap-2 px-4 py-3 md:grid-cols-7">
+        {rows.map(([l, v]) => <Link key={l} to="/opportunities" search={{ tab: "pipeline" } as never} className="rounded-md bg-base px-1.5 py-2 text-center ring-1 ring-line/60 hover:ring-signal/40"><div className={cn("num text-lg font-semibold", v ? "text-signal" : "text-mute")}>{v}</div><div className="text-[10px] leading-tight text-mute">{l}</div></Link>)}
+      </div>
+    </Panel>
   );
 }

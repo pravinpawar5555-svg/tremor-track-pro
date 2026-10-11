@@ -578,6 +578,173 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunities: {
+        Row: {
+          archived: boolean
+          attachment_links: string
+          branch_id: string
+          closed_at: string | null
+          contact_email: string
+          contact_mobile: string
+          contact_name: string
+          created_at: string
+          created_by: string
+          created_by_domain: string
+          cs_handover: Json
+          customer_name: string
+          customer_success_engineer_id: string
+          estimated_value: number | null
+          exec_handover: Json
+          expected_date: string | null
+          expected_machine_qty: number
+          expected_sensor_qty: number
+          hold_reason: string
+          hold_review_date: string | null
+          id: string
+          lead_source: string
+          lead_source_other: string
+          location: string
+          lost_reason: string
+          lost_remark: string
+          next_action: string
+          next_action_date: string | null
+          next_action_owner: string
+          notes: string
+          opportunity_number: string
+          opportunity_type: string
+          plant_id: string
+          plant_name: string
+          priority: string
+          related_execution_job_id: string
+          requirement_summary: string
+          sales_engineer_id: string
+          stage: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          archived?: boolean
+          attachment_links?: string
+          branch_id?: string
+          closed_at?: string | null
+          contact_email?: string
+          contact_mobile?: string
+          contact_name?: string
+          created_at?: string
+          created_by?: string
+          created_by_domain?: string
+          cs_handover?: Json
+          customer_name?: string
+          customer_success_engineer_id?: string
+          estimated_value?: number | null
+          exec_handover?: Json
+          expected_date?: string | null
+          expected_machine_qty?: number
+          expected_sensor_qty?: number
+          hold_reason?: string
+          hold_review_date?: string | null
+          id?: string
+          lead_source?: string
+          lead_source_other?: string
+          location?: string
+          lost_reason?: string
+          lost_remark?: string
+          next_action?: string
+          next_action_date?: string | null
+          next_action_owner?: string
+          notes?: string
+          opportunity_number?: string
+          opportunity_type?: string
+          plant_id?: string
+          plant_name?: string
+          priority?: string
+          related_execution_job_id?: string
+          requirement_summary?: string
+          sales_engineer_id?: string
+          stage?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Update: {
+          archived?: boolean
+          attachment_links?: string
+          branch_id?: string
+          closed_at?: string | null
+          contact_email?: string
+          contact_mobile?: string
+          contact_name?: string
+          created_at?: string
+          created_by?: string
+          created_by_domain?: string
+          cs_handover?: Json
+          customer_name?: string
+          customer_success_engineer_id?: string
+          estimated_value?: number | null
+          exec_handover?: Json
+          expected_date?: string | null
+          expected_machine_qty?: number
+          expected_sensor_qty?: number
+          hold_reason?: string
+          hold_review_date?: string | null
+          id?: string
+          lead_source?: string
+          lead_source_other?: string
+          location?: string
+          lost_reason?: string
+          lost_remark?: string
+          next_action?: string
+          next_action_date?: string | null
+          next_action_owner?: string
+          notes?: string
+          opportunity_number?: string
+          opportunity_type?: string
+          plant_id?: string
+          plant_name?: string
+          priority?: string
+          related_execution_job_id?: string
+          requirement_summary?: string
+          sales_engineer_id?: string
+          stage?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: []
+      }
+      opportunity_activity: {
+        Row: {
+          by_user: string
+          created_at: string
+          id: string
+          kind: string
+          opportunity_id: string
+          text: string
+        }
+        Insert: {
+          by_user?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          opportunity_id: string
+          text?: string
+        }
+        Update: {
+          by_user?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          opportunity_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_activity_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ownership_audit: {
         Row: {
           changed_at: string

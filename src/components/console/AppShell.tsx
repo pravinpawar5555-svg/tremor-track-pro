@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, type ReactNode } from "react";
-import { Settings as SettingsIcon, CalendarDays, Factory, Wrench, FileText, LayoutDashboard, ListChecks, Menu, MessageSquare, Users } from "lucide-react";
+import { Settings as SettingsIcon, CalendarDays, Factory, Wrench, FileText, LayoutDashboard, ListChecks, Menu, MessageSquare, Users, Target } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,7 @@ const nav = [
   { to: "/discussions", label: "Discussion & Tickets" },
   { to: "/visits", label: "Visits" },
   { to: "/execution", label: "Execution" },
+  { to: "/opportunities", label: "Leads & Opportunities" },
   { to: "/reports", label: "Reports" },
   { to: "/plants", label: "Plants" },
   { to: "/engineers", label: "Engineers" },
@@ -55,7 +56,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/tasks", short: "Daily Work", icon: ListChecks },
     exec ? { to: "/execution", short: "Execution", icon: Wrench } : { to: "/reports", short: "Reports", icon: FileText },
   ] as const;
-  const moreIcons = { "/discussions": MessageSquare, "/visits": CalendarDays, "/execution": Wrench, "/plants": Factory, "/engineers": Users, "/settings": SettingsIcon } as Record<string, typeof Menu>;
+  const moreIcons = { "/discussions": MessageSquare, "/visits": CalendarDays, "/execution": Wrench, "/opportunities": Target, "/plants": Factory, "/engineers": Users, "/settings": SettingsIcon } as Record<string, typeof Menu>;
   const more = items.filter((n) => !primary.some((p) => p.to === n.to)).map((n) => ({ ...n, icon: moreIcons[n.to] ?? Menu }));
   const moreActive = more.some((m) => isActive(m.to));
   const signOut = async () => {
