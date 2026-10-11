@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, type ReactNode } from "react";
-import { Settings as SettingsIcon, CalendarDays, Factory, Wrench, FileText, LayoutDashboard, ListChecks, Menu, MessageSquare, Users } from "lucide-react";
+import { Settings as SettingsIcon, CalendarDays, Factory, Wrench, FileText, LayoutDashboard, ListChecks, Menu, MessageSquare, Users, Target } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
