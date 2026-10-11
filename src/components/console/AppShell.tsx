@@ -27,6 +27,7 @@ const nav = [
   { to: "/discussions", label: "Discussion & Tickets" },
   { to: "/visits", label: "Visits" },
   { to: "/execution", label: "Execution" },
+  { to: "/opportunities", label: "Leads & Opportunities" },
   { to: "/reports", label: "Reports" },
   { to: "/plants", label: "Plants" },
   { to: "/engineers", label: "Engineers" },
@@ -55,7 +56,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/tasks", short: "Daily Work", icon: ListChecks },
     exec ? { to: "/execution", short: "Execution", icon: Wrench } : { to: "/reports", short: "Reports", icon: FileText },
   ] as const;
-  const moreIcons = { "/discussions": MessageSquare, "/visits": CalendarDays, "/execution": Wrench, "/plants": Factory, "/engineers": Users, "/settings": SettingsIcon } as Record<string, typeof Menu>;
+  const moreIcons = { "/discussions": MessageSquare, "/visits": CalendarDays, "/execution": Wrench, "/opportunities": Target, "/plants": Factory, "/engineers": Users, "/settings": SettingsIcon } as Record<string, typeof Menu>;
   const more = items.filter((n) => !primary.some((p) => p.to === n.to)).map((n) => ({ ...n, icon: moreIcons[n.to] ?? Menu }));
   const moreActive = more.some((m) => isActive(m.to));
   const signOut = async () => {

@@ -16,6 +16,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedDiscussionsRouteImport } from './routes/_authenticated/discussions'
 import { Route as AuthenticatedEngineersRouteImport } from './routes/_authenticated/engineers'
 import { Route as AuthenticatedExecutionRouteImport } from './routes/_authenticated/execution'
+import { Route as AuthenticatedOpportunitiesRouteImport } from './routes/_authenticated/opportunities'
 import { Route as AuthenticatedPlantsRouteImport } from './routes/_authenticated/plants'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -57,6 +58,12 @@ const AuthenticatedExecutionRoute = AuthenticatedExecutionRouteImport.update({
   path: '/execution',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOpportunitiesRoute =
+  AuthenticatedOpportunitiesRouteImport.update({
+    id: '/opportunities',
+    path: '/opportunities',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPlantsRoute = AuthenticatedPlantsRouteImport.update({
   id: '/plants',
   path: '/plants',
@@ -90,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/discussions': typeof AuthenticatedDiscussionsRoute
   '/engineers': typeof AuthenticatedEngineersRoute
   '/execution': typeof AuthenticatedExecutionRoute
+  '/opportunities': typeof AuthenticatedOpportunitiesRoute
   '/plants': typeof AuthenticatedPlantsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -102,6 +110,7 @@ export interface FileRoutesByTo {
   '/discussions': typeof AuthenticatedDiscussionsRoute
   '/engineers': typeof AuthenticatedEngineersRoute
   '/execution': typeof AuthenticatedExecutionRoute
+  '/opportunities': typeof AuthenticatedOpportunitiesRoute
   '/plants': typeof AuthenticatedPlantsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -117,6 +126,7 @@ export interface FileRoutesById {
   '/_authenticated/discussions': typeof AuthenticatedDiscussionsRoute
   '/_authenticated/engineers': typeof AuthenticatedEngineersRoute
   '/_authenticated/execution': typeof AuthenticatedExecutionRoute
+  '/_authenticated/opportunities': typeof AuthenticatedOpportunitiesRoute
   '/_authenticated/plants': typeof AuthenticatedPlantsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/discussions'
     | '/engineers'
     | '/execution'
+    | '/opportunities'
     | '/plants'
     | '/reports'
     | '/settings'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/discussions'
     | '/engineers'
     | '/execution'
+    | '/opportunities'
     | '/plants'
     | '/reports'
     | '/settings'
@@ -159,6 +171,7 @@ export interface FileRouteTypes {
     | '/_authenticated/discussions'
     | '/_authenticated/engineers'
     | '/_authenticated/execution'
+    | '/_authenticated/opportunities'
     | '/_authenticated/plants'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
@@ -224,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedExecutionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/opportunities': {
+      id: '/_authenticated/opportunities'
+      path: '/opportunities'
+      fullPath: '/opportunities'
+      preLoaderRoute: typeof AuthenticatedOpportunitiesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/plants': {
       id: '/_authenticated/plants'
       path: '/plants'
@@ -266,6 +286,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDiscussionsRoute: typeof AuthenticatedDiscussionsRoute
   AuthenticatedEngineersRoute: typeof AuthenticatedEngineersRoute
   AuthenticatedExecutionRoute: typeof AuthenticatedExecutionRoute
+  AuthenticatedOpportunitiesRoute: typeof AuthenticatedOpportunitiesRoute
   AuthenticatedPlantsRoute: typeof AuthenticatedPlantsRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -278,6 +299,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDiscussionsRoute: AuthenticatedDiscussionsRoute,
   AuthenticatedEngineersRoute: AuthenticatedEngineersRoute,
   AuthenticatedExecutionRoute: AuthenticatedExecutionRoute,
+  AuthenticatedOpportunitiesRoute: AuthenticatedOpportunitiesRoute,
   AuthenticatedPlantsRoute: AuthenticatedPlantsRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
