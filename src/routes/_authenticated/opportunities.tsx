@@ -350,16 +350,16 @@ function OppForm({ ctx, initial, opps, onDone, onOpenExisting }: { ctx: Ctx; ini
 
   const pickPlant = (id: string) => {
     const p = ctx.data.plants.find((x) => x.id === id);
-    if (!p) return set({ plantId: "" });
+    if (!p) return void set({ plantId: "" });
     set({ plantId: p.id, customerName: p.customer, plantName: p.name, location: p.location, branchId: p.branchId ?? o.branchId, salesEngineerId: p.salesEngineerId ?? o.salesEngineerId, contactName: o.contactName || p.contact, contactMobile: o.contactMobile || p.contactPhone });
   };
 
   const submit = async () => {
-    if (!o.customerName.trim()) return toast.error("Customer name is required");
-    if (!o.requirement.trim()) return toast.error(ctx.exec ? "Describe the opportunity you observed" : "Requirement / summary is required");
-    if (ctx.manager && !o.branchId) return toast.error("Branch is required");
-    if (ctx.manager && !o.salesEngineerId) return toast.error("Sales Engineer / lead owner is required");
-    if (dups.length && !dupOk) return toast.error("An open opportunity already exists for this plant — open it or tick 'Create new anyway'");
+    if (!o.customerName.trim()) return void toast.error("Customer name is required");
+    if (!o.requirement.trim()) return void toast.error(ctx.exec ? "Describe the opportunity you observed" : "Requirement / summary is required");
+    if (ctx.manager && !o.branchId) return void toast.error("Branch is required");
+    if (ctx.manager && !o.salesEngineerId) return void toast.error("Sales Engineer / lead owner is required");
+    if (dups.length && !dupOk) return void toast.error("An open opportunity already exists for this plant — open it or tick 'Create new anyway'");
     setBusy(true);
     try {
       const saved = await saveOpp(o, prev, ctx.authId, ctx.myName);
@@ -465,12 +465,12 @@ function Detail({ ctx, o, activity, onEdit }: { ctx: Ctx; o: Opp; activity: { id
     finally { setBusy(false); }
   };
   const applyStage = () => {
-    if (stage === "lost" && !reason) return toast.error("Choose a lost reason");
-    if (stage === "on_hold" && !reason) return toast.error("Enter a hold reason");
+    if (stage === "lost" && !reason) return void toast.error("Choose a lost reason");
+    if (stage === "on_hold" && !reason) return void toast.error("Enter a hold reason");
     void save({ stage, ...(stage === "lost" ? { lostReason: reason, lostRemark: remark } : {}), ...(stage === "on_hold" ? { holdReason: reason, holdReviewDate: review } : {}) }, `Stage set to ${stages[stage]}`);
   };
   const addReminder = async () => {
-    if (!na.text || !na.date) return toast.error("Set next action and date first");
+    if (!na.text || !na.date) return void toast.error("Set next action and date first");
     const r = blankReminder(na.owner || ctx.data.currentUserId, na.date);
     await saveReminder({ ...r, title: `${o.number}: ${na.text}`, description: custLine(o), plantId: o.plantId, createdBy: ctx.data.currentUserId });
     await logOpp(o.id, `Reminder added for ${fmtDate(na.date)}`, ctx.myName);
@@ -608,7 +608,7 @@ function ExecHandoverForm({ ctx, o, onClose }: { ctx: Ctx; o: Opp; onClose: () =
     toast.success("Handover draft saved");
   };
   const send = async () => {
-    if (!h.engineerId) return toast.error("Choose the Execution engineer");
+    if (!h.engineerId) return void toast.error("Choose the Execution engineer");
     setBusy(true);
     try {
       const j = blankJob(ctx.data.currentUserId);
@@ -659,7 +659,7 @@ function CsHandoverForm({ ctx, o, onClose }: { ctx: Ctx; o: Opp; onClose: () => 
   const [pending, setPending] = useState(o.csHandover.pendingItems ?? "");
   const [notes, setNotes] = useState(o.csHandover.customerNotes ?? "");
   const accept = async () => {
-    if (!eng) return toast.error("Choose the Customer Success engineer");
+    if (!eng) return void toast.error("Choose the Customer Success engineer");
     await saveOpp({ ...o, csEngineerId: eng, stage: "cs_active", csHandover: { ...o.csHandover, status: "accepted", pendingItems: pending, customerNotes: notes, engineerId: eng, acceptedBy: ctx.myName, acceptedAt: new Date().toISOString() } }, o, ctx.authId, ctx.myName);
     toast.success(`Handed to ${engineerName(ctx.data, eng)}${plant && plant.engineerId !== eng ? " — update the plant's engineer in Plants if needed" : ""}`);
     onClose();
