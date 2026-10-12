@@ -1266,6 +1266,42 @@ export type Database = {
         }
         Relationships: []
       }
+      workload_settings: {
+        Row: {
+          cs_high: number | null
+          cs_over: number | null
+          exec_high: number | null
+          exec_over: number | null
+          holidays: string[]
+          id: string
+          non_working_days: number[]
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          cs_high?: number | null
+          cs_over?: number | null
+          exec_high?: number | null
+          exec_over?: number | null
+          holidays?: string[]
+          id?: string
+          non_working_days?: number[]
+          updated_at?: string
+          updated_by?: string
+        }
+        Update: {
+          cs_high?: number | null
+          cs_over?: number | null
+          exec_high?: number | null
+          exec_over?: number | null
+          holidays?: string[]
+          id?: string
+          non_working_days?: number[]
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

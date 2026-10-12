@@ -127,6 +127,13 @@
       "when": 1791704582225,
       "tag": "0017_leads_opportunities",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791779313874,
+      "tag": "0018_workload_settings",
+      "breakpoints": true
     }
   ]
 }
