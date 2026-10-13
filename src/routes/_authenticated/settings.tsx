@@ -4,7 +4,8 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, PageHeader, Panel, Select, TextInput } from "@/components/console/ui";
 import { peekDomain } from "@/lib/domain";
-import { useData } from "@/lib/store";
+import { useData, engineerName } from "@/lib/store";
+import { saveWorkloadSettings, useWorkloadSettings, type WorkloadSettings } from "@/lib/workload";
 import {
   emailOk, phoneSuspicious, saveBranch, saveKam, saveSales, useBranches,
   type Branch, type Kam, type SalesEngineer,
@@ -27,8 +28,8 @@ export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
 });
 
-type Tab = "kams" | "branches" | "sales" | "hierarchy" | "history";
-const tabs: [Tab, string][] = [["kams", "HO Division KAMs"], ["branches", "Branches"], ["sales", "Sales Engineers"], ["hierarchy", "Hierarchy"], ["history", "Change history"]];
+type Tab = "kams" | "branches" | "sales" | "hierarchy" | "history" | "workload";
+const tabs: [Tab, string][] = [["kams", "HO Division KAMs"], ["branches", "Branches"], ["sales", "Sales Engineers"], ["hierarchy", "Hierarchy"], ["history", "Change history"], ["workload", "Workload"]];
 
 const wrap = async (p: Promise<void>, ok: string) => {
   try { await p; toast.success(ok); return true; } catch (e: any) { toast.error(e.message ?? "Could not save"); return false; }
@@ -53,6 +54,7 @@ function SettingsPage() {
       {tab === "sales" && <Sales />}
       {tab === "hierarchy" && <Hierarchy />}
       {tab === "history" && <History />}
+      {tab === "workload" && <WorkloadRules />}
     </AppShell>
   );
 }
@@ -205,6 +207,49 @@ function History() {
           ))}
         </ul>
       ) : <Empty>No changes recorded yet.</Empty>}
+    </Panel>
+  );
+}
+
+function WorkloadRules() {
+  const cur = useWorkloadSettings();
+  const data = useData();
+  const [f, setF] = useState<WorkloadSettings | null>(null);
+  const v = f ?? cur;
+  const num = (x: string) => (x === "" ? null : Math.max(0, Number(x) || 0));
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return (
+    <Panel title="Workload Settings" meta={<span>Leave blank to show counts only, without High / Over judgement</span>}>
+      <div className="grid gap-4 p-4 md:grid-cols-2">
+        <div className="grid gap-2">
+          <div className="label-caps">Customer Success — active items per day</div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="High from"><TextInput type="number" value={v.csHigh ?? ""} onChange={(e) => setF({ ...v, csHigh: num(e.target.value) })} /></Field>
+            <Field label="Overloaded from"><TextInput type="number" value={v.csOver ?? ""} onChange={(e) => setF({ ...v, csOver: num(e.target.value) })} /></Field>
+          </div>
+          <div className="text-[11px] text-mute">Counts tasks (incl. carried), reports due, visits and customer follow-ups on that day.</div>
+        </div>
+        <div className="grid gap-2">
+          <div className="label-caps">Execution — concurrent jobs per day</div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="High from"><TextInput type="number" value={v.execHigh ?? ""} onChange={(e) => setF({ ...v, execHigh: num(e.target.value) })} /></Field>
+            <Field label="Overloaded from"><TextInput type="number" value={v.execOver ?? ""} onChange={(e) => setF({ ...v, execOver: num(e.target.value) })} /></Field>
+          </div>
+          <div className="text-[11px] text-mute">Overlapping jobs for the same engineer are always flagged as a conflict.</div>
+        </div>
+        <div className="grid gap-2">
+          <div className="label-caps">Non-working days</div>
+          <div className="flex flex-wrap gap-1.5">
+            {days.map((d, i) => { const on = v.nonWorkingDays.includes(i); return <button key={d} type="button" onClick={() => setF({ ...v, nonWorkingDays: on ? v.nonWorkingDays.filter((x) => x !== i) : [...v.nonWorkingDays, i] })} className={`rounded-md px-2.5 py-1 text-xs ring-1 ${on ? "bg-signal/10 text-signal ring-signal/40" : "text-mute ring-line"}`}>{d}</button>; })}
+          </div>
+        </div>
+        <Field label="Company holidays" hint="Dates separated by commas, e.g. 2026-10-20, 2026-11-08">
+          <TextInput value={v.holidays.join(", ")} onChange={(e) => setF({ ...v, holidays: e.target.value.split(/[,\s]+/).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x)) })} />
+        </Field>
+      </div>
+      <div className="flex justify-end gap-2 px-4 pb-4">
+        <Button variant="solid" disabled={!f} onClick={async () => { if (f && (await wrap(saveWorkloadSettings(f, engineerName(data, data.currentUserId) || "Manager"), "Workload settings saved"))) setF(null); }}>Save</Button>
+      </div>
     </Panel>
   );
 }
