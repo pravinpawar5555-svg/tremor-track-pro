@@ -20,6 +20,9 @@ import { useExecution, ensureExecEngineer, execRecordFor } from "@/lib/execution
 import { Button } from "@/components/console/ui";
 import { reviewUser, deleteAccount } from "@/lib/store";
 import { Trash2 } from "lucide-react";
+import { Workload } from "@/components/console/Workload";
+import { cn } from "@/lib/utils";
+import { engineerName } from "@/lib/store";
 
 const roleLabel: Record<Engineer["role"], string> = { analyst: "Customer Success Engineer", manager: "Manager", execution: "Execution Engineer" };
 
@@ -55,6 +58,7 @@ function EngineersPage() {
   const [note, setNote] = useState<{ ok: boolean; message: string } | null>(null);
   const [confirmId, setConfirmId] = useState("");
   const [moveTo, setMoveTo] = useState("");
+  const [tab, setTab] = useState<"engineers" | "workload" | "activity">("engineers");
 
   const submit = () => {
     const res = saveEngineer(form.id ? { id: form.id, name: form.name, role: form.role } : { name: form.name, role: form.role });
@@ -96,8 +100,16 @@ function EngineersPage() {
     <AppShell>
       <PageHeader
         title="Engineers"
-        subtitle="Manage the team and review the last 7 days of work"
+        subtitle={tab === "workload" ? "Resource planning — who has work, when, and where it is accumulating" : tab === "activity" ? "Recent work activity across the team" : "Manage the team and review the last 7 days of work"}
       />
+      <div className="mb-4 inline-flex overflow-hidden rounded-md ring-1 ring-line">
+        {([["engineers", "Engineers"], ["workload", "Workload"], ["activity", "Activity"]] as const).map(([id, l]) => (
+          <button key={id} type="button" onClick={() => setTab(id)} className={cn("px-3 py-1.5 text-xs font-medium", tab === id ? "bg-signal text-signal-foreground" : "bg-panel text-mute hover:bg-base")}>{l}</button>
+        ))}
+      </div>
+      {tab === "workload" ? <Workload data={data} myName={engineerName(data, data.currentUserId) || "Manager"} /> : null}
+      {tab === "activity" ? <Activity /> : null}
+      {tab === "engineers" ? (<>
 
       <Panel title="Account approvals" meta={`${pendingUsers.length} waiting`} className="mb-4">
         {data.profiles.length ? (
@@ -313,6 +325,29 @@ function EngineersPage() {
           })}
         </div>
       ) : null}
+      </>) : null}
     </AppShell>
+  );
+}
+
+function Activity() {
+  const data = useData();
+  const ex = useExecution();
+  const rows = [
+    ...data.tasks.flatMap((t) => t.activity.map((a) => ({ at: a.at, who: engineerName(data, t.engineerId), text: `${a.text} — ${t.title}`, dom: "Customer Success" }))),
+    ...ex.activity.map((a) => { const j = ex.jobs.find((x) => x.id === a.jobId); return { at: a.createdAt, who: a.byUser, text: `${a.text}${j ? ` — ${j.plantName || j.customerName}` : ""}`, dom: "Execution" }; }),
+  ].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 80);
+  return (
+    <Panel title="Recent activity" meta={<span>Latest 80</span>}>
+      <div className="divide-y divide-line/60">
+        {rows.map((r, i) => (
+          <div key={i} className="flex items-start justify-between gap-3 px-4 py-2 text-sm">
+            <div className="min-w-0"><div className="truncate">{r.text}</div><div className="text-xs text-mute">{r.who} · {r.dom}</div></div>
+            <span className="num shrink-0 text-xs text-mute">{fmtDate(r.at.slice(0, 10))}</span>
+          </div>
+        ))}
+        {!rows.length ? <Empty>No activity yet.</Empty> : null}
+      </div>
+    </Panel>
   );
 }
