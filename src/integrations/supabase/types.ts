@@ -1318,6 +1318,7 @@ export type Database = {
       is_approved: { Args: { _user_id: string }; Returns: boolean }
       is_exec_engineer_id: { Args: { _id: string }; Returns: boolean }
       my_exec_ids: { Args: { _uid: string }; Returns: string[] }
+      my_person_ids: { Args: { _uid: string }; Returns: string[] }
       review_user: {
         Args: { _approve: boolean; _user_id: string }
         Returns: undefined
