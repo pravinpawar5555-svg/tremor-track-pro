@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Building2, ChevronLeft, ChevronRight, Coffee, MapPin, Palmtree, Trash2, Zap } from "lucide-react";
 import { Button, Empty, Panel, Select } from "@/components/console/ui";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,21 @@ import {
 import { useVisits } from "@/lib/visits";
 import { useComms, openFollowUp } from "@/lib/comms";
 import { useExecution, saveJob, installTypeLabel, execStatusLabel, type ExecJob } from "@/lib/execution";
-import { levelFor, useWorkloadSettings, type Level } from "@/lib/workload";
+import { addLeave, deleteLeave, leaveOn, levelFor, useLeaves, useWorkloadSettings, type Level } from "@/lib/workload";
+
+type DayKind = "site" | "office" | "leave" | "off" | "weekend";
+const kindMeta: Record<DayKind, { label: string; cls: string; Icon: typeof MapPin }> = {
+  office: { label: "Office", cls: "bg-black/[0.05] text-ink ring-line", Icon: Building2 },
+  site: { label: "Site", cls: "bg-signal text-signal-foreground ring-signal", Icon: MapPin },
+  weekend: { label: "Holiday work", cls: "bg-signal text-signal-foreground ring-2 ring-sev-medium", Icon: Zap },
+  leave: { label: "Leave", cls: "bg-[oklch(0.93_0.04_300)] text-[oklch(0.4_0.15_300)] ring-[oklch(0.75_0.1_300)] ring-dashed", Icon: Palmtree },
+  off: { label: "Off", cls: "bg-transparent text-mute ring-transparent", Icon: Coffee },
+};
+function KindBadge({ k, where }: { k: DayKind; where?: string }) {
+  const m = kindMeta[k];
+  return <span title={where ? `${m.label}: ${where}` : m.label} className={cn("inline-flex max-w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-[10px] font-semibold ring-1", m.cls)}><m.Icon className="size-3 shrink-0" /><span className="truncate">{where && (k === "site" || k === "weekend") ? where : m.label}</span></span>;
+}
+const LEAVE_REASONS = ["Casual", "Sick", "Earned", "Comp-off", "Other"];
 
 type Period = "day" | "week" | "month";
 type Team = "all" | "cs" | "exec";
@@ -77,6 +91,8 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
   const comms = useComms();
   const ex = useExecution();
   const rules = useWorkloadSettings();
+  const leaves = useLeaves();
+  const [leaveForm, setLeaveForm] = useState<{ personId: string; start: string; end: string; reason: string; note: string } | null>(null);
   const [period, setPeriod] = useState<Period>("week");
   const [anchor, setAnchor] = useState(TODAY);
   const [team, setTeam] = useState<Team>("all");
@@ -91,6 +107,20 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
   const showCs = team !== "exec";
   const showEx = team !== "cs";
   const x = { visits, comms };
+  const kindFor = (pid: string, d: string, site: boolean, worked: boolean): DayKind => {
+    if (leaveOn(leaves, pid, d)) return "leave";
+    if (nonWork(d)) return site || worked ? "weekend" : "off";
+    return site ? "site" : "office";
+  };
+  const csKind = (id: string, d: string) => {
+    const c = csDay(data, x, id, d);
+    const worked = c.tasks.some((t) => doneOn(t) === d) || c.reports.some((r) => r.sentDate === d);
+    return { c, k: kindFor(id, d, c.visits.length > 0, worked), where: c.visits[0] ? plantName(data, c.visits[0].plantId) : "" };
+  };
+  const exKind = (id: string, d: string) => {
+    const j = jobsOf(id).find((z) => jStart(z) && d >= jStart(z) && d <= jEnd(z));
+    return { k: kindFor(id, d, !!j, false), where: j ? j.plantName || j.customerName : "" };
+  };
 
   const jobsOf = (id: string) => ex.jobs.filter((j) => (j.assignedEngineerId === id || j.secondaryEngineerId === id) && j.status !== "cancelled");
   const inRange = (j: ExecJob) => !!jStart(j) && jStart(j) <= days[days.length - 1]! && jEnd(j) >= days[0]!;
@@ -156,6 +186,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
           return (
             <button key={d} type="button" onClick={() => setDrill({ kind: "cs", id: a.id, d })} style={hatch(d)}
               className={cn("m-0.5 rounded-md px-1 py-1 text-left text-[10px] leading-tight ring-1 ring-transparent hover:ring-signal/40", c.total ? (lvl ? levelCls[lvl] : future ? "bg-signal/5" : "bg-black/[0.03]") : "text-mute", d === TODAY && "ring-signal/30")}>
+              {(() => { const ck = csKind(a.id, d); return ck.k !== "off" || c.total ? <div className="mb-0.5">{period === "month" ? <span className={cn("inline-grid size-4 place-items-center rounded ring-1", kindMeta[ck.k].cls)}>{(() => { const I = kindMeta[ck.k].Icon; return <I className="size-2.5" />; })()}</span> : <KindBadge k={ck.k} where={ck.where} />}</div> : null; })()}
               {c.total ? (
                 <>
                   <div className="num text-sm font-semibold">{c.total}</div>
@@ -170,7 +201,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
                     </>
                   ) : c.carried.length ? <div className="text-sev-high">↻{c.carried.length}</div> : null}
                 </>
-              ) : <span className="opacity-50">—</span>}
+              ) : null}
             </button>
           );
         })}
@@ -189,8 +220,8 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
     const daily = days.map((d) => jobs.filter((j) => d >= jStart(j) && d <= jEnd(j)).length);
     return (
       <div key={e.id} className="grid border-b border-line/50" style={{ gridTemplateColumns: gridCols }}>
-        <div style={{ gridRow: `1 / span ${Math.max(1, lanes.length)}` }} className="sticky left-0 z-10 bg-panel"><Name initials={initials} name={e.name} role="Execution" sub={`${jobs.length} job${jobs.length === 1 ? "" : "s"} · ${field.size} field days${sensors ? ` · ${sensors} sensors` : ""}`} /></div>
-        {!lanes.length ? days.map((d, i) => <div key={d} style={{ ...hatch(d), gridColumn: i + 2, gridRow: 1 }} className={cn("m-0.5 rounded-md py-3 text-center text-[10px] text-mute", d === TODAY && "bg-signal/5")}>—</div>) : null}
+        <div style={{ gridRow: `1 / span ${lanes.length + 1}` }} className="sticky left-0 z-10 bg-panel"><Name initials={initials} name={e.name} role="Execution" sub={`${jobs.length} job${jobs.length === 1 ? "" : "s"} · ${field.size} field days${sensors ? ` · ${sensors} sensors` : ""}`} /></div>
+        {days.map((d, i) => { const ek = exKind(e.id, d); return <div key={d} style={{ ...hatch(d), gridColumn: i + 2, gridRow: 1 }} className={cn("m-0.5 px-1 py-1", d === TODAY && "bg-signal/5")}>{ek.k === "off" ? null : period === "month" ? <span className={cn("inline-grid size-4 place-items-center rounded ring-1", kindMeta[ek.k].cls)}>{(() => { const I = kindMeta[ek.k].Icon; return <I className="size-2.5" />; })()}</span> : <KindBadge k={ek.k} where={ek.where} />}</div>; })}
         {lanes.flatMap((lane, li) => lane.map((j) => {
           const s = Math.max(0, days.indexOf(jStart(j) < days[0]! ? days[0]! : jStart(j)));
           const endD = jEnd(j) > days[days.length - 1]! ? days[days.length - 1]! : jEnd(j);
@@ -200,7 +231,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
           const lvl = levelFor(Math.max(...daily.slice(s, en + 1)), rules.execHigh, rules.execOver);
           return (
             <button key={j.id} type="button" onClick={() => setDrill({ kind: "job", job: j })}
-              style={{ gridColumn: `${s + 2} / ${en + 3}`, gridRow: li + 1 }}
+              style={{ gridColumn: `${s + 2} / ${en + 3}`, gridRow: li + 2 }}
               className={cn("m-0.5 truncate rounded-md px-2 py-1 text-left text-[10px] leading-tight ring-1",
                 j.status === "completed" ? "bg-sev-low/10 ring-sev-low/30" : blocked ? "bg-sev-high/10 ring-sev-high/40" : conflict || lvl === "over" ? "bg-sev-critical/10 ring-sev-critical/40" : lvl === "high" ? "bg-sev-medium/15 ring-sev-medium/40" : "bg-signal/10 ring-signal/30")}>
               <div className="truncate text-[11px] font-semibold">{j.plantName || j.customerName || "Job"}</div>
@@ -244,7 +275,42 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
         <div className="ml-auto"><Seg v={mode} set={setMode} opts={[["grid", "Workload Grid"], ["summary", "Summary"]]} /></div>
       </div>
 
+      {(() => {
+        const people: { id: string; name: string; isCs: boolean }[] = [...(showCs ? csTeam.map((a) => ({ id: a.id, name: a.name, isCs: true })) : []), ...(showEx ? exTeam.map((e) => ({ id: e.id, name: e.name, isCs: false })) : [])];
+        const tot: Record<DayKind, number> = { site: 0, office: 0, weekend: 0, leave: 0, off: 0 };
+        const per: Record<string, Record<DayKind, number>> = {};
+        for (const p of people) { per[p.name] = { site: 0, office: 0, weekend: 0, leave: 0, off: 0 }; for (const d of days) { const k = p.isCs ? csKind(p.id, d).k : exKind(p.id, d).k; tot[k]++; per[p.name]![k]++; } }
+        const todayIn = days.includes(TODAY);
+        const now = todayIn ? people.map((p) => ({ name: p.name, ...(p.isCs ? csKind(p.id, TODAY) : exKind(p.id, TODAY)) })) : [];
+        return (
+          <div className="panel-glass mb-3 grid gap-2 p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {(["site", "office", "weekend", "leave"] as DayKind[]).map((k) => (
+                <div key={k} title={people.map((p) => `${p.name}: ${per[p.name]![k]}`).join("\n")} className="flex items-center gap-2 rounded-md bg-base px-3 py-1.5 ring-1 ring-line/60">
+                  <KindBadge k={k} /><span className="num text-base font-semibold">{tot[k]}</span><span className="text-[11px] text-mute">days</span>
+                </div>
+              ))}
+              {tot.weekend ? <span className="text-[11px] text-sev-medium">Comp-off due for {tot.weekend} weekend / holiday day{tot.weekend > 1 ? "s" : ""}</span> : null}
+              <div className="ml-auto"><Button onClick={() => setLeaveForm({ personId: people[0]?.id ?? "", start: TODAY, end: TODAY, reason: "Casual", note: "" })}>+ Mark Leave</Button></div>
+            </div>
+            {now.length ? <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]"><span className="text-mute">Today:</span>{now.map((n) => <span key={n.name} className="flex items-center gap-1">{n.name} <KindBadge k={n.k} where={n.where} /></span>)}</div> : null}
+            {leaveForm ? (
+              <div className="grid gap-2 rounded-md p-3 ring-1 ring-signal/40 sm:grid-cols-6">
+                <Select className="sm:col-span-2" value={leaveForm.personId} onChange={(e) => setLeaveForm({ ...leaveForm, personId: e.target.value })} aria-label="Engineer">
+                  {[...analystsOf(data).map((a) => ({ id: a.id, name: a.name })), ...ex.engineers.filter((e) => e.status === "active").map((e) => ({ id: e.id, name: e.name }))].map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </Select>
+                <input type="date" aria-label="From" className="rounded-md bg-panel px-2 py-1.5 text-sm ring-1 ring-line" value={leaveForm.start} onChange={(e) => setLeaveForm({ ...leaveForm, start: e.target.value, end: leaveForm.end < e.target.value ? e.target.value : leaveForm.end })} />
+                <input type="date" aria-label="To" className="rounded-md bg-panel px-2 py-1.5 text-sm ring-1 ring-line" value={leaveForm.end} min={leaveForm.start} onChange={(e) => setLeaveForm({ ...leaveForm, end: e.target.value })} />
+                <Select value={leaveForm.reason} onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} aria-label="Leave type">{LEAVE_REASONS.map((r) => <option key={r}>{r}</option>)}</Select>
+                <div className="flex gap-2"><Button variant="ghost" onClick={() => setLeaveForm(null)}>Cancel</Button><Button variant="solid" disabled={!leaveForm.personId} onClick={async () => { try { await addLeave(leaveForm, myName); toast.success("Leave marked"); setLeaveForm(null); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not save leave"); } }}>Save</Button></div>
+              </div>
+            ) : null}
+          </div>
+        );
+      })()}
       <div className="mb-3 flex flex-wrap gap-3 text-[11px] text-mute">
+        {(["office", "site", "weekend", "leave"] as DayKind[]).map((k) => <KindBadge key={k} k={k} />)}
+        <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-black/10" />Sat / Sun / holiday off</span>
         {[["bg-sev-low/30", "Normal"], ["bg-sev-medium/40", "High"], ["bg-sev-critical/40", "Over capacity / conflict"], ["bg-signal/30", "Scheduled"], ["bg-sev-high/40", "Carried / blocked"], ["bg-black/10", "No work / non-working"]].map(([c, l]) => <span key={l} className="flex items-center gap-1.5"><span className={cn("size-2.5 rounded-sm", c)} />{l}</span>)}
         {rules.csHigh === null && rules.execHigh === null ? <span>· Workload levels not configured — showing counts only (Settings → Workload)</span> : null}
       </div>
@@ -300,12 +366,20 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
         </div>
       )}
 
-      <div className="mt-4 grid items-start gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Panel title="Workload Attention">
           <div className="divide-y divide-line/60">{attention.map((a, i) => <div key={i} className="px-4 py-2 text-sm"><div className="font-medium">{a.who}</div><div className={cn("text-xs", a.tone)}>{a.text}</div></div>)}{!attention.length ? <Empty>Nothing accumulating.</Empty> : null}</div>
         </Panel>
         <Panel title="Scheduling Conflicts">
           <div className="divide-y divide-line/60">{conflicts.map((c, i) => <div key={i} className="px-4 py-2 text-sm"><div className="font-medium">{c.who}</div><div className="text-xs text-sev-critical">{c.text}</div></div>)}{!conflicts.length ? <Empty>No conflicts.</Empty> : null}</div>
+        </Panel>
+        <Panel title="Leaves in this period">
+          <div className="divide-y divide-line/60">{leaves.filter((l) => l.start <= days[days.length - 1]! && l.end >= days[0]!).map((l) => (
+            <div key={l.id} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
+              <div><div className="font-medium">{engineerName(data, l.personId) !== "—" && engineerName(data, l.personId) ? engineerName(data, l.personId) : ex.engineers.find((e) => e.id === l.personId)?.name ?? "Engineer"}</div><div className="text-xs text-mute">{l.reason} · {fmtDate(l.start)}{l.end !== l.start ? ` – ${fmtDate(l.end)}` : ""}</div></div>
+              <button type="button" aria-label="Delete leave" className="text-sev-critical" onClick={async () => { if (!window.confirm("Delete this leave?")) return; try { await deleteLeave(l.id); toast.success("Leave removed"); } catch { toast.error("Could not delete"); } }}><Trash2 className="size-4" /></button>
+            </div>
+          ))}{!leaves.some((l) => l.start <= days[days.length - 1]! && l.end >= days[0]!) ? <Empty>No leave in this period.</Empty> : null}</div>
         </Panel>
         <Panel title="Unscheduled / Carried Work">
           <div className="divide-y divide-line/60">{unsched.map((u, i) => <div key={i} className="flex justify-between px-4 py-2 text-sm"><span>{u.who}</span><span className="text-xs text-sev-high">{u.text}</span></div>)}{!unsched.length ? <Empty>All work is scheduled.</Empty> : null}</div>
