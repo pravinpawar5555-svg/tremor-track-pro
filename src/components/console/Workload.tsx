@@ -376,7 +376,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
         <Panel title="Leaves in this period">
           <div className="divide-y divide-line/60">{leaves.filter((l) => l.start <= days[days.length - 1]! && l.end >= days[0]!).map((l) => (
             <div key={l.id} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
-              <div><div className="font-medium">{engineerName(data, l.personId) !== "—" && engineerName(data, l.personId) ? engineerName(data, l.personId) : ex.engineers.find((e) => e.id === l.personId)?.name ?? "Engineer"}</div><div className="text-xs text-mute">{l.reason} · {fmtDate(l.start)}{l.end !== l.start ? ` – ${fmtDate(l.end)}` : ""}</div></div>
+              <div><div className="font-medium">{ex.engineers.find((e) => e.id === l.personId)?.name ?? engineerName(data, l.personId)}</div><div className="text-xs text-mute">{l.reason} · {fmtDate(l.start)}{l.end !== l.start ? ` – ${fmtDate(l.end)}` : ""}</div></div>
               <button type="button" aria-label="Delete leave" className="text-sev-critical" onClick={async () => { if (!window.confirm("Delete this leave?")) return; try { await deleteLeave(l.id); toast.success("Leave removed"); } catch { toast.error("Could not delete"); } }}><Trash2 className="size-4" /></button>
             </div>
           ))}{!leaves.some((l) => l.start <= days[days.length - 1]! && l.end >= days[0]!) ? <Empty>No leave in this period.</Empty> : null}</div>
