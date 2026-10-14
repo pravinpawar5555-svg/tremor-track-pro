@@ -250,6 +250,39 @@ export type Database = {
         }
         Relationships: []
       }
+      engineer_leaves: {
+        Row: {
+          created_at: string
+          created_by: string
+          end_date: string
+          id: string
+          note: string
+          person_id: string
+          reason: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          end_date: string
+          id?: string
+          note?: string
+          person_id: string
+          reason?: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          end_date?: string
+          id?: string
+          note?: string
+          person_id?: string
+          reason?: string
+          start_date?: string
+        }
+        Relationships: []
+      }
       engineers: {
         Row: {
           created_at: string

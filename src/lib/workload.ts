@@ -13,7 +13,7 @@ export interface WorkloadSettings {
   nonWorkingDays: number[]; // 0 = Sunday
   holidays: string[];
 }
-const defaults: WorkloadSettings = { csHigh: null, csOver: null, execHigh: null, execOver: null, nonWorkingDays: [0], holidays: [] };
+const defaults: WorkloadSettings = { csHigh: null, csOver: null, execHigh: null, execOver: null, nonWorkingDays: [0, 6], holidays: [] };
 
 let state: WorkloadSettings = defaults;
 let loaded = false;
@@ -22,7 +22,7 @@ const emit = () => listeners.forEach((l) => l());
 
 export async function loadWorkloadSettings() {
   const { data } = await db.from("workload_settings").select("*").eq("id", "default").maybeSingle();
-  if (data) state = { csHigh: data.cs_high, csOver: data.cs_over, execHigh: data.exec_high, execOver: data.exec_over, nonWorkingDays: data.non_working_days ?? [0], holidays: data.holidays ?? [] };
+  if (data) state = { csHigh: data.cs_high, csOver: data.cs_over, execHigh: data.exec_high, execOver: data.exec_over, nonWorkingDays: data.non_working_days ?? [0, 6], holidays: data.holidays ?? [] };
   loaded = true;
   emit();
 }
@@ -50,3 +50,31 @@ export function levelFor(value: number, high: number | null, over: number | null
   if (high !== null && value >= high) return "high";
   return "normal";
 }
+
+/* ------------------------------------------------------------ Engineer leaves */
+export interface Leave { id: string; personId: string; start: string; end: string; reason: string; note: string }
+let leaves: Leave[] = [];
+let leavesLoaded = false;
+const leaveListeners = new Set<() => void>();
+const emitLeaves = () => leaveListeners.forEach((l) => l());
+export async function loadLeaves() {
+  const { data } = await db.from("engineer_leaves").select("*").order("start_date");
+  leaves = (data ?? []).map((r: any) => ({ id: r.id, personId: r.person_id, start: r.start_date, end: r.end_date, reason: r.reason, note: r.note }));
+  leavesLoaded = true;
+  emitLeaves();
+}
+export function useLeaves() {
+  useEffect(() => { if (!leavesLoaded) void loadLeaves(); }, []);
+  return useSyncExternalStore((cb) => { leaveListeners.add(cb); return () => { leaveListeners.delete(cb); }; }, () => leaves, () => leaves);
+}
+export async function addLeave(l: Omit<Leave, "id">, by: string) {
+  const { error } = await db.from("engineer_leaves").insert({ person_id: l.personId, start_date: l.start, end_date: l.end, reason: l.reason, note: l.note, created_by: by });
+  if (error) throw new Error(error.message);
+  await loadLeaves();
+}
+export async function deleteLeave(id: string) {
+  const { error } = await db.from("engineer_leaves").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  await loadLeaves();
+}
+export const leaveOn = (ls: Leave[], personId: string, d: string) => ls.find((l) => l.personId === personId && l.start <= d && l.end >= d);
