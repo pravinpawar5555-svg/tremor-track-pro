@@ -287,7 +287,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
             <div className="flex flex-wrap items-center gap-2">
               {(["site", "office", "weekend", "leave"] as DayKind[]).map((k) => (
                 <div key={k} title={people.map((p) => `${p.name}: ${per[p.name]![k]}`).join("\n")} className="flex items-center gap-2 rounded-md bg-base px-3 py-1.5 ring-1 ring-line/60">
-                  <KindBadge k={k} /><span className="num text-base font-semibold">{tot[k]}</span><span className="text-[11px] text-mute">days</span>
+                  <KindBadge k={k} /><span className="num text-lg font-semibold text-ink">{tot[k]}</span><span className="text-[11px] text-mute">days</span>
                 </div>
               ))}
               {tot.weekend ? <span className="text-[11px] text-sev-medium">Comp-off due for {tot.weekend} weekend / holiday day{tot.weekend > 1 ? "s" : ""}</span> : null}
