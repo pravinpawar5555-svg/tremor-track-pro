@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { peekDomain } from "@/lib/domain";
 import { AppShell } from "@/components/console/AppShell";

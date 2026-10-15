@@ -414,6 +414,16 @@ export function execRecordFor(userId: string) {
   return engineers.find((x) => x.linkedUserId === userId || x.id === userId);
 }
 
+export async function deleteEngineer(id: string) {
+  engineers = engineers.filter((e) => e.id !== id);
+  emit();
+  const { error } = await db.from("execution_engineers").delete().eq("id", id);
+  if (error) {
+    console.error("execution engineer delete failed", error);
+    throw error;
+  }
+}
+
 export async function reassignJobs(fromId: string, toId: string) {
   const moved = jobs.filter((j) => (j.assignedEngineerId === fromId || j.secondaryEngineerId === fromId) && !["completed", "cancelled"].includes(j.status));
   if (moved.length) {
