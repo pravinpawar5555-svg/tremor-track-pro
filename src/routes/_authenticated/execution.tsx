@@ -15,6 +15,7 @@ import {
   blankJob,
   dateRange,
   deleteDailyUpdate,
+  deleteEngineer,
   deleteJob,
   execEngineerName,
   execStatusLabel,
@@ -768,6 +769,12 @@ function TeamPanel() {
                       ) : (
                         <Button variant="ghost" onClick={() => void saveEngineer({ ...e, status: "active" })}>Activate</Button>
                       )}
+                      <Button variant="ghost" className="text-sev-high" onClick={() => {
+                        if (openCount(e.id)) { toast.error("Reassign their open jobs before deleting"); setReassign({ from: e, to: "" }); return; }
+                        if (window.confirm(`Delete ${e.name} from the Execution Team?\nTheir historical job records will remain available.`)) {
+                          void deleteEngineer(e.id).then(() => toast.success("Engineer deleted")).catch(() => toast.error("Could not delete engineer"));
+                        }
+                      }}><Trash2 size={14} /></Button>
                     </div>
                   </Td>
                 </Tr>
