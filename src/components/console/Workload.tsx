@@ -333,7 +333,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
                   {days.map((d) => { const c = csDay(data, x, a.id, d); const lvl = levelFor(c.total, rules.csHigh, rules.csOver); return (
                     <button key={d} type="button" onClick={() => setDrill({ kind: "cs", id: a.id, d })} className={cn("min-w-24 snap-start rounded-md p-2 text-left text-[11px] ring-1 ring-line/60", lvl ? levelCls[lvl] : "", d === TODAY && "ring-signal/50")}>
                       <div className="font-semibold">{fmtDate(d).split(" ").slice(0, 2).join(" ")}</div>
-                      <div className="num text-base font-semibold">{c.total} <span className="text-[10px] font-normal">active</span></div>
+                      <div className="num text-lg font-semibold text-ink">{c.total} <span className="text-[10px] font-normal">active</span></div>
                       {c.reports.length ? <div>{c.reports.length} reports</div> : null}{c.visits.length ? <div>{c.visits.length} visit</div> : null}{c.follow.length ? <div>{c.follow.length} follow-up</div> : null}
                       {lvl === "high" ? <div className="text-sev-medium">High workload</div> : lvl === "over" ? <div className="text-sev-critical">Over capacity</div> : null}
                     </button>); })}
@@ -400,7 +400,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
 function SummaryCard({ name, role, rows }: { name: string; role: string; rows: [string, number][] }) {
   return (
     <Panel title={name} meta={<span>{role}</span>}>
-      <div className="grid grid-cols-5 gap-1.5 p-3">{rows.map(([l, v]) => <div key={l} className="rounded-md bg-base px-1 py-2 text-center ring-1 ring-line/60"><div className="num text-base font-semibold">{v}</div><div className="text-[10px] text-mute">{l}</div></div>)}</div>
+      <div className="grid grid-cols-5 gap-1.5 p-3">{rows.map(([l, v]) => <div key={l} className="rounded-md bg-base px-1 py-2 text-center ring-1 ring-line/60"><div className="num text-lg font-semibold text-ink">{v}</div><div className="text-[10px] text-mute">{l}</div></div>)}</div>
     </Panel>
   );
 }
