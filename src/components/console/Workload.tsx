@@ -118,7 +118,8 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
     return { c, k: kindFor(id, d, c.visits.length > 0, worked), where: c.visits[0] ? plantName(data, c.visits[0].plantId) : "" };
   };
   const exKind = (id: string, d: string) => {
-    const j = jobsOf(id).find((z) => jStart(z) && d >= jStart(z) && d <= jEnd(z));
+    const mine = jobsOf(id);
+    const j = mine.find((z) => jStart(z) && d >= jStart(z) && d <= jEnd(z)) ?? mine.find((z) => z.removalPlanned === d || z.removalCompleted === d);
     return { k: kindFor(id, d, !!j, false), where: j ? j.plantName || j.customerName : "" };
   };
 

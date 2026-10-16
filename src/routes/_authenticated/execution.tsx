@@ -634,6 +634,22 @@ function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; b
         </div>
       </Section>
 
+      {j.installationType === "demo" ? (
+        <Section title="Demo removal / retrieval">
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Removal planned date"><TextInput disabled={!canEdit} type="date" value={j.removalPlanned ?? ""} onChange={(e) => set({ removalPlanned: e.target.value || null })} /></Field>
+            <Field label="Sensors removed"><TextInput disabled={!canEdit} type="number" min={0} value={j.sensorsRemoved} onChange={(e) => set({ sensorsRemoved: Math.max(0, Number(e.target.value) || 0) })} /></Field>
+            <Field label="Removal completed date"><TextInput disabled={!canEdit} type="date" value={j.removalCompleted ?? ""} onChange={(e) => set({ removalCompleted: e.target.value || null })} /></Field>
+            <div className="flex items-end">
+              {canEdit && !j.removalCompleted ? (
+                <Button onClick={() => void persist({ ...j, removalCompleted: todayIso() }, "Demo removal marked done")}>Mark removal done today</Button>
+              ) : null}
+            </div>
+            <div className="col-span-2"><Field label="Hardware condition / retrieval notes"><TextArea disabled={!canEdit} rows={2} placeholder="Sensor & gateway condition, missing items, packing details" value={j.removalNotes} onChange={(e) => set({ removalNotes: e.target.value })} /></Field></div>
+          </div>
+        </Section>
+      ) : null}
+
       {canEdit ? (
         <Section title="Job status">
           <div className="grid gap-2">
@@ -670,6 +686,7 @@ function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; b
             <Info label="Kickoff" value={yesNoNaLabel[j.kickoff]} />
             <Info label="Configuration" value={yesNoNaLabel[j.configuration]} />
             <Info label="AIP sheet" value={yesNoNaLabel[j.aip]} />
+            {j.installationType === "demo" ? <Info label="Sensors removed" value={`${j.sensorsRemoved}${j.removalCompleted ? ` on ${fmtDate(j.removalCompleted)}` : " (removal pending)"}`} /> : null}
             <Info label="Report link" value={j.reportLink} />
             <div className="col-span-2"><Info label="Comments" value={j.comments} /></div>
           </div>
