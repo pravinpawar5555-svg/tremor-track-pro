@@ -457,10 +457,14 @@ export type Database = {
           plant_id: string
           plant_name: string
           priority: string
+          removal_completed_date: string | null
+          removal_notes: string
+          removal_planned_date: string | null
           report_link: string
           schedule_notes: string
           secondary_engineer_id: string
           sensors_installed: number
+          sensors_removed: number
           status: string
           updated_at: string
         }
@@ -495,10 +499,14 @@ export type Database = {
           plant_id?: string
           plant_name?: string
           priority?: string
+          removal_completed_date?: string | null
+          removal_notes?: string
+          removal_planned_date?: string | null
           report_link?: string
           schedule_notes?: string
           secondary_engineer_id?: string
           sensors_installed?: number
+          sensors_removed?: number
           status?: string
           updated_at?: string
         }
@@ -533,10 +541,14 @@ export type Database = {
           plant_id?: string
           plant_name?: string
           priority?: string
+          removal_completed_date?: string | null
+          removal_notes?: string
+          removal_planned_date?: string | null
           report_link?: string
           schedule_notes?: string
           secondary_engineer_id?: string
           sensors_installed?: number
+          sensors_removed?: number
           status?: string
           updated_at?: string
         }
