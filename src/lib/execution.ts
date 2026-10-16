@@ -58,6 +58,10 @@ export interface ExecJob {
   nextPlannedDate: string | null;
   completedAt: string | null;
   completedBy: string;
+  removalPlanned: string | null;
+  removalCompleted: string | null;
+  sensorsRemoved: number;
+  removalNotes: string;
 }
 
 export interface ExecUpdate {
@@ -176,6 +180,10 @@ const jFrom = (r: any): ExecJob => ({
   nextPlannedDate: r.next_planned_date,
   completedAt: r.completed_at,
   completedBy: r.completed_by ?? "",
+  removalPlanned: r.removal_planned_date,
+  removalCompleted: r.removal_completed_date,
+  sensorsRemoved: r.sensors_removed ?? 0,
+  removalNotes: r.removal_notes ?? "",
 });
 
 const uFrom = (r: any): ExecUpdate => ({
@@ -247,6 +255,9 @@ function diffText(prev: ExecJob, next: ExecJob): string[] {
   if (prev.machinesCovered !== next.machinesCovered) out.push(`Machines covered updated to ${next.machinesCovered}`);
   if (prev.reportLink !== next.reportLink) out.push("Report link updated");
   if (prev.aip !== next.aip) out.push(`AIP sheet marked ${yesNoNaLabel[next.aip]}`);
+  if (prev.removalPlanned !== next.removalPlanned) out.push(`Demo removal scheduled for ${fmtDate(next.removalPlanned ?? undefined)}`);
+  if (prev.sensorsRemoved !== next.sensorsRemoved) out.push(`Sensors removed updated to ${next.sensorsRemoved}`);
+  if (prev.removalCompleted !== next.removalCompleted) out.push(next.removalCompleted ? `Demo removal completed on ${fmtDate(next.removalCompleted)}` : "Demo removal reopened");
   return out;
 }
 
@@ -285,6 +296,10 @@ const toRow = (j: ExecJob) => ({
   next_planned_date: j.nextPlannedDate,
   completed_at: j.completedAt,
   completed_by: j.completedBy,
+  removal_planned_date: j.removalPlanned,
+  removal_completed_date: j.removalCompleted,
+  sensors_removed: j.sensorsRemoved,
+  removal_notes: j.removalNotes,
   updated_at: new Date().toISOString(),
 });
 
@@ -325,6 +340,10 @@ export function blankJob(createdBy: string): ExecJob {
     nextPlannedDate: null,
     completedAt: null,
     completedBy: "",
+    removalPlanned: null,
+    removalCompleted: null,
+    sensorsRemoved: 0,
+    removalNotes: "",
   };
 }
 
