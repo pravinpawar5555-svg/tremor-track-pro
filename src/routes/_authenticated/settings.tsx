@@ -139,7 +139,18 @@ function Branches() {
 function Sales() {
   const s = useBranches();
   const [f, setF] = useState<Partial<SalesEngineer> | null>(null);
-  const bn = (id: string) => s.branches.find((b) => b.id === id)?.name ?? "—";
+  const [q, setQ] = useState("");
+  const [bf, setBf] = useState("");
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const t = q.trim().toLowerCase();
+  const groups = s.branches
+    .filter((b) => !bf || b.id === bf)
+    .map((b) => ({
+      b,
+      list: s.sales.filter((x) => x.branchId === b.id && (!t || b.name.toLowerCase().includes(t) || [x.name, x.mobile, x.email].some((v) => (v ?? "").toLowerCase().includes(t)))),
+    }))
+    .filter((g) => g.list.length || (!t && !bf ? false : !t));
+  const shown = groups.reduce((n, g) => n + g.list.length, 0);
   return (
     <Panel title={`Sales Engineers (${s.sales.length})`} meta={<Button variant="solid" onClick={() => setF({ status: "active", branchId: s.branches[0]?.id ?? "" })}>Add Sales Engineer</Button>}>
       {f && (
@@ -156,19 +167,48 @@ function Sales() {
           </div>
         </div>
       )}
-      {s.sales.length ? (
-        <ul className="divide-y divide-line/60">
-          {s.sales.map((x) => (
-            <li key={x.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
-              <span className="font-medium">{x.name}</span>
-              <span className="text-xs text-mute">{bn(x.branchId)}</span>
-              <span className="text-xs text-mute">{x.email} {x.mobile}</span>
-              <StatusPill s={x.status} />
-              <Button variant="ghost" className="ml-auto" onClick={() => setF(x)}>Edit</Button>
-            </li>
-          ))}
-        </ul>
-      ) : <Empty>No Sales Engineers yet. Add them branch by branch.</Empty>}
+      <div className="flex flex-wrap items-center gap-2 border-b border-line/60 p-3">
+        <TextInput className="min-w-0 flex-1" placeholder="Search name, mobile, email or branch…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Select value={bf} onChange={(e) => setBf(e.target.value)} className="w-auto">
+          <option value="">All branches</option>
+          {s.branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </Select>
+        <span className="text-xs text-mute">{shown} shown</span>
+      </div>
+      {groups.length ? (
+        <div className="grid gap-3 p-3 md:grid-cols-2">
+          {groups.map(({ b, list }) => {
+            const isOpen = open[b.id] ?? (!!q || !!bf);
+            return (
+              <div key={b.id} className="rounded-md border border-line/70">
+                <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-left" onClick={() => setOpen({ ...open, [b.id]: !isOpen })}>
+                  <span className="text-mute">{isOpen ? "▾" : "▸"}</span>
+                  <span className="font-medium">{b.name}</span>
+                  <span className="num rounded-full border border-line px-2 text-xs">{list.length}</span>
+                  <span className="ml-auto truncate text-xs text-mute">RM: {b.rmName || "—"}</span>
+                </button>
+                {isOpen && (
+                  <ul className="divide-y divide-line/60 border-t border-line/60">
+                    {list.map((x) => (
+                      <li key={x.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium">{x.name}</div>
+                          <div className="text-xs text-mute break-all">
+                            {x.mobile && <a className="text-signal" href={`tel:${x.mobile}`}>{x.mobile}</a>} {x.email && <a className="text-signal" href={`mailto:${x.email}`}>{x.email}</a>}
+                          </div>
+                        </div>
+                        <StatusPill s={x.status} />
+                        <Button variant="ghost" onClick={() => setF(x)}>Edit</Button>
+                      </li>
+                    ))}
+                    <li className="px-3 py-2"><Button variant="ghost" onClick={() => setF({ status: "active", branchId: b.id })}>+ Add Engineer</Button></li>
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : <Empty>{s.sales.length ? "No match." : "No Sales Engineers yet. Add them branch by branch."}</Empty>}
     </Panel>
   );
 }
