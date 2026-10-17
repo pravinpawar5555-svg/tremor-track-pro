@@ -52,7 +52,8 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 
 function StatusPill({ v }: { v: Visit }) {
   const s = visitStatus(v);
-  return <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium ring-1", statusTone[s])}>{visitStatusLabel[s]}</span>;
+  const tag = s === "completed" ? (v.momRequired ? " · MOM" : " · Discussion") : "";
+  return <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium ring-1", statusTone[s])}>{visitStatusLabel[s]}{tag}</span>;
 }
 
 function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { v: T; label: string }[]; onChange: (v: T) => void }) {
