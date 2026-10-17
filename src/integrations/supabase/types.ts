@@ -1254,6 +1254,7 @@ export type Database = {
           frequency: string
           id: string
           mom_no: string
+          mom_required: boolean
           next_visit_date: string | null
           observations: string
           planned_date: string
@@ -1277,6 +1278,7 @@ export type Database = {
           frequency?: string
           id?: string
           mom_no?: string
+          mom_required?: boolean
           next_visit_date?: string | null
           observations?: string
           planned_date: string
@@ -1300,6 +1302,7 @@ export type Database = {
           frequency?: string
           id?: string
           mom_no?: string
+          mom_required?: boolean
           next_visit_date?: string | null
           observations?: string
           planned_date?: string

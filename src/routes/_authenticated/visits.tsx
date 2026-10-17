@@ -52,7 +52,8 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 
 function StatusPill({ v }: { v: Visit }) {
   const s = visitStatus(v);
-  return <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium ring-1", statusTone[s])}>{visitStatusLabel[s]}</span>;
+  const tag = s === "completed" ? (v.momRequired ? " · MOM" : " · Discussion") : "";
+  return <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium ring-1", statusTone[s])}>{visitStatusLabel[s]}{tag}</span>;
 }
 
 function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { v: T; label: string }[]; onChange: (v: T) => void }) {
@@ -358,6 +359,21 @@ function VisitCalendar({ month, setMonth, visits, onPick }: { month: string; set
   );
 }
 
+function MomToggle({ on, set }: { on: boolean; set: (v: boolean) => void }) {
+  return (
+    <label className="panel-inset flex cursor-pointer items-center justify-between gap-4 p-3 md:col-span-full">
+      <span>
+        <span className="block font-medium">MOM Required</span>
+        <span className="block text-xs text-mute">{on ? "A formal Minutes of Meeting with serial number will be prepared." : "Discussion only — no formal MOM document will be generated. The visit still counts in workload and reports."}</span>
+      </span>
+      <span className={cn("relative h-6 w-11 shrink-0 rounded-full transition-colors", on ? "bg-signal" : "bg-line")}>
+        <input className="peer sr-only" type="checkbox" checked={on} onChange={(e) => set(e.target.checked)} />
+        <span className={cn("absolute top-1 size-4 rounded-full bg-panel shadow transition-transform", on ? "translate-x-6" : "translate-x-1")} />
+      </span>
+    </label>
+  );
+}
+
 function VisitForm({ initial, onClose }: { initial: Visit; onClose: () => void }) {
   const data = useData();
   const team = analystsOf(data);
@@ -441,6 +457,7 @@ function VisitForm({ initial, onClose }: { initial: Visit; onClose: () => void }
             <TextArea rows={2} value={v.purpose} onChange={(e) => set({ purpose: e.target.value })} />
           </Field>
         </div>
+        <MomToggle on={v.momRequired} set={(x) => set({ momRequired: x })} />
         <div className="md:col-span-3"><Button onClick={() => void submit()}>Save visit</Button></div>
       </div>
     </Panel>
@@ -455,6 +472,7 @@ function CompleteForm({ visit, manager, onClose }: { visit: Visit; manager: bool
   const [obs, setObs] = useState(visit.observations);
   const [actions, setActions] = useState<VisitAction[]>(visit.actions);
   const [signOffRequired, setSignOffRequired] = useState(visit.signOffRequired);
+  const [momRequired, setMomRequired] = useState(visit.momRequired);
   const auto = nextVisitAfter(visit, date);
   const [nextOverride, setNextOverride] = useState<string | null>(null);
   const next = nextOverride ?? auto;
@@ -463,7 +481,7 @@ function CompleteForm({ visit, manager, onClose }: { visit: Visit; manager: bool
     try {
       await completeVisit(
         visit,
-        { completedDate: date, discussionPoints: points.map((p) => p.trim()).filter(Boolean), observations: obs, actions: actions.filter((a) => a.action.trim()), signOffRequired },
+        { completedDate: date, discussionPoints: points.map((p) => p.trim()).filter(Boolean), observations: obs, actions: momRequired ? actions.filter((a) => a.action.trim()) : [], signOffRequired: momRequired && signOffRequired, momRequired },
         next,
       );
       toast.success(visit.visitType === "amc" && next ? `Visit completed · next visit ${fmtDate(next)}` : "Visit completed");
@@ -481,6 +499,14 @@ function CompleteForm({ visit, manager, onClose }: { visit: Visit; manager: bool
         <Field label="Visit date"><TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
         <div className="md:col-span-4"><div className="label-caps">Visit purpose</div>{visit.purpose || "—"}</div>
 
+        <MomToggle on={momRequired} set={setMomRequired} />
+        {!momRequired ? (
+          <div className="md:col-span-4">
+            <Field label="Discussion notes / remarks">
+              <TextArea rows={4} placeholder="What was discussed with the customer" value={points.join("\n")} onChange={(e) => setPoints(e.target.value.split("\n"))} />
+            </Field>
+          </div>
+        ) : (<>
         <div className="md:col-span-4">
           <div className="label-caps mb-1">Discussion points</div>
           {points.map((p, i) => (
@@ -524,6 +550,7 @@ function CompleteForm({ visit, manager, onClose }: { visit: Visit; manager: bool
             + Add action
           </button>
         </div>
+        </>)}
 
         {visit.visitType === "amc" ? (
           <div className="panel-inset grid gap-3 p-3 md:col-span-4 md:grid-cols-3">
@@ -540,7 +567,7 @@ function CompleteForm({ visit, manager, onClose }: { visit: Visit; manager: bool
         ) : (
           <div className="text-xs text-mute md:col-span-4">On-request visit — the AMC schedule for this plant is not changed.</div>
         )}
-        <label className="panel-inset flex cursor-pointer items-center justify-between gap-4 p-3 md:col-span-4">
+        {momRequired ? <label className="panel-inset flex cursor-pointer items-center justify-between gap-4 p-3 md:col-span-4">
           <span>
             <span className="block font-medium">Sign-Off Required</span>
             <span className="block text-xs text-mute">Add customer and Forbes Marshall signature blocks to the MOM PDF.</span>
@@ -549,7 +576,7 @@ function CompleteForm({ visit, manager, onClose }: { visit: Visit; manager: bool
             <input className="peer sr-only" type="checkbox" checked={signOffRequired} onChange={(e) => setSignOffRequired(e.target.checked)} />
             <span className={cn("absolute top-1 size-4 rounded-full bg-panel shadow transition-transform", signOffRequired ? "translate-x-6" : "translate-x-1")} />
           </span>
-        </label>
+        </label> : null}
         <div className="md:col-span-4"><Button onClick={() => void submit()}>Complete visit</Button></div>
       </div>
     </Panel>
@@ -574,10 +601,10 @@ function VisitDetail({ v, manager, canComplete, onClose, onEdit, onComplete }: {
         <div><div className="label-caps">Visited on</div><span className="num">{fmtDate(v.completedDate ?? undefined)}</span></div>
         <div><div className="label-caps">Next visit due</div><span className="num">{fmtDate(v.nextVisitDate ?? undefined)}</span></div>
         <div className="md:col-span-4"><div className="label-caps">Purpose</div>{v.purpose || "—"}</div>
-        <AttendeesEditor key={v.id} v={v} canEdit={manager || canComplete} />
+        {v.momRequired ? <AttendeesEditor key={v.id} v={v} canEdit={manager || canComplete} /> : null}
         {v.discussionPoints.length ? (
           <div className="md:col-span-4">
-            <div className="label-caps">Discussion points</div>
+            <div className="label-caps">{v.momRequired ? "Discussion points" : "Discussion notes"}</div>
             <ol className="list-decimal pl-5">{v.discussionPoints.map((p, i) => <li key={i}>{p}</li>)}</ol>
           </div>
         ) : null}
@@ -611,7 +638,8 @@ function VisitDetail({ v, manager, canComplete, onClose, onEdit, onComplete }: {
         ) : null}
         <div className="flex flex-wrap items-end gap-2 md:col-span-4">
           {openStatus && canComplete ? <Button onClick={onComplete}>Complete visit</Button> : null}
-          {s === "completed" ? <Button variant="solid" onClick={() => setMom(true)}><FileText className="size-4" /> Open MOM — preview, edit &amp; PDF</Button> : null}
+          {s === "completed" && !v.momRequired ? <span className="rounded-full px-2 py-1 text-xs text-mute ring-1 ring-line">Discussion only · no MOM</span> : null}
+          {s === "completed" && v.momRequired ? <Button variant="solid" onClick={() => setMom(true)}><FileText className="size-4" /> Open MOM — preview, edit &amp; PDF</Button> : null}
           {manager && openStatus ? (
             <>
               <TextInput type="date" className="w-40" value={date} onChange={(e) => setDate(e.target.value)} />
