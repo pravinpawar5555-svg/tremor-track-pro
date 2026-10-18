@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { Fragment, useState } from "react";
+import { ChevronRight, MoreHorizontal } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ownershipOf, useBranches } from "@/lib/branches";
 import { useDomain } from "@/lib/domain";
 import { AppShell } from "@/components/console/AppShell";
@@ -106,6 +108,7 @@ function PlantsPage() {
     demo: plants.filter((p) => (p.category ?? "order") === "demo").length,
   };
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const edit = (p: Plant) => {
     setForm({
@@ -277,6 +280,20 @@ function PlantsPage() {
         </Panel>
       ) : null}
 
+      <div className="mb-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
+        {[
+          { l: "Plants", v: String(shownPlants.length), h: `${shownPlants.filter((p) => (p.category ?? "order") === "order").length} order · ${shownPlants.filter((p) => p.category === "demo").length} demo` },
+          { l: "Machines / Assets", v: `${shownPlants.reduce((a, p) => a + (p.machines || 0), 0)} / ${shownPlants.reduce((a, p) => a + (p.assets ?? 0), 0)}`, h: "Across shown plants" },
+          { l: "Sensors", v: String(shownPlants.reduce((a, p) => a + (p.node6 ?? 0) + (p.nodeX ?? 0) + (p.vibassist ?? 0), 0)), h: `N6 ${shownPlants.reduce((a, p) => a + (p.node6 ?? 0), 0)} · NX ${shownPlants.reduce((a, p) => a + (p.nodeX ?? 0), 0)} · VA ${shownPlants.reduce((a, p) => a + (p.vibassist ?? 0), 0)}` },
+          { l: "CS Engineers", v: String(team.length), h: team.map((t) => `${t.name.split(" ")[0]} ${shownPlants.filter((p) => p.engineerId === t.id).length}`).join(" · ") },
+        ].map((k) => (
+          <div key={k.l} className="panel-glass min-w-0 px-3 py-2">
+            <div className="label-caps">{k.l}</div>
+            <div className="num text-lg font-semibold text-ink">{k.v}</div>
+            <div className="truncate text-xs text-mute">{k.h}</div>
+          </div>
+        ))}
+      </div>
       <div className="mb-3 grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
         <TextInput placeholder="Search plant, branch, RM, KAM, sales…" value={q} onChange={(e) => setQ(e.target.value)} />
         <Select value={kamF} onChange={(e) => { setKamF(e.target.value); setBranchF(""); setSalesF(""); }}>
@@ -353,71 +370,104 @@ function PlantsPage() {
               );
             })}
           </ul>
-          <div className="hidden overflow-x-auto md:block">
-            <table className="w-full text-sm">
+          <div className="hidden md:block">
+            <table className="w-full table-fixed text-sm">
+              <colgroup>
+                <col className="w-[30%]" />
+                <col className="w-[20%]" />
+                <col className="w-[18%]" />
+                <col className="w-[20%]" />
+                <col className="w-[12%]" />
+              </colgroup>
               <thead>
                 <tr>
-                  <Th>Plant</Th>
-                  <Th>Customer / contact</Th>
-                  <Th>Location</Th>
-                  <Th align="right">Machines</Th>
-                  <Th align="right">Assets</Th>
-                  <Th align="right">Node 6</Th>
-                  <Th align="right">Node X</Th>
-                  <Th align="right">VibAssist</Th>
+                  <Th>Plant & customer</Th>
+                  <Th>Equipment & sensors</Th>
                   <Th>Report cycle</Th>
-                  <Th>Category</Th>
-                  <Th>Engineer</Th>
-                  <Th>Branch / Sales</Th>
-                  <Th>Last report sent</Th>
-                  <Th align="right"> </Th>
+                  <Th>Assignment & branch</Th>
+                  <Th align="right">Actions</Th>
                 </tr>
               </thead>
               <tbody>
                 {shownPlants.map((p) => {
                   const s = plantSummary(data, p.id);
                   const cycles = plantFrequencies(p);
+                  const o = ownershipOf(bs, p);
+                  const isOpen = expanded === p.id;
+                  const cat = (p.category ?? "order") as CustomerCategory;
                   return (
-                    <Tr key={p.id}>
-                      <Td className="font-medium">{p.name}</Td>
-                      <Td>
-                        <div>{p.customer || "—"}</div>
-                        <div className="text-xs text-mute">{p.contact || "—"}</div>
-                        <div className="num text-xs text-mute">{p.contactPhone || "—"}</div>
-                      </Td>
-                      <Td className="text-mute">{p.location || "—"}</Td>
-                      <Td align="right" mono>{p.machines}</Td>
-                      <Td align="right" mono>{p.assets ?? 0}</Td>
-                      <Td align="right" mono>{p.node6 ?? 0}</Td>
-                      <Td align="right" mono>{p.nodeX ?? 0}</Td>
-                      <Td align="right" mono>{p.vibassist ?? 0}</Td>
-                      <Td>
-                        <span className="flex flex-wrap gap-1">
-                          {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : "—"}
-                        </span>
-                      </Td>
-                      <Td className="text-mute">{customerCategoryLabel[(p.category ?? "order") as CustomerCategory]}</Td>
-                      <Td>{engineerName(data, p.engineerId)}</Td>
-                      <Td>
-                        {(() => { const o = ownershipOf(bs, p); return o.branch ? (
-                          <details>
-                            <summary className="cursor-pointer text-xs"><span className="font-medium">{o.branch.name}</span> · {o.sales?.name ?? "No sales eng."}</summary>
-                            <OwnershipBody o={o} />
-                          </details>
-                        ) : <span className="text-xs text-mute">—</span>; })()}
-                      </Td>
-                      <Td mono>{fmtDate(s.lastReportSent)}</Td>
-                      <Td align="right">
-                        <Link to="/visits" search={{ plant: p.id }} className="mr-1 text-xs text-signal">Visit history</Link>
-                        {manager ? (
-                          <span className="inline-flex justify-end gap-1">
-                            <Button variant="ghost" onClick={() => edit(p)}>Edit</Button>
-                            <Link to="/opportunities" search={{ plant: p.id }} className="inline-flex items-center rounded-md px-3 py-1.5 text-xs text-signal hover:bg-signal/10">+ Opportunity</Link>
-                            <Button variant="ghost" onClick={() => removePlant(p.id)}>Delete</Button>
+                    <Fragment key={p.id}>
+                      <Tr>
+                        <Td className="align-top">
+                          <button type="button" onClick={() => setExpanded(isOpen ? null : p.id)} className="flex w-full min-w-0 items-start gap-1.5 text-left" aria-expanded={isOpen}>
+                            <ChevronRight className={`mt-0.5 size-4 shrink-0 text-mute transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                            <span className="min-w-0">
+                              <span className="flex flex-wrap items-center gap-1.5">
+                                <span className="break-words font-semibold">{p.name}</span>
+                                <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ${cat === "demo" ? "bg-sev-medium/10 text-sev-medium" : "bg-signal/10 text-signal"}`}>{customerCategoryLabel[cat]}</span>
+                              </span>
+                              <span className="block truncate text-xs text-mute">{p.customer || "—"}{p.location ? ` · ${p.location}` : ""}</span>
+                              <span className="block truncate text-xs text-mute">{p.contact || "—"}{p.contactPhone ? <span className="num"> · {p.contactPhone}</span> : null}</span>
+                            </span>
+                          </button>
+                        </Td>
+                        <Td className="align-top">
+                          <div className="num text-xs"><span className="font-semibold text-ink">{p.machines}</span> machines · <span className="font-semibold text-ink">{p.assets ?? 0}</span> assets</div>
+                          <div className="mt-1 flex flex-wrap gap-1 text-[11px]">
+                            <span className="num rounded px-1.5 py-0.5 ring-1 ring-line">N6 {p.node6 ?? 0}</span>
+                            <span className="num rounded px-1.5 py-0.5 ring-1 ring-line">NX {p.nodeX ?? 0}</span>
+                            <span className="num rounded px-1.5 py-0.5 ring-1 ring-line">VA {p.vibassist ?? 0}</span>
+                          </div>
+                        </Td>
+                        <Td className="align-top">
+                          <span className="flex flex-wrap gap-1">{cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : "—"}</span>
+                          <div className="num mt-1 text-xs text-mute">Last: {fmtDate(s.lastReportSent)}</div>
+                        </Td>
+                        <Td className="align-top">
+                          <div className="truncate text-xs"><span className="text-mute">CS:</span> {engineerName(data, p.engineerId)}</div>
+                          <div className="truncate text-xs text-mute">{o.branch?.name ?? "No branch"} · {o.sales?.name ?? "No sales eng."}</div>
+                        </Td>
+                        <Td align="right" className="align-top">
+                          <span className="inline-flex items-center justify-end gap-1">
+                            <Link to="/visits" search={{ plant: p.id }} className="rounded-md px-2 py-1 text-xs text-signal ring-1 ring-signal/40 hover:bg-signal/10">Visits</Link>
+                            {manager ? (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button type="button" aria-label={`More actions for ${p.name}`} className="grid size-7 place-items-center rounded-md text-mute ring-1 ring-line hover:bg-black/5"><MoreHorizontal className="size-4" /></button>
+                                </PopoverTrigger>
+                                <PopoverContent align="end" className="w-44 p-1">
+                                  <button type="button" onClick={() => edit(p)} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-black/5">Edit plant</button>
+                                  <Link to="/opportunities" search={{ plant: p.id }} className="block rounded px-3 py-2 text-sm text-signal hover:bg-black/5">+ Opportunity</Link>
+                                  <button type="button" onClick={() => { if (window.confirm(`Delete ${p.name}?`)) removePlant(p.id); }} className="block w-full rounded px-3 py-2 text-left text-sm text-red-600 hover:bg-black/5">Delete</button>
+                                </PopoverContent>
+                              </Popover>
+                            ) : null}
                           </span>
-                        ) : null}
-                      </Td>
-                    </Tr>
+                        </Td>
+                      </Tr>
+                      {isOpen ? (
+                        <tr className="bg-base/60">
+                          <td colSpan={5} className="px-4 py-3">
+                            <div className="grid gap-4 text-xs lg:grid-cols-3">
+                              <div><div className="label-caps mb-1">Commercial ownership</div><OwnershipBody o={o} /></div>
+                              <div>
+                                <div className="label-caps mb-1">Customer contact</div>
+                                <div>{p.contact || "—"}</div>
+                                {p.contactPhone ? <a className="num text-signal" href={`tel:${p.contactPhone}`}>{p.contactPhone}</a> : null}
+                                <div className="mt-1 text-mute">{p.location || "—"}</div>
+                              </div>
+                              <div>
+                                <div className="label-caps mb-1">Quick links</div>
+                                <div className="flex flex-wrap gap-2">
+                                  <Link to="/visits" search={{ plant: p.id }} className="text-signal">Visit history</Link>
+                                  {manager ? <><Link to="/opportunities" search={{ plant: p.id }} className="text-signal">+ Opportunity</Link><button type="button" onClick={() => edit(p)} className="text-signal">Edit plant</button></> : null}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
                   );
                 })}
               </tbody>
