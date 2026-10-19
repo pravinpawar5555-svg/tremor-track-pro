@@ -87,6 +87,7 @@ const emptyTicket = {
   plantId: "",
   area: "",
   machine: "",
+  machines: [] as string[],
   subject: "",
   observation: "",
   askFor: "both" as AskFor,
@@ -195,7 +196,15 @@ function DiscussionsPage() {
     }
   }, [jumped, meId, data.messages, search.thread, search.unread, search.tickets, tickets]);
 
+  const [machineDraft, setMachineDraft] = useState("");
   const set = (k: keyof typeof emptyTicket, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const addMachine = () => {
+    const name = machineDraft.trim();
+    if (!name) return;
+    setForm((f) => (f.machines.includes(name) ? f : { ...f, machines: [...f.machines, name] }));
+    setMachineDraft("");
+  };
+  const removeMachine = (name: string) => setForm((f) => ({ ...f, machines: f.machines.filter((m) => m !== name) }));
   const flash = (msg: string) => {
     setNotice(msg);
     window.setTimeout(() => setNotice(""), 3500);
@@ -203,10 +212,11 @@ function DiscussionsPage() {
 
   const raise = () => {
     const raisedBy = manager ? team[0]?.id ?? meId : meId;
-    const res = createTicket({ ...form, raisedBy, assignedTo: managersOf(data)[0]?.id ?? "" });
+    const res = createTicket({ ...form, machine: form.machines[0] ?? "", raisedBy, assignedTo: managersOf(data)[0]?.id ?? "" });
     flash(res.message);
     if (res.ok) {
       setForm(emptyTicket);
+      setMachineDraft("");
       setShowNew(false);
       if (res.id) setSelectedTicket(res.id);
       setTab("tickets");
@@ -268,8 +278,35 @@ function DiscussionsPage() {
             <Field label="Area name">
               <TextInput value={form.area} onChange={(e) => set("area", e.target.value)} placeholder="e.g. Boiler feed area" />
             </Field>
-            <Field label="Machine name">
-              <TextInput value={form.machine} onChange={(e) => set("machine", e.target.value)} placeholder="e.g. Boiler feed pump 2A" />
+            <Field label="Machine names" hint="Add every machine in this plant that needs analysis support — one ticket can cover several machines.">
+              <div className="flex gap-2">
+                <TextInput
+                  value={machineDraft}
+                  onChange={(e) => setMachineDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addMachine();
+                    }
+                  }}
+                  placeholder="e.g. Boiler feed pump 2A"
+                />
+                <Button variant="outline" onClick={addMachine} disabled={!machineDraft.trim()}>
+                  + Add
+                </Button>
+              </div>
+              {form.machines.length ? (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {form.machines.map((m) => (
+                    <span key={m} className="inline-flex items-center gap-1.5 rounded-full bg-signal/10 px-2.5 py-1 text-xs text-signal ring-1 ring-signal/30">
+                      {m}
+                      <button type="button" aria-label={`Remove ${m}`} onClick={() => removeMachine(m)} className="text-signal/70 hover:text-signal">
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </Field>
             <Field label="Subject">
               <TextInput value={form.subject} onChange={(e) => set("subject", e.target.value)} placeholder="Short title of the issue" />
@@ -301,7 +338,7 @@ function DiscussionsPage() {
               </Field>
             </div>
             <div className="flex items-center gap-2 md:col-span-3">
-              <Button variant="solid" onClick={raise} disabled={!form.plantId || !form.machine.trim() || !form.subject.trim()}>
+              <Button variant="solid" onClick={raise} disabled={!form.plantId || !form.machines.length || !form.subject.trim()}>
                 Send to manager
               </Button>
               <Button variant="ghost" onClick={() => setForm(emptyTicket)}>Clear</Button>
