@@ -554,6 +554,69 @@ export type Database = {
         }
         Relationships: []
       }
+      execution_site_visits: {
+        Row: {
+          attachment_link: string
+          created_at: string
+          created_by: string
+          end_time: string
+          engineer_ids: string[]
+          id: string
+          location: string
+          notes: string
+          outcome: string
+          plant_id: string
+          purpose: string
+          related_job_id: string
+          sensors_collected: number
+          sensors_delivered: number
+          start_time: string
+          updated_at: string
+          visit_date: string
+          visit_type: string
+        }
+        Insert: {
+          attachment_link?: string
+          created_at?: string
+          created_by?: string
+          end_time?: string
+          engineer_ids?: string[]
+          id?: string
+          location?: string
+          notes?: string
+          outcome?: string
+          plant_id?: string
+          purpose?: string
+          related_job_id?: string
+          sensors_collected?: number
+          sensors_delivered?: number
+          start_time?: string
+          updated_at?: string
+          visit_date?: string
+          visit_type?: string
+        }
+        Update: {
+          attachment_link?: string
+          created_at?: string
+          created_by?: string
+          end_time?: string
+          engineer_ids?: string[]
+          id?: string
+          location?: string
+          notes?: string
+          outcome?: string
+          plant_id?: string
+          purpose?: string
+          related_job_id?: string
+          sensors_collected?: number
+          sensors_delivered?: number
+          start_time?: string
+          updated_at?: string
+          visit_date?: string
+          visit_type?: string
+        }
+        Relationships: []
+      }
       ho_division_kams: {
         Row: {
           created_at: string
