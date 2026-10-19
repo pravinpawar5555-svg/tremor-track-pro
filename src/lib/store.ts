@@ -84,6 +84,7 @@ export interface Ticket {
   plantId: string;
   area: string;
   machine: string;
+  machines: string[];
   subject: string;
   observation: string;
   askFor: AskFor;
@@ -647,6 +648,7 @@ const rowToTicket = (r: any): Ticket =>
     plantId: r.plant_id ?? "",
     area: r.area ?? "",
     machine: r.machine ?? "",
+    machines: Array.isArray(r.machines) ? r.machines : r.machine ? [r.machine] : [],
     subject: r.subject ?? "",
     observation: r.observation ?? "",
     askFor: r.ask_for,
@@ -666,6 +668,7 @@ const ticketToRow = (t: Ticket) => ({
   plant_id: t.plantId,
   area: t.area,
   machine: t.machine,
+  machines: t.machines ?? [],
   subject: t.subject,
   observation: t.observation,
   ask_for: t.askFor,
@@ -1328,6 +1331,7 @@ export function createTicket(input: {
   plantId: string;
   area: string;
   machine: string;
+  machines?: string[];
   subject: string;
   observation: string;
   askFor: AskFor;
@@ -1336,7 +1340,8 @@ export function createTicket(input: {
   assignedTo?: string;
 }) {
   if (!input.plantId) return { ok: false, message: "Select a plant." };
-  if (!input.machine.trim()) return { ok: false, message: "Enter the machine name." };
+  const machines = (input.machines ?? [input.machine]).map((m) => m.trim()).filter(Boolean);
+  if (!machines.length) return { ok: false, message: "Enter at least one machine name." };
   if (!input.subject.trim()) return { ok: false, message: "Enter a short subject." };
   const manager = input.assignedTo || managersOf(data)[0]?.id || "";
   const ticket: Ticket = {
@@ -1344,7 +1349,8 @@ export function createTicket(input: {
     ticketNo: nextTicketNo(),
     plantId: input.plantId,
     area: input.area.trim(),
-    machine: input.machine.trim(),
+    machine: machines[0]!,
+    machines,
     subject: input.subject.trim(),
     observation: input.observation.trim(),
     askFor: input.askFor,
