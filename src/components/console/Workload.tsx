@@ -11,7 +11,7 @@ import {
 } from "@/lib/store";
 import { useVisits } from "@/lib/visits";
 import { useComms, openFollowUp } from "@/lib/comms";
-import { useExecution, saveJob, installTypeLabel, execStatusLabel, type ExecJob } from "@/lib/execution";
+import { useExecution, saveJob, siteVisitTypeLabel, installTypeLabel, execStatusLabel, type ExecJob } from "@/lib/execution";
 import { addLeave, deleteLeave, leaveOn, levelFor, useLeaves, useWorkloadSettings, type Level } from "@/lib/workload";
 
 type DayKind = "site" | "office" | "leave" | "off" | "weekend";
@@ -120,7 +120,9 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
   const exKind = (id: string, d: string) => {
     const mine = jobsOf(id);
     const j = mine.find((z) => jStart(z) && d >= jStart(z) && d <= jEnd(z)) ?? mine.find((z) => z.removalPlanned === d || z.removalCompleted === d);
-    return { k: kindFor(id, d, !!j, false), where: j ? j.plantName || j.customerName : "" };
+    const sv = ex.siteVisits.find((v) => v.visitDate === d && v.engineerIds.includes(id));
+    const svWhere = sv ? (sv.plantId ? plantName(data, sv.plantId) : "") || sv.location || siteVisitTypeLabel[sv.visitType] : "";
+    return { k: kindFor(id, d, !!j || !!sv, false), where: j ? j.plantName || j.customerName : svWhere };
   };
 
   const jobsOf = (id: string) => ex.jobs.filter((j) => (j.assignedEngineerId === id || j.secondaryEngineerId === id) && j.status !== "cancelled");

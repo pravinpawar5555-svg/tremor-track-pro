@@ -128,6 +128,7 @@ let engineers: ExecEngineer[] = [];
 let jobs: ExecJob[] = [];
 let updates: ExecUpdate[] = [];
 let activity: ExecActivity[] = [];
+let siteVisits: ExecSiteVisit[] = [];
 let loaded = false;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
@@ -207,6 +208,9 @@ export async function loadExecution() {
     db.from("execution_daily_updates").select("*").order("work_date"),
     db.from("execution_activity").select("*").order("created_at", { ascending: false }),
   ]);
+  const sv = await db.from("execution_site_visits").select("*").order("visit_date", { ascending: false });
+  if (sv.error) console.error("execution site visits load failed", sv.error);
+  siteVisits = (sv.data ?? []).map(svFrom);
   for (const [res, label] of [[e, "engineers"], [j, "jobs"], [u, "updates"], [a, "activity"]] as const) {
     if (res.error) console.error(`execution ${label} load failed`, res.error);
   }
@@ -232,7 +236,7 @@ export function useExecution() {
   );
 }
 
-const snapshot = { get engineers() { return engineers; }, get jobs() { return jobs; }, get updates() { return updates; }, get activity() { return activity; } };
+const snapshot = { get engineers() { return engineers; }, get jobs() { return jobs; }, get updates() { return updates; }, get activity() { return activity; }, get siteVisits() { return siteVisits; } };
 
 export function execEngineerName(id: string) {
   return engineers.find((e) => e.id === id)?.name ?? "";
@@ -472,4 +476,93 @@ export function activityFor(jobId: string) {
 
 export function openJobs() {
   return jobs.filter((j) => !["completed", "cancelled"].includes(j.status));
+}
+
+// ---- standalone site visits (factory inspection, sensor collection, etc.)
+
+export type SiteVisitType = "factory_inspection" | "sensor_collection" | "material" | "customer_meeting" | "service_support" | "other";
+export type SiteVisitOutcome = "completed" | "follow_up" | "blocked";
+export const siteVisitTypeLabel: Record<SiteVisitType, string> = {
+  factory_inspection: "Factory Inspection",
+  sensor_collection: "Sensor Collection / Return",
+  material: "Material Delivery / Pickup",
+  customer_meeting: "Customer Meeting / Survey",
+  service_support: "Service Support / Troubleshooting",
+  other: "Other Site Work",
+};
+export const siteVisitOutcomeLabel: Record<SiteVisitOutcome, string> = { completed: "Completed", follow_up: "Follow-up needed", blocked: "Blocked" };
+
+export interface ExecSiteVisit {
+  id: string;
+  visitDate: string;
+  startTime: string;
+  endTime: string;
+  engineerIds: string[];
+  plantId: string;
+  location: string;
+  visitType: SiteVisitType;
+  purpose: string;
+  notes: string;
+  sensorsCollected: number;
+  sensorsDelivered: number;
+  outcome: SiteVisitOutcome;
+  attachmentLink: string;
+  relatedJobId: string;
+  createdBy: string;
+}
+
+function svFrom(r: any): ExecSiteVisit {
+  return {
+    id: r.id,
+    visitDate: r.visit_date,
+    startTime: r.start_time ?? "",
+    endTime: r.end_time ?? "",
+    engineerIds: Array.isArray(r.engineer_ids) ? r.engineer_ids : [],
+    plantId: r.plant_id ?? "",
+    location: r.location ?? "",
+    visitType: (r.visit_type in siteVisitTypeLabel ? r.visit_type : "other") as SiteVisitType,
+    purpose: r.purpose ?? "",
+    notes: r.notes ?? "",
+    sensorsCollected: r.sensors_collected ?? 0,
+    sensorsDelivered: r.sensors_delivered ?? 0,
+    outcome: (r.outcome in siteVisitOutcomeLabel ? r.outcome : "completed") as SiteVisitOutcome,
+    attachmentLink: r.attachment_link ?? "",
+    relatedJobId: r.related_job_id ?? "",
+    createdBy: r.created_by ?? "",
+  };
+}
+
+export function blankSiteVisit(today: string, engineerId: string, createdBy: string): ExecSiteVisit {
+  return { id: "", visitDate: today, startTime: "", endTime: "", engineerIds: engineerId ? [engineerId] : [], plantId: "", location: "", visitType: "factory_inspection", purpose: "", notes: "", sensorsCollected: 0, sensorsDelivered: 0, outcome: "completed", attachmentLink: "", relatedJobId: "", createdBy };
+}
+
+export async function saveSiteVisit(v: ExecSiteVisit) {
+  const isNew = !v.id;
+  const id = v.id || crypto.randomUUID();
+  const row = {
+    id, visit_date: v.visitDate, start_time: v.startTime, end_time: v.endTime, engineer_ids: v.engineerIds, plant_id: v.plantId,
+    location: v.location, visit_type: v.visitType, purpose: v.purpose, notes: v.notes, sensors_collected: v.sensorsCollected || 0,
+    sensors_delivered: v.sensorsDelivered || 0, outcome: v.outcome, attachment_link: v.attachmentLink, related_job_id: v.relatedJobId,
+    created_by: v.createdBy, updated_at: new Date().toISOString(),
+  };
+  const { error } = isNew ? await db.from("execution_site_visits").insert(row) : await db.from("execution_site_visits").update(row).eq("id", id);
+  if (error) {
+    console.error("site visit save failed", error);
+    throw error;
+  }
+  const next = { ...v, id };
+  siteVisits = [next, ...siteVisits.filter((x) => x.id !== id)].sort((a, b) => (a.visitDate < b.visitDate ? 1 : -1));
+  emit();
+  if (v.relatedJobId) await log(v.relatedJobId, `${siteVisitTypeLabel[v.visitType]} visit on ${fmtDate(v.visitDate)}${v.purpose ? ` — ${v.purpose}` : ""}`, v.createdBy).catch(() => {});
+}
+
+export async function deleteSiteVisit(id: string) {
+  siteVisits = siteVisits.filter((x) => x.id !== id);
+  emit();
+  const { error } = await db.from("execution_site_visits").delete().eq("id", id);
+  if (error) console.error("site visit delete failed", error);
+}
+
+export function siteVisitsOn(engineerId: string, date: string) {
+  return siteVisits.filter((v) => v.visitDate === date && v.engineerIds.includes(engineerId));
 }

@@ -169,6 +169,13 @@
       "when": 1792394357392,
       "tag": "0023_ticket_multiple_machines",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792421068186,
+      "tag": "0024_execution_site_visits",
+      "breakpoints": true
     }
   ]
 }

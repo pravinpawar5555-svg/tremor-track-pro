@@ -4,6 +4,7 @@ import { ExternalLink, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { peekDomain } from "@/lib/domain";
 import { AppShell } from "@/components/console/AppShell";
+import { ExecSiteVisits } from "@/components/console/ExecSiteVisits";
 import { Button, Empty, Field, Kpi, Panel, PageHeader, Select, TextArea, TextInput, Td, Th, Tr } from "@/components/console/ui";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -52,7 +53,7 @@ export const Route = createFileRoute("/_authenticated/execution")({
   component: ExecutionPage,
 });
 
-type Tab = "overview" | "leads" | "schedule" | "jobs" | "team";
+type Tab = "overview" | "leads" | "schedule" | "jobs" | "visits" | "team";
 const iso = (v: string | null | undefined) => v ?? undefined;
 const closed = (s: ExecStatus) => s === "completed" || s === "cancelled";
 
@@ -91,12 +92,13 @@ function ExecutionPage() {
   const open = openId ? ex.jobs.find((j) => j.id === openId) : undefined;
 
   const tabs: { v: Tab; label: string }[] = mineOnly
-    ? [{ v: "overview", label: "My Work" }, { v: "schedule", label: "My Schedule" }, { v: "jobs", label: "My Jobs" }]
+    ? [{ v: "overview", label: "My Work" }, { v: "schedule", label: "My Schedule" }, { v: "jobs", label: "My Jobs" }, { v: "visits", label: "My Site Visits" }]
     : [
         { v: "overview", label: "Overview" },
         { v: "leads", label: "Leads" },
         { v: "schedule", label: "Schedule" },
         { v: "jobs", label: "All Jobs" },
+        { v: "visits", label: "Site Visits" },
         ...(manager ? [{ v: "team" as Tab, label: "Execution Team" }] : []),
       ];
 
@@ -113,6 +115,10 @@ function ExecutionPage() {
       {tab === "leads" ? <JobsList jobs={visible.filter((j) => j.status === "lead" || j.status === "planning")} onOpen={setOpenId} title="Leads" /> : null}
       {tab === "schedule" ? <ScheduleView jobs={visible} onOpen={setOpenId} /> : null}
       {tab === "jobs" ? <JobsPage jobs={visible} onOpen={setOpenId} /> : null}
+      {tab === "visits" ? (
+        <ExecSiteVisits data={data} manager={!mineOnly} meId={meExec?.id ?? ""} myName={myName} engineers={ex.engineers} jobs={visible}
+          visits={mineOnly ? ex.siteVisits.filter((v) => v.engineerIds.includes(meExec!.id)) : ex.siteVisits} />
+      ) : null}
       {tab === "team" && manager ? <TeamPanel /> : null}
 
       {editing ? (

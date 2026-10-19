@@ -451,6 +451,15 @@ function Execution({ m, period }: { m: Model; period: Period }) {
     ["Order Jobs", doneMonth.filter((j) => j.installationType === "order").length],
     ["Troubleshooting", doneMonth.filter((j) => j.installationType === "troubleshooting").length],
   ];
+  const svMonth = ex.siteVisits.filter((v) => v.visitDate >= monthStart && v.visitDate <= TODAY && (eng === "all" || v.engineerIds.includes(eng)));
+  const svStats: [string, number][] = [
+    ["Site Visits", svMonth.length],
+    ["Factory Inspections", svMonth.filter((v) => v.visitType === "factory_inspection").length],
+    ["Sensor Collections", svMonth.filter((v) => v.visitType === "sensor_collection").length],
+    ["Sensors Collected", svMonth.reduce((s, v) => s + v.sensorsCollected, 0)],
+    ["Other Visits", svMonth.filter((v) => !["factory_inspection", "sensor_collection"].includes(v.visitType)).length],
+    ["Follow-ups Pending", svMonth.filter((v) => v.outcome !== "completed").length],
+  ];
   const jp = (j: ExecJob) => j.plantName || plantName(data, j.plantId) || j.customerName;
 
   return (
@@ -503,6 +512,11 @@ function Execution({ m, period }: { m: Model; period: Period }) {
           <Panel title="This Month — Execution Output">
             <div className="grid grid-cols-3 gap-2 px-4 py-3">
               {output.map(([l, v]) => <div key={l} className="rounded-md bg-base px-2 py-2 text-center ring-1 ring-line/60"><div className="num text-lg font-semibold">{v}</div><div className="text-[10px] leading-tight text-mute">{l}</div></div>)}
+            </div>
+          </Panel>
+          <Panel title="This Month — Non-job Site Visits" meta={<Link to="/execution" className="text-signal">Open →</Link>}>
+            <div className="grid grid-cols-3 gap-2 px-4 py-3">
+              {svStats.map(([l, v]) => <div key={l} className="rounded-md bg-base px-2 py-2 text-center ring-1 ring-line/60"><div className="num text-lg font-semibold">{v}</div><div className="text-[10px] leading-tight text-mute">{l}</div></div>)}
             </div>
           </Panel>
         </div>
