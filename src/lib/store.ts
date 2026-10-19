@@ -429,6 +429,7 @@ function seed(): AppData {
       plantId: "pl-1",
       area: "Boiler feed area",
       machine: "Boiler feed pump 2A",
+      machines: ["Boiler feed pump 2A"],
       subject: "Rising vibration on NDE bearing",
       observation:
         "Overall velocity has risen over three weeks. Indication of possible bearing distress — requires verification. Site wants a view before the weekly report.",
@@ -446,6 +447,7 @@ function seed(): AppData {
       plantId: "pl-2",
       area: "Cooling tower",
       machine: "CT fan 4",
+      machines: ["CT fan 4"],
       subject: "Above alert after gearbox oil change",
       observation:
         "Suspected looseness at fan hub. Need your recommendation on whether to advise the customer to stop the fan or continue under watch.",
@@ -463,6 +465,7 @@ function seed(): AppData {
       plantId: "pl-6",
       area: "Ammonia compressor house",
       machine: "Compressor 1 — motor DE",
+      machines: ["Compressor 1 — motor DE"],
       subject: "On-demand study finding",
       observation: "Two machines abnormal in the on-demand study. Observation needed before the report goes to the customer.",
       askFor: "observation",
