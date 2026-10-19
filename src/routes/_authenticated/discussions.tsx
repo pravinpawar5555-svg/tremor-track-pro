@@ -407,7 +407,7 @@ function DiscussionsPage() {
                       </div>
                       <div className="mt-0.5 truncate text-sm font-medium">{t.subject}</div>
                       <div className="truncate text-[11px] text-mute">
-                        {plantName(data, t.plantId)} · {t.area || "—"} · {t.machine}
+                        {plantName(data, t.plantId)} · {t.area || "—"} · {(t.machines?.length ? t.machines : [t.machine]).join(", ")}
                       </div>
                       <div className="mt-1 flex items-center gap-2">
                         <Chip severity={ticketSeverity(t.priority)} label={priorityLabel[t.priority]} />
@@ -508,8 +508,8 @@ function DiscussionsPage() {
                     <div>{ticket.area || "—"}</div>
                   </div>
                   <div>
-                    <div className="label-caps">Machine</div>
-                    <div>{ticket.machine}</div>
+                    <div className="label-caps">Machines</div>
+                    <div>{(ticket.machines?.length ? ticket.machines : [ticket.machine]).join(", ")}</div>
                   </div>
                   <div>
                     <div className="label-caps">Raised by</div>
