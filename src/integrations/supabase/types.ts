@@ -1167,6 +1167,7 @@ export type Database = {
           created_at: string
           id: string
           machine: string
+          machines: string[]
           observation: string
           plant_id: string
           priority: string
@@ -1187,6 +1188,7 @@ export type Database = {
           created_at?: string
           id: string
           machine?: string
+          machines?: string[]
           observation?: string
           plant_id?: string
           priority?: string
@@ -1207,6 +1209,7 @@ export type Database = {
           created_at?: string
           id?: string
           machine?: string
+          machines?: string[]
           observation?: string
           plant_id?: string
           priority?: string

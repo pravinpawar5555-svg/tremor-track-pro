@@ -162,6 +162,13 @@
       "when": 1792202964641,
       "tag": "0022_visit_mom_required",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792394357392,
+      "tag": "0023_ticket_multiple_machines",
+      "breakpoints": true
     }
   ]
 }
