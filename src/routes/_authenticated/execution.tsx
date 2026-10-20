@@ -134,7 +134,7 @@ function ExecutionPage() {
           <div className="text-base font-semibold">📍 Record Site Visit</div>
           <div className="mt-0.5 text-xs opacity-80">Factory inspection, sensor collection, pickup, meeting</div>
           <div className="mt-3 flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
-            {(["factory_inspection", "sensor_collection", "material_delivery"] as SiteVisitType[]).filter((t) => t in siteVisitTypeLabel).map((t) => (
+            {(["factory_inspection", "sensor_collection", "material"] as SiteVisitType[]).filter((t) => t in siteVisitTypeLabel).map((t) => (
               <span key={t} role="button" tabIndex={0} onClick={() => newVisit(t)} onKeyDown={(e) => e.key === "Enter" && newVisit(t)}
                 className="rounded-full bg-signal-foreground/15 px-2.5 py-1 text-[11px] font-medium ring-1 ring-signal-foreground/30">{siteVisitTypeLabel[t]}</span>
             ))}
