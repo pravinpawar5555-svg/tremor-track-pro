@@ -4,7 +4,7 @@ import { ExternalLink, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { peekDomain } from "@/lib/domain";
 import { AppShell } from "@/components/console/AppShell";
-import { ExecSiteVisits } from "@/components/console/ExecSiteVisits";
+import { ExecSiteVisits, VisitForm } from "@/components/console/ExecSiteVisits";
 import { Button, Empty, Field, Kpi, Panel, PageHeader, Select, TextArea, TextInput, Td, Th, Tr } from "@/components/console/ui";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,10 @@ import {
   addComment,
   addDailyUpdate,
   blankJob,
+  blankSiteVisit,
+  siteVisitTypeLabel,
+  type ExecSiteVisit,
+  type SiteVisitType,
   dateRange,
   deleteDailyUpdate,
   deleteEngineer,
@@ -36,6 +40,7 @@ import {
 } from "@/lib/execution";
 
 export const Route = createFileRoute("/_authenticated/execution")({
+  validateSearch: (s: Record<string, unknown>): { add?: "visit" | "lead" } => (s.add === "visit" || s.add === "lead" ? { add: s.add } : {}),
   beforeLoad: () => {
     const d = peekDomain();
     if (d !== "manager" && d !== "execution") throw redirect({ to: "/" });
