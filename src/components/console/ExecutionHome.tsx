@@ -34,6 +34,16 @@ export function ExecutionHome() {
   return (
     <div className="grid gap-4">
       <PageHeader title="My Execution Dashboard" subtitle="Your assigned execution jobs, schedules and pending actions" />
+      <div className="grid grid-cols-2 gap-3">
+        <button type="button" onClick={() => void navigate({ to: "/execution", search: { add: "visit" } })} className="rounded-xl bg-signal p-4 text-left text-signal-foreground shadow-sm active:scale-[0.99]">
+          <div className="text-base font-semibold">📍 Record Site Visit</div>
+          <div className="mt-0.5 text-xs opacity-80">Factory inspection, sensor collection, pickup, meeting</div>
+        </button>
+        <button type="button" onClick={() => void navigate({ to: "/execution", search: { add: "lead" } })} className="rounded-xl bg-panel p-4 text-left ring-1 ring-line shadow-sm active:scale-[0.99]">
+          <div className="text-base font-semibold text-ink">➕ New Execution Lead</div>
+          <div className="mt-0.5 text-xs text-mute">New demo, order installation or troubleshooting</div>
+        </button>
+      </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kpi label="Visits this month" value={visitsMonth} />
         <Kpi label="Upcoming jobs" value={upcoming.length} />

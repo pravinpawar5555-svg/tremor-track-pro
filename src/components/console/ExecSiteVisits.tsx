@@ -115,7 +115,7 @@ export function ExecSiteVisits({ data, visits, engineers, jobs, meId, myName, ma
   );
 }
 
-function VisitForm({ v, data, engineers, jobs, onClose }: { v: ExecSiteVisit; data: AppData; engineers: ExecEngineer[]; jobs: ExecJob[]; onClose: () => void }) {
+export function VisitForm({ v, data, engineers, jobs, onClose }: { v: ExecSiteVisit; data: AppData; engineers: ExecEngineer[]; jobs: ExecJob[]; onClose: () => void }) {
   const [f, setF] = useState(v);
   const [busy, setBusy] = useState(false);
   const set = <K extends keyof ExecSiteVisit>(k: K, val: ExecSiteVisit[K]) => setF((p) => ({ ...p, [k]: val }));
@@ -128,9 +128,12 @@ function VisitForm({ v, data, engineers, jobs, onClose }: { v: ExecSiteVisit; da
         <SheetHeader><SheetTitle>{v.id ? "Edit Site Visit" : "Add Site Visit"}</SheetTitle></SheetHeader>
         <div className="space-y-3 px-4 pb-6">
           <Field label="Visit type">
-            <Select value={f.visitType} onChange={(e) => set("visitType", e.target.value as SiteVisitType)}>
-              {Object.entries(siteVisitTypeLabel).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-            </Select>
+            <div className="grid grid-cols-2 gap-1.5">
+              {Object.entries(siteVisitTypeLabel).map(([k, l]) => (
+                <button key={k} type="button" onClick={() => set("visitType", k as SiteVisitType)}
+                  className={cn("rounded-md px-2.5 py-2 text-left text-xs font-medium ring-1", f.visitType === k ? "bg-signal text-signal-foreground ring-signal" : "ring-line text-ink hover:bg-base")}>{l}</button>
+              ))}
+            </div>
           </Field>
           <div className="grid grid-cols-3 gap-2">
             <Field label="Date"><TextInput type="date" value={f.visitDate} onChange={(e) => set("visitDate", e.target.value)} /></Field>
