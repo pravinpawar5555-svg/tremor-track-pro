@@ -81,24 +81,34 @@ function ExecutionPage() {
   const myName = me?.name ?? "";
   const meExec = ex.engineers.find((e) => e.linkedUserId && e.linkedUserId === data.currentUserId);
   const mineOnly = !manager && !!meExec;
-  const [tab, setTab] = useState<Tab>("overview");
-  const [editing, setEditing] = useState<{ job: ExecJob; isNew: boolean } | null>(null);
+  const search = Route.useSearch();
+  const [tab, setTab] = useState<Tab>(search.add === "visit" ? "visits" : "overview");
+  const [editing, setEditing] = useState<{ job: ExecJob; isNew: boolean } | null>(
+    search.add === "lead" ? { job: { ...blankJob(myName), assignedEngineerId: meExec?.id ?? "" }, isNew: true } : null,
+  );
   const [openId, setOpenId] = useState<string | null>(null);
+  const today = todayIso();
+  const [quickVisit, setQuickVisit] = useState<ExecSiteVisit | null>(search.add === "visit" ? blankSiteVisit(today, meExec?.id ?? "", myName) : null);
 
   const visible = useMemo(
     () => (mineOnly ? ex.jobs.filter((j) => j.assignedEngineerId === meExec!.id || j.secondaryEngineerId === meExec!.id) : ex.jobs),
     [ex.jobs, mineOnly, meExec],
   );
+  const myVisits = mineOnly ? ex.siteVisits.filter((v) => v.engineerIds.includes(meExec!.id)) : ex.siteVisits;
   const open = openId ? ex.jobs.find((j) => j.id === openId) : undefined;
+  const newLead = () => setEditing({ job: { ...blankJob(myName), assignedEngineerId: meExec?.id ?? "" }, isNew: true });
+  const newVisit = (t?: SiteVisitType) => setQuickVisit({ ...blankSiteVisit(today, meExec?.id ?? "", myName), ...(t ? { visitType: t } : {}) });
+  const leadCount = visible.filter((j) => j.status === "lead" || j.status === "planning").length;
+  const visitsMonth = myVisits.filter((v) => v.visitDate.slice(0, 7) === today.slice(0, 7)).length;
 
   const tabs: { v: Tab; label: string }[] = mineOnly
-    ? [{ v: "overview", label: "My Work" }, { v: "schedule", label: "My Schedule" }, { v: "jobs", label: "My Jobs" }, { v: "visits", label: "My Site Visits" }]
+    ? [{ v: "overview", label: "My Work" }, { v: "visits", label: `📍 My Site Visits (${visitsMonth})` }, { v: "schedule", label: "My Schedule" }, { v: "jobs", label: `My Jobs (${visible.length})` }]
     : [
         { v: "overview", label: "Overview" },
-        { v: "leads", label: "Leads" },
+        { v: "visits", label: `📍 Site Visits (${visitsMonth})` },
+        { v: "leads", label: `Leads (${leadCount})` },
         { v: "schedule", label: "Schedule" },
-        { v: "jobs", label: "All Jobs" },
-        { v: "visits", label: "Site Visits" },
+        { v: "jobs", label: `All Jobs (${visible.length})` },
         ...(manager ? [{ v: "team" as Tab, label: "Execution Team" }] : []),
       ];
 
@@ -107,8 +117,30 @@ function ExecutionPage() {
       <PageHeader
         title="Execution"
         subtitle="Demo installation, order execution and troubleshooting site work"
-        actions={<Button variant="solid" onClick={() => setEditing({ job: { ...blankJob(myName), assignedEngineerId: meExec?.id ?? "" }, isNew: true })}>+ New Execution Lead</Button>}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="solid" onClick={() => newVisit()}>📍 Record Site Visit</Button>
+            <Button onClick={newLead}>+ New Execution Lead</Button>
+          </div>
+        }
       />
+      <div className="mb-4 grid grid-cols-2 gap-3">
+        <button type="button" onClick={() => newVisit()} className="rounded-xl bg-signal p-4 text-left text-signal-foreground shadow-sm active:scale-[0.99]">
+          <div className="text-base font-semibold">📍 Record Site Visit</div>
+          <div className="mt-0.5 text-xs opacity-80">Factory inspection, sensor collection, pickup, meeting</div>
+          <div className="mt-3 flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
+            {(["factory_inspection", "sensor_collection", "material_delivery"] as SiteVisitType[]).filter((t) => t in siteVisitTypeLabel).map((t) => (
+              <span key={t} role="button" tabIndex={0} onClick={() => newVisit(t)} onKeyDown={(e) => e.key === "Enter" && newVisit(t)}
+                className="rounded-full bg-signal-foreground/15 px-2.5 py-1 text-[11px] font-medium ring-1 ring-signal-foreground/30">{siteVisitTypeLabel[t]}</span>
+            ))}
+          </div>
+        </button>
+        <button type="button" onClick={newLead} className="rounded-xl bg-panel p-4 text-left ring-1 ring-line shadow-sm active:scale-[0.99]">
+          <div className="text-base font-semibold text-ink">➕ New Execution Lead</div>
+          <div className="mt-0.5 text-xs text-mute">New demo, order installation or troubleshooting job</div>
+          <div className="mt-3 text-xs font-medium text-signal">{leadCount} open leads →</div>
+        </button>
+      </div>
       <div className="mb-4 overflow-x-auto"><Seg value={tab} options={tabs} onChange={setTab} /></div>
 
       {tab === "overview" ? (mineOnly ? <EngineerOverview jobs={visible} onOpen={setOpenId} /> : <ManagerOverview jobs={visible} onOpen={setOpenId} />) : null}
@@ -117,9 +149,10 @@ function ExecutionPage() {
       {tab === "jobs" ? <JobsPage jobs={visible} onOpen={setOpenId} /> : null}
       {tab === "visits" ? (
         <ExecSiteVisits data={data} manager={!mineOnly} meId={meExec?.id ?? ""} myName={myName} engineers={ex.engineers} jobs={visible}
-          visits={mineOnly ? ex.siteVisits.filter((v) => v.engineerIds.includes(meExec!.id)) : ex.siteVisits} />
+          visits={myVisits} />
       ) : null}
       {tab === "team" && manager ? <TeamPanel /> : null}
+      {quickVisit ? <VisitForm v={quickVisit} data={data} engineers={ex.engineers} jobs={visible} onClose={() => setQuickVisit(null)} /> : null}
 
       {editing ? (
         <JobForm
