@@ -129,23 +129,6 @@ function ExecutionPage() {
           </div>
         }
       />
-      <div className="mb-4 grid grid-cols-2 gap-3">
-        <button type="button" onClick={() => newVisit()} className="rounded-xl bg-signal p-4 text-left text-signal-foreground shadow-sm active:scale-[0.99]">
-          <div className="text-base font-semibold">📍 Record Site Visit</div>
-          <div className="mt-0.5 text-xs opacity-80">Factory inspection, sensor collection, pickup, meeting</div>
-          <div className="mt-3 flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
-            {(["factory_inspection", "sensor_collection", "material"] as SiteVisitType[]).filter((t) => t in siteVisitTypeLabel).map((t) => (
-              <span key={t} role="button" tabIndex={0} onClick={() => newVisit(t)} onKeyDown={(e) => e.key === "Enter" && newVisit(t)}
-                className="rounded-full bg-signal-foreground/15 px-2.5 py-1 text-[11px] font-medium ring-1 ring-signal-foreground/30">{siteVisitTypeLabel[t]}</span>
-            ))}
-          </div>
-        </button>
-        <button type="button" onClick={newLead} className="rounded-xl bg-panel p-4 text-left ring-1 ring-line shadow-sm active:scale-[0.99]">
-          <div className="text-base font-semibold text-ink">➕ New Execution Lead</div>
-          <div className="mt-0.5 text-xs text-mute">New demo, order installation or troubleshooting job</div>
-          <div className="mt-3 text-xs font-medium text-signal">{leadCount} open leads →</div>
-        </button>
-      </div>
       <div className="mb-4 overflow-x-auto"><Seg value={tab} options={tabs} onChange={setTab} /></div>
 
       {tab === "overview" ? (mineOnly ? <EngineerOverview jobs={visible} onOpen={setOpenId} /> : <ManagerOverview jobs={visible} onOpen={setOpenId} />) : null}
