@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useDomain } from "@/lib/domain";
+import { navAllowed } from "@/lib/access";
 import { RefreshControls } from "@/components/console/RefreshControls";
 import { NotificationBell } from "@/components/console/NotificationBell";
 import {
@@ -48,7 +49,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const unread = chatUnread(data);
   const tickets = ticketAttention(data);
   const navigate = useNavigate();
-  const items = nav.filter((n) => manager ? true : exec ? n.to !== "/visits" && n.to !== "/reports" && n.to !== "/engineers" : n.to !== "/engineers" && n.to !== "/execution").filter((n) => manager || n.to !== "/settings");
+  const items = nav.filter((n) => navAllowed(manager, domain, n.to));
   const [moreOpen, setMoreOpen] = useState(false);
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
   const primary = [

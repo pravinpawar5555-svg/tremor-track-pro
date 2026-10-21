@@ -37,6 +37,7 @@ import {
   type ExecStatus,
   type YesNoNa,
 } from "@/lib/execution";
+import { execScope } from "@/lib/access";
 
 export const Route = createFileRoute("/_authenticated/execution")({
   validateSearch: (s: Record<string, unknown>): { add?: "visit" | "lead" } => (s["add"] === "visit" || s["add"] === "lead" ? { add: s["add"] as "visit" | "lead" } : {}),
@@ -94,16 +95,13 @@ function ExecutionPage() {
   const today = todayIso();
   const [quickVisit, setQuickVisit] = useState<ExecSiteVisit | null>(search.add === "visit" ? blankSiteVisit(today, meExec?.id ?? "", myName) : null);
 
-  const visible = useMemo(
-    () => (mineOnly ? ex.jobs.filter((j) => j.assignedEngineerId === meExec!.id || j.secondaryEngineerId === meExec!.id) : ex.jobs),
-    [ex.jobs, mineOnly, meExec],
+  const { visible, myVisits, leadCount, visitsMonth } = useMemo(
+    () => execScope(ex.jobs, ex.siteVisits, mineOnly ? meExec!.id : null, today),
+    [ex.jobs, ex.siteVisits, mineOnly, meExec, today],
   );
-  const myVisits = mineOnly ? ex.siteVisits.filter((v) => v.engineerIds.includes(meExec!.id)) : ex.siteVisits;
   const open = openId ? ex.jobs.find((j) => j.id === openId) : undefined;
   const newLead = () => setEditing({ job: { ...blankJob(myName), assignedEngineerId: meExec?.id ?? "" }, isNew: true });
   const newVisit = (t?: SiteVisitType) => setQuickVisit({ ...blankSiteVisit(today, meExec?.id ?? "", myName), ...(t ? { visitType: t } : {}) });
-  const leadCount = visible.filter((j) => j.status === "lead" || j.status === "planning").length;
-  const visitsMonth = myVisits.filter((v) => v.visitDate.slice(0, 7) === today.slice(0, 7)).length;
 
   const tabs: { v: Tab; label: string }[] = mineOnly
     ? [{ v: "overview", label: "My Work" }, { v: "visits", label: `📍 My Site Visits (${visitsMonth})` }, { v: "schedule", label: "My Schedule" }, { v: "jobs", label: `My Jobs (${visible.length})` }]
