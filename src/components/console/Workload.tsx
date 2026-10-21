@@ -13,8 +13,7 @@ import { useVisits } from "@/lib/visits";
 import { useComms, openFollowUp } from "@/lib/comms";
 import { useExecution, saveJob, siteVisitTypeLabel, installTypeLabel, execStatusLabel, type ExecJob } from "@/lib/execution";
 import { addLeave, deleteLeave, leaveOn, levelFor, useLeaves, useWorkloadSettings, type Level } from "@/lib/workload";
-
-type DayKind = "site" | "office" | "leave" | "off" | "weekend";
+import { dayKind, execOnSite, type DayKind } from "@/lib/access";
 const kindMeta: Record<DayKind, { label: string; cls: string; Icon: typeof MapPin }> = {
   office: { label: "Office", cls: "bg-black/[0.05] text-ink ring-line", Icon: Building2 },
   site: { label: "Site", cls: "bg-signal text-signal-foreground ring-signal", Icon: MapPin },
@@ -107,22 +106,16 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
   const showCs = team !== "exec";
   const showEx = team !== "cs";
   const x = { visits, comms };
-  const kindFor = (pid: string, d: string, site: boolean, worked: boolean): DayKind => {
-    if (leaveOn(leaves, pid, d)) return "leave";
-    if (nonWork(d)) return site || worked ? "weekend" : "off";
-    return site ? "site" : "office";
-  };
+  const kindFor = (pid: string, d: string, site: boolean, worked: boolean): DayKind => dayKind(!!leaveOn(leaves, pid, d), nonWork(d), site, worked);
   const csKind = (id: string, d: string) => {
     const c = csDay(data, x, id, d);
     const worked = c.tasks.some((t) => doneOn(t) === d) || c.reports.some((r) => r.sentDate === d);
     return { c, k: kindFor(id, d, c.visits.length > 0, worked), where: c.visits[0] ? plantName(data, c.visits[0].plantId) : "" };
   };
   const exKind = (id: string, d: string) => {
-    const mine = jobsOf(id);
-    const j = mine.find((z) => jStart(z) && d >= jStart(z) && d <= jEnd(z)) ?? mine.find((z) => z.removalPlanned === d || z.removalCompleted === d);
-    const sv = ex.siteVisits.find((v) => v.visitDate === d && v.engineerIds.includes(id));
+    const { job: j, visit: sv, site } = execOnSite(ex.jobs, ex.siteVisits, id, d);
     const svWhere = sv ? (sv.plantId ? plantName(data, sv.plantId) : "") || sv.location || siteVisitTypeLabel[sv.visitType] : "";
-    return { k: kindFor(id, d, !!j || !!sv, false), where: j ? j.plantName || j.customerName : svWhere };
+    return { k: kindFor(id, d, site, false), where: j ? j.plantName || j.customerName : svWhere };
   };
 
   const jobsOf = (id: string) => ex.jobs.filter((j) => (j.assignedEngineerId === id || j.secondaryEngineerId === id) && j.status !== "cancelled");
