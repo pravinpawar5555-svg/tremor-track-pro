@@ -15,7 +15,6 @@ import {
   addDailyUpdate,
   blankJob,
   blankSiteVisit,
-  siteVisitTypeLabel,
   type ExecSiteVisit,
   type SiteVisitType,
   dateRange,
