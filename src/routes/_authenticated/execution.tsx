@@ -37,6 +37,7 @@ import {
   type ExecStatus,
   type YesNoNa,
 } from "@/lib/execution";
+import { execScope } from "@/lib/access";
 
 export const Route = createFileRoute("/_authenticated/execution")({
   validateSearch: (s: Record<string, unknown>): { add?: "visit" | "lead" } => (s["add"] === "visit" || s["add"] === "lead" ? { add: s["add"] as "visit" | "lead" } : {}),
