@@ -40,7 +40,7 @@ import {
 } from "@/lib/execution";
 
 export const Route = createFileRoute("/_authenticated/execution")({
-  validateSearch: (s: Record<string, unknown>): { add?: "visit" | "lead" } => (s.add === "visit" || s.add === "lead" ? { add: s.add } : {}),
+  validateSearch: (s: Record<string, unknown>): { add?: "visit" | "lead" } => (s["add"] === "visit" || s["add"] === "lead" ? { add: s["add"] as "visit" | "lead" } : {}),
   beforeLoad: () => {
     const d = peekDomain();
     if (d !== "manager" && d !== "execution") throw redirect({ to: "/" });
