@@ -4,6 +4,7 @@ import { ChevronRight, MoreHorizontal } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ownershipOf, useBranches } from "@/lib/branches";
 import { useDomain } from "@/lib/domain";
+import { amcStatus } from "@/lib/amc";
 import { AppShell } from "@/components/console/AppShell";
 import {
   Button,
@@ -71,6 +72,8 @@ const blank = {
   category: "order" as CustomerCategory,
   branchId: "",
   salesEngineerId: "",
+  amcStart: "",
+  amcEnd: "",
 };
 
 function PlantsPage() {
@@ -128,6 +131,8 @@ function PlantsPage() {
       category: (p.category ?? "order") as CustomerCategory,
       branchId: p.branchId ?? "",
       salesEngineerId: p.salesEngineerId ?? "",
+      amcStart: p.amcStart ?? "",
+      amcEnd: p.amcEnd ?? "",
     });
     setOpen(true);
   };
@@ -159,6 +164,8 @@ function PlantsPage() {
       category: form.category,
       branchId: form.branchId,
       salesEngineerId: form.salesEngineerId,
+      amcStart: form.amcStart,
+      amcEnd: form.amcEnd,
     });
     setForm(blank);
     setOpen(false);
@@ -248,6 +255,12 @@ function PlantsPage() {
                   <option value="">Select Sales Engineer</option>
                   {formSales.map((x) => <option key={x.id} value={x.id}>{x.name}{x.branchId === form.branchId ? "" : ` (${bs.branches.find((b) => b.id === x.branchId)?.name ?? "—"})`}{x.status === "inactive" ? " — inactive" : ""}</option>)}
                 </Select>
+              </Field>
+              <Field label="AMC start date">
+                <TextInput type="date" value={form.amcStart} onChange={(e) => setForm({ ...form, amcStart: e.target.value })} />
+              </Field>
+              <Field label="AMC end date" hint="Renewal alert starts 60 days before.">
+                <TextInput type="date" value={form.amcEnd} onChange={(e) => setForm({ ...form, amcEnd: e.target.value })} />
               </Field>
               <div className="text-xs"><div className="label-caps">HO Division KAM</div><div className="mt-1">{formKam?.name ?? "—"}</div></div>
               <div className="text-xs"><div className="label-caps">Branch RM</div><div className="mt-1">{formBranch?.rmName || "—"}</div><div className="num text-mute">{formBranch?.rmContact}</div><div className="text-mute">{formBranch?.rmEmail}</div></div>
@@ -426,6 +439,7 @@ function PlantsPage() {
                         <Td className="align-top">
                           <div className="truncate text-xs"><span className="text-mute">CS:</span> {engineerName(data, p.engineerId)}</div>
                           <div className="truncate text-xs text-mute">{o.branch?.name ?? "No branch"} · {o.sales?.name ?? "No sales eng."}</div>
+                          <AmcChip end={p.amcEnd} />
                         </Td>
                         <Td align="right" className="align-top">
                           <span className="inline-flex items-center justify-end gap-1">
@@ -508,4 +522,12 @@ function Ownership({ o }: { o: ReturnType<typeof ownershipOf> }) {
       ) : null}
     </details>
   );
+}
+
+function AmcChip({ end }: { end?: string | undefined }) {
+  const a = amcStatus(end, TODAY);
+  if (a.state === "none") return <div className="mt-1 text-[11px] text-mute">AMC: not set</div>;
+  const cls = a.state === "expired" ? "bg-sev-high/10 text-sev-high" : a.state === "renewal" ? "bg-sev-medium/10 text-sev-medium" : "bg-signal/10 text-signal";
+  const txt = a.state === "expired" ? `AMC expired ${-a.days!}d ago` : a.state === "renewal" ? `AMC renewal in ${a.days}d` : `AMC till ${fmtDate(end!)}`;
+  return <span className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[11px] font-medium ${cls}`}>{txt}</span>;
 }

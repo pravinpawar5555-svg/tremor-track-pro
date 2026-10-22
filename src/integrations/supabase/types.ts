@@ -891,6 +891,8 @@ export type Database = {
       }
       plants: {
         Row: {
+          amc_end: string | null
+          amc_start: string | null
           assets: number
           branch_id: string
           category: string
@@ -910,6 +912,8 @@ export type Database = {
           vibassist: number
         }
         Insert: {
+          amc_end?: string | null
+          amc_start?: string | null
           assets?: number
           branch_id?: string
           category?: string
@@ -929,6 +933,8 @@ export type Database = {
           vibassist?: number
         }
         Update: {
+          amc_end?: string | null
+          amc_start?: string | null
           assets?: number
           branch_id?: string
           category?: string
