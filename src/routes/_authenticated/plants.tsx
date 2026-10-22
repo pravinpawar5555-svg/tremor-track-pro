@@ -524,7 +524,7 @@ function Ownership({ o }: { o: ReturnType<typeof ownershipOf> }) {
   );
 }
 
-function AmcChip({ end }: { end?: string }) {
+function AmcChip({ end }: { end?: string | undefined }) {
   const a = amcStatus(end, TODAY);
   if (a.state === "none") return <div className="mt-1 text-[11px] text-mute">AMC: not set</div>;
   const cls = a.state === "expired" ? "bg-sev-high/10 text-sev-high" : a.state === "renewal" ? "bg-sev-medium/10 text-sev-medium" : "bg-signal/10 text-signal";

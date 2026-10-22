@@ -596,7 +596,7 @@ function AmcPanel({ data, inCat }: { data: AppData; inCat: (pid: string) => bool
         <div className="divide-y divide-line/60">
           {[...groups.entries()].map(([k, list]) => (
             <div key={k} className="px-4 py-3">
-              <div className="mb-1.5 text-xs font-semibold">{k}{list[0].o.branch?.rmName ? <span className="font-normal text-mute"> · RM {list[0].o.branch.rmName}</span> : null}</div>
+              <div className="mb-1.5 text-xs font-semibold">{k}{list[0]?.o.branch?.rmName ? <span className="font-normal text-mute"> · RM {list[0]?.o.branch?.rmName}</span> : null}</div>
               <div className="grid gap-1">
                 {list.map(({ p, a }) => (
                   <Link key={p.id} to="/plants" className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm ring-1 ring-line/60 hover:bg-base">
