@@ -109,13 +109,19 @@ function VisitsPage() {
     if (filter === "request" && v.visitType !== "request") return false;
     if (customer && pCust(v.plantId) !== customer) return false;
     if (plant && v.plantId !== plant) return false;
-    if (q) {
-      const t = `${plantName(data, v.plantId)} ${pCust(v.plantId)}`.toLowerCase();
-      if (!t.includes(q.toLowerCase())) return false;
+    if (q.trim()) {
+      const t = `${plantName(data, v.plantId)} ${pCust(v.plantId)} ${v.momNo}`.toLowerCase();
+      if (!t.includes(q.trim().toLowerCase())) return false;
     }
-    if (momQ.trim() && !v.momNo.toLowerCase().includes(momQ.trim().toLowerCase())) return false;
     return true;
   });
+  const counts = {
+    all: mine.filter((v) => v.status !== "cancelled").length,
+    upcoming: mine.filter((v) => ["upcoming", "due", "rescheduled"].includes(visitStatus(v))).length,
+    completed: mine.filter((v) => visitStatus(v) === "completed").length,
+    overdue: mine.filter((v) => visitStatus(v) === "overdue").length,
+    request: mine.filter((v) => v.visitType === "request").length,
+  };
 
   const active = (v: Visit) => !["completed", "cancelled"].includes(visitStatus(v));
   const weekEnd = shiftDate(TODAY, 7);
@@ -133,33 +139,21 @@ function VisitsPage() {
       />
 
       {manager ? (
-        <div className="mb-3">
-          <Segmented
-            value={who}
-            onChange={setWho}
-            options={[{ v: "total", label: "Total" }, ...team.map((a) => ({ v: a.id, label: a.name.split(" ")[0]! }))]}
-          />
+        <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-mute">Engineer:</span>
+            <Segmented
+              value={who}
+              onChange={setWho}
+              options={[{ v: "total", label: "Total" }, ...team.map((a) => ({ v: a.id, label: a.name.split(" ")[0]! }))]}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <span className="text-mute">This week: <span className="num font-semibold text-ink">{mine.filter((v) => active(v) && v.plannedDate >= TODAY && v.plannedDate <= weekEnd).length}</span></span>
+            <span className="text-mute">Open customer actions: <span className={cn("num font-semibold", actionsOpen ? "text-sev-medium" : "text-ink")}>{actionsOpen}</span></span>
+          </div>
         </div>
       ) : null}
-
-      {manager ? (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-          <Kpi label="Total planned" value={mine.filter((v) => v.status !== "cancelled").length} />
-          <Kpi label="Completed" value={mine.filter((v) => v.status === "completed").length} tone="low" />
-          <Kpi label="Upcoming" value={mine.filter((v) => active(v) && v.plannedDate >= TODAY).length} tone="medium" />
-          <Kpi label="Overdue" value={mine.filter((v) => visitStatus(v) === "overdue").length} tone={mine.some((v) => visitStatus(v) === "overdue") ? "high" : "low"} />
-          <Kpi label="On-request" value={mine.filter((v) => v.visitType === "request").length} />
-          <Kpi label="Open customer actions" value={actionsOpen} tone={actionsOpen ? "medium" : "low"} />
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-          <Kpi label="Visits today" value={mine.filter((v) => active(v) && v.plannedDate === TODAY).length} />
-          <Kpi label="This week" value={mine.filter((v) => active(v) && v.plannedDate >= TODAY && v.plannedDate <= weekEnd).length} />
-          <Kpi label="Upcoming" value={mine.filter((v) => active(v) && v.plannedDate >= TODAY).length} tone="medium" />
-          <Kpi label="Overdue" value={mine.filter((v) => visitStatus(v) === "overdue").length} tone={mine.some((v) => visitStatus(v) === "overdue") ? "high" : "low"} />
-          <Kpi label="Open actions" value={actionsOpen} tone={actionsOpen ? "medium" : "low"} />
-        </div>
-      )}
 
       {reminders.length ? (
         <Panel className="mt-4" title="Reminders" meta={`${reminders.length} alerts`}>
@@ -193,25 +187,34 @@ function VisitsPage() {
       <Panel
         className="mt-4"
         title="Visits"
-        meta={
-          <div className="flex flex-wrap items-center gap-2">
-            <Segmented value={view} onChange={setView} options={[{ v: "list", label: "List" }, { v: "calendar", label: "Calendar" }]} />
-            <Segmented
-              value={filter}
-              onChange={setFilter}
-              options={[
-                { v: "all", label: "All" },
-                { v: "upcoming", label: "Upcoming" },
-                { v: "completed", label: "Completed" },
-                { v: "overdue", label: "Overdue" },
-                { v: "request", label: "On Request" },
-              ]}
-            />
-          </div>
-        }
+        meta={<Segmented value={view} onChange={setView} options={[{ v: "list", label: "List" }, { v: "calendar", label: "Calendar" }]} />}
       >
-        <div className="flex flex-wrap gap-2 border-b border-line/60 px-4 py-2.5">
-          <TextInput className="w-48" placeholder="Search customer / plant" value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="flex flex-wrap gap-1 border-b border-line/60 px-3 py-2" role="tablist">
+          {([
+            { v: "all", label: "All", n: counts.all, tone: "" },
+            { v: "upcoming", label: "Upcoming", n: counts.upcoming, tone: "text-sev-medium" },
+            { v: "completed", label: "Completed", n: counts.completed, tone: "text-sev-low" },
+            { v: "overdue", label: "Overdue", n: counts.overdue, tone: counts.overdue ? "text-sev-high" : "" },
+            { v: "request", label: "On-Request", n: counts.request, tone: "" },
+          ] as { v: Filter; label: string; n: number; tone: string }[]).map((t) => (
+            <button
+              key={t.v}
+              type="button"
+              role="tab"
+              aria-selected={filter === t.v}
+              onClick={() => setFilter(t.v)}
+              className={cn(
+                "inline-flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors",
+                filter === t.v ? "bg-signal text-signal-foreground" : "text-mute hover:bg-black/5",
+              )}
+            >
+              {t.label}
+              <span className={cn("num rounded-full px-1.5 text-xs font-semibold", filter === t.v ? "bg-signal-foreground/20" : cn("bg-black/5", t.tone))}>{t.n}</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-b border-line/60 px-4 py-2.5 lg:flex-nowrap">
+          <TextInput className="min-w-0 flex-1 lg:max-w-md" placeholder="Search plant, customer or MOM No." value={q} onChange={(e) => setQ(e.target.value)} />
           <Select className="w-44" value={customer} onChange={(e) => { setCustomer(e.target.value); setPlant(""); }}>
             <option value="">All customers</option>
             {customers.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -220,8 +223,7 @@ function VisitsPage() {
             <option value="">All plants</option>
             {plantOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </Select>
-          <TextInput className="w-56" placeholder="Find MOM No. e.g. FM/2026/09/001" value={momQ} onChange={(e) => setMomQ(e.target.value)} />
-          {momQ ? <button type="button" className="text-xs text-mute hover:text-ink" onClick={() => setMomQ("")}>Clear</button> : null}
+          {q || customer || plant ? <button type="button" className="whitespace-nowrap text-xs text-mute hover:text-ink" onClick={() => { setQ(""); setCustomer(""); setPlant(""); }}>Clear</button> : null}
         </div>
 
         {view === "list" ? (
@@ -250,32 +252,46 @@ function VisitsPage() {
             })}
             {!shown.length ? <Empty>No visits match these filters.</Empty> : null}
           </ul>
-          <div className="hidden overflow-x-auto md:block">
-            <table className="w-full text-sm">
+          <div className="hidden md:block">
+            <table className="w-full table-fixed text-sm">
+              <colgroup>
+                <col className="w-[15%]" />
+                <col className="w-[27%]" />
+                <col className="w-[15%]" />
+                <col className="w-[15%]" />
+                <col className="w-[16%]" />
+                <col className="w-[12%]" />
+              </colgroup>
               <thead>
                 <tr>
-                  <Th>Visit date</Th><Th>Customer</Th><Th>Plant</Th><Th>Engineer</Th><Th>Visit type</Th><Th>Frequency</Th><Th>MOM No.</Th><Th>Status</Th><Th>Next visit</Th><Th align="right">Actions</Th>
+                  <Th>Visit date & type</Th><Th>Plant & customer</Th><Th>Engineer</Th><Th>MOM No.</Th><Th>Status & next</Th><Th align="right">Actions</Th>
                 </tr>
               </thead>
               <tbody>
                 {shown.map((v) => {
                   const s = visitStatus(v);
+                  const freq = frequencyText(v);
                   return (
                     <Tr key={v.id}>
-                      <Td mono>{fmtDate(v.plannedDate)}</Td>
-                      <Td className="text-mute">{pCust(v.plantId)}</Td>
-                      <Td><button type="button" className="font-medium hover:text-signal" onClick={() => setSelected(v.id)}>{plantName(data, v.plantId)}</button></Td>
-                      <Td>{v.engineerIds.map((id) => engineerName(data, id)).join(" + ") || "—"}</Td>
-                      <Td>{visitTypeLabel[v.visitType]}</Td>
-                      <Td>{frequencyText(v)}</Td>
-                      <Td mono>{v.momNo || "—"}</Td>
-                      <Td><StatusPill v={v} /></Td>
-                      <Td mono>{fmtDate(v.nextVisitDate ?? undefined)}</Td>
-                      <Td align="right">
-                        <span className="flex justify-end gap-2 text-xs">
-                          <button type="button" className="text-signal" onClick={() => setSelected(v.id)}>View</button>
-                          {s !== "completed" && s !== "cancelled" && true ? (
-                            <button type="button" className="text-signal" onClick={() => setCompleting(v)}>Complete</button>
+                      <Td className="align-top">
+                        <div className="num whitespace-nowrap font-medium">{fmtDate(v.plannedDate)}</div>
+                        <div className="truncate text-xs text-mute">{visitTypeLabel[v.visitType]}{freq && freq !== "—" ? ` · ${freq}` : ""}</div>
+                      </Td>
+                      <Td className="align-top">
+                        <button type="button" className="block w-full truncate text-left font-semibold hover:text-signal" onClick={() => setSelected(v.id)}>{plantName(data, v.plantId)}</button>
+                        <div className="truncate text-xs text-mute">{pCust(v.plantId) || "—"}</div>
+                      </Td>
+                      <Td className="align-top"><div className="truncate">{v.engineerIds.map((id) => engineerName(data, id)).join(" + ") || "—"}</div></Td>
+                      <Td mono className="align-top"><div className="truncate text-xs">{v.momNo || "—"}</div></Td>
+                      <Td className="align-top">
+                        <span className="whitespace-nowrap"><StatusPill v={v} /></span>
+                        {v.nextVisitDate ? <div className="num mt-1 whitespace-nowrap text-xs text-mute">Next: {fmtDate(v.nextVisitDate)}</div> : null}
+                      </Td>
+                      <Td align="right" className="align-top">
+                        <span className="inline-flex flex-wrap justify-end gap-1 text-xs">
+                          <button type="button" className="rounded-md px-2 py-1 text-signal ring-1 ring-signal/40 hover:bg-signal/10" onClick={() => setSelected(v.id)}>View</button>
+                          {s !== "completed" && s !== "cancelled" ? (
+                            <button type="button" className="rounded-md bg-signal px-2 py-1 text-signal-foreground" onClick={() => setCompleting(v)}>Complete</button>
                           ) : null}
                         </span>
                       </Td>
