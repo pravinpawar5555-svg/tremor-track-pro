@@ -109,13 +109,19 @@ function VisitsPage() {
     if (filter === "request" && v.visitType !== "request") return false;
     if (customer && pCust(v.plantId) !== customer) return false;
     if (plant && v.plantId !== plant) return false;
-    if (q) {
-      const t = `${plantName(data, v.plantId)} ${pCust(v.plantId)}`.toLowerCase();
-      if (!t.includes(q.toLowerCase())) return false;
+    if (q.trim()) {
+      const t = `${plantName(data, v.plantId)} ${pCust(v.plantId)} ${v.momNo}`.toLowerCase();
+      if (!t.includes(q.trim().toLowerCase())) return false;
     }
-    if (momQ.trim() && !v.momNo.toLowerCase().includes(momQ.trim().toLowerCase())) return false;
     return true;
   });
+  const counts = {
+    all: mine.filter((v) => v.status !== "cancelled").length,
+    upcoming: mine.filter((v) => ["upcoming", "due", "rescheduled"].includes(visitStatus(v))).length,
+    completed: mine.filter((v) => visitStatus(v) === "completed").length,
+    overdue: mine.filter((v) => visitStatus(v) === "overdue").length,
+    request: mine.filter((v) => v.visitType === "request").length,
+  };
 
   const active = (v: Visit) => !["completed", "cancelled"].includes(visitStatus(v));
   const weekEnd = shiftDate(TODAY, 7);
