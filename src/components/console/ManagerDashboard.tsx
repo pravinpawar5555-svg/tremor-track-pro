@@ -591,7 +591,7 @@ function AmcPanel({ data, inCat }: { data: AppData; inCat: (pid: string) => bool
       meta={<span>{rows.filter((r) => r.a.state === "expired").length} expired · {rows.filter((r) => r.a.state === "renewal").length} due{noDate ? ` · ${noDate} order plants without AMC date` : ""}</span>}
     >
       {rows.length === 0 ? (
-        <Empty title="No AMC renewals due" hint="Add AMC end dates on the Plants page to track renewals." />
+        <Empty>No AMC renewals due. Add AMC end dates on the Plants page to track renewals.</Empty>
       ) : (
         <div className="divide-y divide-line/60">
           {[...groups.entries()].map(([k, list]) => (
