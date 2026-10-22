@@ -19,6 +19,8 @@ import { useVisits, visitStatus, visitTypeLabel } from "@/lib/visits";
 import { useExecution, installTypeLabel, execStatusLabel, type ExecJob } from "@/lib/execution";
 import { useComms, openFollowUp } from "@/lib/comms";
 import { useOpps } from "@/lib/opportunities";
+import { amcStatus } from "@/lib/amc";
+import { ownershipOf, useBranches } from "@/lib/branches";
 
 export type ManagerView = "overview" | "cs" | "execution";
 type Period = "today" | "7d" | "month";
@@ -182,6 +184,8 @@ function Overview({ m, period }: { m: Model; period: Period }) {
         <Card label="Execution at Risk" value={execRisk.length} hint="Blocked or past date" t="orange" onClick={() => setChip("exec")} />
         <Card label={period === "month" ? "Upcoming 30 Days" : "Upcoming 7 Days"} value={upcoming.length} hint="Visits, reports, jobs" t="blue" />
       </div>
+
+      <AmcPanel data={data} inCat={inCat} />
 
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.4fr_1fr]">
         <Panel title="Management Action Queue" meta={<span>{queue.length} open</span>}>
@@ -562,6 +566,51 @@ function BusinessPipeline() {
       <div className="grid grid-cols-4 gap-2 px-4 py-3 md:grid-cols-7">
         {rows.map(([l, v]) => <Link key={l} to="/opportunities" search={{ tab: "pipeline" } as never} className="rounded-md bg-base px-1.5 py-2 text-center ring-1 ring-line/60 hover:ring-signal/40"><div className={cn("num text-lg font-semibold", v ? "text-signal" : "text-mute")}>{v}</div><div className="text-[10px] leading-tight text-mute">{l}</div></Link>)}
       </div>
+    </Panel>
+  );
+}
+
+/* ------------------------------------------------------------ AMC RENEWALS */
+function AmcPanel({ data, inCat }: { data: AppData; inCat: (pid: string) => boolean }) {
+  const bs = useBranches();
+  const rows = data.plants
+    .filter((p) => inCat(p.id))
+    .map((p) => ({ p, a: amcStatus(p.amcEnd, TODAY), o: ownershipOf(bs, p) }))
+    .filter((r) => r.a.state === "renewal" || r.a.state === "expired")
+    .sort((x, y) => (x.a.days ?? 0) - (y.a.days ?? 0));
+  const noDate = data.plants.filter((p) => inCat(p.id) && (p.category ?? "order") === "order" && !p.amcEnd).length;
+  const groups = new Map<string, typeof rows>();
+  rows.forEach((r) => {
+    const k = `${r.o.branch?.name ?? "No branch"} · ${r.o.sales?.name ?? "No sales engineer"}`;
+    groups.set(k, [...(groups.get(k) ?? []), r]);
+  });
+  return (
+    <Panel
+      className="mt-4"
+      title="AMC Renewals — next 60 days"
+      meta={<span>{rows.filter((r) => r.a.state === "expired").length} expired · {rows.filter((r) => r.a.state === "renewal").length} due{noDate ? ` · ${noDate} order plants without AMC date` : ""}</span>}
+    >
+      {rows.length === 0 ? (
+        <Empty title="No AMC renewals due" hint="Add AMC end dates on the Plants page to track renewals." />
+      ) : (
+        <div className="divide-y divide-line/60">
+          {[...groups.entries()].map(([k, list]) => (
+            <div key={k} className="px-4 py-3">
+              <div className="mb-1.5 text-xs font-semibold">{k}{list[0].o.branch?.rmName ? <span className="font-normal text-mute"> · RM {list[0].o.branch.rmName}</span> : null}</div>
+              <div className="grid gap-1">
+                {list.map(({ p, a }) => (
+                  <Link key={p.id} to="/plants" className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm ring-1 ring-line/60 hover:bg-base">
+                    <span className="min-w-0 truncate">{p.name}<span className="text-xs text-mute"> · ends {fmtDate(p.amcEnd!)}</span></span>
+                    <span className={cn("num shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium", a.state === "expired" ? "bg-sev-high/10 text-sev-high" : (a.days ?? 0) <= 30 ? "bg-sev-high/10 text-sev-high" : "bg-sev-medium/10 text-sev-medium")}>
+                      {a.state === "expired" ? `Expired ${-a.days!}d` : `${a.days}d left`}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </Panel>
   );
 }
