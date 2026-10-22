@@ -38,6 +38,9 @@ export interface Plant {
   engineerId: string;
   /** Customer category: order (paying) or demo (trial). */
   category: CustomerCategory;
+  /** AMC contract start / end dates (YYYY-MM-DD). */
+  amcStart?: string;
+  amcEnd?: string;
 }
 
 export type CustomerCategory = "order" | "demo";
@@ -575,6 +578,8 @@ const rowToPlant = (r: any): Plant => ({
   category: r.category === "demo" ? "demo" : "order",
   branchId: r.branch_id ?? "",
   salesEngineerId: r.sales_engineer_id ?? "",
+  amcStart: r.amc_start ?? "",
+  amcEnd: r.amc_end ?? "",
 });
 const plantToRow = (p: Plant) => ({
   id: p.id,
@@ -593,6 +598,8 @@ const plantToRow = (p: Plant) => ({
   category: p.category ?? "order",
   branch_id: p.branchId ?? "",
   sales_engineer_id: p.salesEngineerId ?? "",
+  amc_start: p.amcStart || null,
+  amc_end: p.amcEnd || null,
 });
 
 const rowToUpdate = (r: any): DailyUpdate => ({
