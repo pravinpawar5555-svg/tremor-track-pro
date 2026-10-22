@@ -1,0 +1,1 @@
+ALTER TABLE public.plants ADD COLUMN IF NOT EXISTS amc_start date, ADD COLUMN IF NOT EXISTS amc_end date;
