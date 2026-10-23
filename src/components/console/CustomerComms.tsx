@@ -13,6 +13,7 @@ import {
 } from "@/lib/store";
 import { useVisits } from "@/lib/visits";
 import { ContactPicker } from "@/components/console/ContactPicker";
+import { useContacts } from "@/lib/contacts";
 import { blankReminder, saveReminder } from "@/lib/dailywork";
 import {
   blankComm, commModes, commTypes, followUpLabel, openFollowUp, saveComm, useComms,
@@ -77,6 +78,7 @@ export function CustomerComms() {
   const data = useData();
   const comms = useComms();
   const visits = useVisits();
+  const contactBook = useContacts();
   const meId = data.currentUserId;
   const people = data.engineers.filter((e) => e.role !== "execution");
   const team = analystsOf(data);
@@ -188,6 +190,8 @@ export function CustomerComms() {
         c = { ...c, reminderId: r.id };
       }
       if (saveContact && plant && (plant.contact !== c.contactPerson || plant.contactPhone !== c.contactNumber)) {
+        const existing = contactBook.contacts.find(x => x.plant_id === c.plantId && x.name.toLowerCase() === c.contactPerson.trim().toLowerCase());
+        await contactBook.save({ ...(existing ?? {}), plant_id: c.plantId, name: c.contactPerson, phone: c.contactNumber, email: c.contactEmail });
         savePlant({ ...plant, contact: c.contactPerson, contactPhone: c.contactNumber });
       }
       await saveComm(c, meId);
