@@ -13,6 +13,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated/contacts'
 import { Route as AuthenticatedDiscussionsRouteImport } from './routes/_authenticated/discussions'
 import { Route as AuthenticatedEngineersRouteImport } from './routes/_authenticated/engineers'
 import { Route as AuthenticatedExecutionRouteImport } from './routes/_authenticated/execution'
@@ -40,6 +41,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedContactsRoute = AuthenticatedContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDiscussionsRoute =
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/contacts': typeof AuthenticatedContactsRoute
   '/discussions': typeof AuthenticatedDiscussionsRoute
   '/engineers': typeof AuthenticatedEngineersRoute
   '/execution': typeof AuthenticatedExecutionRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/contacts': typeof AuthenticatedContactsRoute
   '/discussions': typeof AuthenticatedDiscussionsRoute
   '/engineers': typeof AuthenticatedEngineersRoute
   '/execution': typeof AuthenticatedExecutionRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/contacts': typeof AuthenticatedContactsRoute
   '/_authenticated/discussions': typeof AuthenticatedDiscussionsRoute
   '/_authenticated/engineers': typeof AuthenticatedEngineersRoute
   '/_authenticated/execution': typeof AuthenticatedExecutionRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reset-password'
+    | '/contacts'
     | '/discussions'
     | '/engineers'
     | '/execution'
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/reset-password'
+    | '/contacts'
     | '/discussions'
     | '/engineers'
     | '/execution'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/reset-password'
+    | '/_authenticated/contacts'
     | '/_authenticated/discussions'
     | '/_authenticated/engineers'
     | '/_authenticated/execution'
@@ -214,6 +226,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/contacts': {
+      id: '/_authenticated/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof AuthenticatedContactsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/discussions': {
@@ -283,6 +302,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedContactsRoute: typeof AuthenticatedContactsRoute
   AuthenticatedDiscussionsRoute: typeof AuthenticatedDiscussionsRoute
   AuthenticatedEngineersRoute: typeof AuthenticatedEngineersRoute
   AuthenticatedExecutionRoute: typeof AuthenticatedExecutionRoute
@@ -296,6 +316,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedContactsRoute: AuthenticatedContactsRoute,
   AuthenticatedDiscussionsRoute: AuthenticatedDiscussionsRoute,
   AuthenticatedEngineersRoute: AuthenticatedEngineersRoute,
   AuthenticatedExecutionRoute: AuthenticatedExecutionRoute,

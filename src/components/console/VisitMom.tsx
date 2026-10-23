@@ -7,6 +7,8 @@ import { FM_LOGO_PNG } from "@/assets/fmLogoData";
 import { Button, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
 import { engineerName, fmtDate, plantName, useData, type AppData } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { ContactPicker } from "@/components/console/ContactPicker";
+import { contactAttendee } from "@/lib/contact-rules";
 import { frequencyText, saveVisit, visitTypeLabel, type Attendee, type Visit, type VisitAction } from "@/lib/visits";
 
 /** Customer + Forbes Marshall attendee lists, editable any time after the visit is saved. */
@@ -30,6 +32,7 @@ export function AttendeesEditor({ v, canEdit }: { v: Visit; canEdit: boolean }) 
     <div className="panel-inset grid gap-4 p-3 md:col-span-4 md:grid-cols-2">
       <div>
         <div className="label-caps mb-1">Customer attendees</div>
+        {canEdit && <div className="mb-2"><ContactPicker plantId={v.plantId} onSelect={c => setCust(x => [...x.filter(a => a.name.trim()), contactAttendee(c)])} /></div>}
         {cust.map((a, i) => (
           <div key={i} className="mb-1.5 flex gap-2">
             <TextInput disabled={!canEdit} placeholder="Name" value={a.name} onChange={(e) => setCust((x) => x.map((y, j) => (j === i ? { ...y, name: e.target.value } : y)))} />
@@ -316,6 +319,7 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
       ) : (
         <div className="grid gap-3 p-4 text-sm">
           <div className="label-caps">Customer attendees</div>
+          <ContactPicker plantId={v.plantId} onSelect={c => setV(x => ({ ...x, customerAttendees: [...x.customerAttendees.filter(a => a.name.trim()), contactAttendee(c)] }))} />
           {v.customerAttendees.map((a, i) => (
             <div key={i} className="flex gap-2">
               <TextInput placeholder="Name" value={a.name} onChange={(e) => setV((x) => ({ ...x, customerAttendees: x.customerAttendees.map((y, j) => (j === i ? { ...y, name: e.target.value } : y)) }))} />
