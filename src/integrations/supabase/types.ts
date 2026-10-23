@@ -166,6 +166,68 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_contacts: {
+        Row: {
+          active: boolean
+          alternate_phone: string
+          area: string
+          created_at: string
+          created_by: string | null
+          department: string
+          email: string
+          id: string
+          is_primary: boolean
+          name: string
+          notes: string
+          phone: string
+          plant_id: string
+          position: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          alternate_phone?: string
+          area?: string
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          email?: string
+          id?: string
+          is_primary?: boolean
+          name: string
+          notes?: string
+          phone?: string
+          plant_id: string
+          position?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          alternate_phone?: string
+          area?: string
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          email?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          notes?: string
+          phone?: string
+          plant_id?: string
+          position?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_contacts_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_updates: {
         Row: {
           abnormal: number
