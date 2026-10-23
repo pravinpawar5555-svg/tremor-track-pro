@@ -10,7 +10,7 @@ import { useData } from "@/lib/store";
 const departments = ["Maintenance", "Reliability", "Mechanical", "Electrical", "Instrumentation", "Production", "Utilities", "Purchase", "Management"];
 const blank = (plant: string): ContactInput => ({ plant_id: plant, name: "", area: "", department: "", position: "", phone: "", alternate_phone: "", email: "", notes: "", active: true, is_primary: false });
 
-export function CustomerContacts({ plantId }: { plantId?: string }) {
+export function CustomerContacts({ plantId }: { plantId?: string | undefined }) {
   const data = useData();
   const { contacts, loading, error, retry, save } = useContacts();
   const [plant, setPlant] = useState(plantId ?? "");
@@ -30,7 +30,7 @@ export function CustomerContacts({ plantId }: { plantId?: string }) {
     e.preventDefault();
     if (!form || !form.name.trim() || !form.plant_id) return;
     setBusy(true);
-    try { await save({ ...form, name: form.name.trim(), email: form.email?.trim(), phone: form.phone?.trim() }); setForm(null); toast.success("Customer contact saved"); }
+    try { await save({ ...form, name: form.name.trim(), email: form.email?.trim() ?? "", phone: form.phone?.trim() ?? "" }); setForm(null); toast.success("Customer contact saved"); }
     catch (err) { toast.error(err instanceof Error ? err.message : "Could not save contact"); }
     finally { setBusy(false); }
   };
@@ -57,7 +57,7 @@ export function CustomerContacts({ plantId }: { plantId?: string }) {
       })}</div>}
     <Sheet open={!!form} onOpenChange={o => { if (!o && !busy) setForm(null); }}><SheetContent className="w-full overflow-y-auto sm:max-w-xl"><SheetHeader><SheetTitle>{form?.id ? "Edit customer contact" : "Add customer contact"}</SheetTitle></SheetHeader>
       {form && <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="sm:col-span-2"><Field label="Plant *"><Select required disabled={!!form.id || !!plantId} value={form.plant_id} onChange={e => setForm({ ...form, plant_id: e.target.value })}><option value="">Select plant</option>{data.plants.map(p => <option key={p.id} value={p.id}>{p.name} · {p.customer}</option>)}</Select></Field></div>
+        <div className="sm:col-span-2"><Field label="Plant *"><Select aria-label="Contact plant" required disabled={!!form.id || !!plantId} value={form.plant_id} onChange={e => setForm({ ...form, plant_id: e.target.value })}><option value="">Select plant</option>{data.plants.map(p => <option key={p.id} value={p.id}>{p.name} · {p.customer}</option>)}</Select></Field></div>
         <Field label="Contact name *"><TextInput required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></Field>
         <Field label="Position / Designation"><TextInput value={form.position ?? ""} onChange={e => setForm({ ...form, position: e.target.value })} /></Field>
         <Field label="Department"><TextInput list="contact-departments" value={form.department ?? ""} onChange={e => setForm({ ...form, department: e.target.value })} /><datalist id="contact-departments">{departments.map(d => <option key={d}>{d}</option>)}</datalist></Field>
