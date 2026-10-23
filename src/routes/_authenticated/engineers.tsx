@@ -30,6 +30,8 @@ export const Route = createFileRoute("/_authenticated/engineers")({
   head: () => ({
     meta: [
       { title: "Engineer Activity — Forbes Marshall CM Portal" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         name: "description",
         content:

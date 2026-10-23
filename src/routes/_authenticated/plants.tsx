@@ -43,6 +43,8 @@ export const Route = createFileRoute("/_authenticated/plants")({
   head: () => ({
     meta: [
       { title: "Plants — Forbes Marshall CM Portal" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         name: "description",
         content: "Plant master: customer, location, machine count, report cycles, contact person with phone number and assigned engineer.",

@@ -70,6 +70,6 @@ export function CustomerContacts({ plantId }: { plantId?: string }) {
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.active ?? true} onChange={e => setForm({ ...form, active: e.target.checked })} />Active</label>
         <div className="flex gap-2 sm:col-span-2"><Button type="submit" variant="solid" disabled={busy}>{busy ? "Saving…" : "Save contact"}</Button><Button disabled={busy} onClick={() => setForm(null)}>Cancel</Button></div>
       </form>}
-    </Sheet>
+    </SheetContent></Sheet>
   </div>;
 }
