@@ -12,6 +12,7 @@ import {
   TODAY, addTask, analystsOf, engineerName, fmtDate, frequencyLabel, plantName, savePlant, useData,
 } from "@/lib/store";
 import { useVisits } from "@/lib/visits";
+import { ContactPicker } from "@/components/console/ContactPicker";
 import { blankReminder, saveReminder } from "@/lib/dailywork";
 import {
   blankComm, commModes, commTypes, followUpLabel, openFollowUp, saveComm, useComms,
@@ -396,6 +397,7 @@ export function CustomerComms() {
                 <Field label="Time"><TextInput type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} /></Field>
               </div>
               <Field label="Customer contact person *"><TextInput value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} /></Field>
+              <ContactPicker plantId={form.plantId} onSelect={c => { setForm({ ...form, contactPerson: c.name, contactNumber: c.phone, contactEmail: c.email }); setSaveContact(false); }} />
               <Field label="Customer contact number"><TextInput type="tel" value={form.contactNumber} onChange={(e) => setForm({ ...form, contactNumber: e.target.value })} /></Field>
               <Field label="Customer email"><TextInput type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} /></Field>
               {(() => {

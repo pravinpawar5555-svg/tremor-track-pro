@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ownershipOf, useBranches } from "@/lib/branches";
 import { useDomain } from "@/lib/domain";
 import { amcStatus } from "@/lib/amc";
+import { CustomerContacts } from "@/components/console/CustomerContacts";
 import { AppShell } from "@/components/console/AppShell";
 import {
   Button,
@@ -369,6 +370,7 @@ function PlantsPage() {
                     <span className="text-mute">Sensors</span><span className="num">N6 {p.node6 ?? 0} · NX {p.nodeX ?? 0} · VA {p.vibassist ?? 0}</span>
                   </div>
                   <Ownership o={ownershipOf(bs, p)} />
+                  <div className="mt-3"><Link to="/contacts" search={{ plant: p.id }} className="text-sm text-signal">Customer contacts</Link></div>
                   <div className="mt-3 flex gap-2">
                     <Link to="/visits" search={{ plant: p.id }} className="grid h-11 flex-1 place-items-center rounded-md bg-signal text-sm font-medium text-signal-foreground">Visit history</Link>
                     {manager ? (
@@ -478,6 +480,7 @@ function PlantsPage() {
                                 </div>
                               </div>
                             </div>
+                            <div className="mt-4 border-t border-line pt-4"><CustomerContacts plantId={p.id} /></div>
                           </td>
                         </tr>
                       ) : null}

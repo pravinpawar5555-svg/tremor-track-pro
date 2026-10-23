@@ -2,7 +2,7 @@
 import type { Domain } from "@/lib/domain";
 import type { ExecJob, ExecSiteVisit } from "@/lib/execution";
 
-export const NAV_PATHS = ["/", "/tasks", "/discussions", "/visits", "/execution", "/opportunities", "/reports", "/plants", "/engineers", "/settings"] as const;
+export const NAV_PATHS = ["/", "/tasks", "/discussions", "/visits", "/execution", "/opportunities", "/reports", "/plants", "/contacts", "/engineers", "/settings"] as const;
 export type NavPath = (typeof NAV_PATHS)[number];
 
 /** Which main tabs a login sees. */
