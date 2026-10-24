@@ -9,3 +9,25 @@ export function filterContacts<T extends ContactDetails>(contacts: T[], filters:
     && (!q || [c.name, c.area, c.department, c.position, c.phone, c.alternate_phone, c.email].join(" ").toLowerCase().includes(q)));
 }
 export const contactAttendee = (c: Pick<ContactDetails, "name" | "phone">) => ({ name: c.name, phone: c.phone });
+
+export interface ContactExportRow extends ContactDetails {
+  is_primary: boolean;
+  plant: string;
+  customer: string;
+}
+
+const HEADERS = ["Name", "Position", "Department", "Area", "Plant", "Customer", "Phone", "Alternate phone", "Email", "Primary", "Active", "Notes"];
+
+/** RFC 4180 cell: quote when needed, and stop Excel reading a phone/email as a formula. */
+function csvCell(value: string | boolean) {
+  let s = typeof value === "boolean" ? (value ? "Yes" : "No") : value ?? "";
+  if (/^[=+\-@\t\r]/.test(s)) s = `="${s.replace(/"/g, '""')}"`;
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/** CSV of the contacts currently shown, one row per contact. */
+export function buildContactsCsv(rows: ContactExportRow[]) {
+  const lines = [HEADERS.join(",")];
+  for (const r of rows) lines.push([r.name, r.position, r.department, r.area, r.plant, r.customer, r.phone, r.alternate_phone, r.email, r.is_primary, r.active, r.notes].map(csvCell).join(","));
+  return lines.join("\r\n") + "\r\n";
+}

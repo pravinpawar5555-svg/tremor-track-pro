@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Mail, MessageCircle, Pencil, Phone, Plus, RefreshCw } from "lucide-react";
+import { Download, Mail, MessageCircle, Pencil, Phone, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button, Empty, Field, PageHeader, Select, TextArea, TextInput } from "@/components/console/ui";
 import { useContacts, type ContactInput, type CustomerContact } from "@/lib/contacts";
-import { filterContacts } from "@/lib/contact-rules";
+import { buildContactsCsv, filterContacts, type ContactExportRow } from "@/lib/contact-rules";
 import { useData } from "@/lib/store";
 
 const departments = ["Maintenance", "Reliability", "Mechanical", "Electrical", "Instrumentation", "Production", "Utilities", "Purchase", "Management"];
@@ -34,8 +34,26 @@ export function CustomerContacts({ plantId }: { plantId?: string | undefined }) 
     catch (err) { toast.error(err instanceof Error ? err.message : "Could not save contact"); }
     finally { setBusy(false); }
   };
+  const exportCsv = () => {
+    const rows: ContactExportRow[] = filtered.map(c => {
+      const p = data.plants.find(x => x.id === c.plant_id);
+      return { ...c, is_primary: !!c.is_primary, plant: p?.name ?? "", customer: p?.customer ?? "" };
+    });
+    const blob = new Blob(["\uFEFF" + buildContactsCsv(rows)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `customer-contacts-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    toast.success(`${rows.length} contact${rows.length === 1 ? "" : "s"} exported`);
+  };
+
   return <div className="min-w-0">
-    <PageHeader title={plantId ? "Customer contacts" : "Customer Phonebook"} actions={<div className="flex gap-2"><Button onClick={() => void retry()}><RefreshCw className="size-4" />Refresh</Button><Button variant="solid" onClick={() => setForm(blank(plantId ?? plant))}><Plus className="size-4" />Add contact</Button></div>} />
+    <PageHeader title={plantId ? "Customer contacts" : "Customer Phonebook"} actions={<div className="flex gap-2"><Button onClick={() => void retry()}><RefreshCw className="size-4" />Refresh</Button><Button onClick={exportCsv} disabled={!filtered.length}><Download className="size-4" />Export CSV</Button><Button variant="solid" onClick={() => setForm(blank(plantId ?? plant))}><Plus className="size-4" />Add contact</Button></div>} />
     <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap">
       <TextInput aria-label="Search contacts" placeholder="Search name, position, phone or email…" value={q} onChange={e => setQ(e.target.value)} className="lg:min-w-56 lg:flex-1" />
       {!plantId && <><Select aria-label="Customer filter" className="lg:w-44" value={customer} onChange={e => { setCustomer(e.target.value); setPlant(""); setArea(""); setDept(""); }}><option value="">All customers</option>{[...new Set(data.plants.map(p => p.customer).filter(Boolean))].sort().map(c => <option key={c}>{c}</option>)}</Select><Select aria-label="Plant filter" className="lg:w-44" value={plant} onChange={e => { setPlant(e.target.value); setArea(""); setDept(""); }}><option value="">All plants</option>{data.plants.filter(p => !customer || p.customer === customer).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</Select></>}
