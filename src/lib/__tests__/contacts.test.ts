@@ -1,7 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { filterContacts, contactAttendee } from "@/lib/contact-rules";
+import { buildContactsCsv, filterContacts, contactAttendee } from "@/lib/contact-rules";
 const contact = { plant_id: "p1", name: "Customer A", area: "Boiler", department: "Maintenance", position: "Manager", phone: "+919876543210", alternate_phone: "", email: "customer@example.org", notes: "", active: true };
 const rows = [contact, { ...contact, name: "Customer B", plant_id: "p2", area: "Turbine", department: "Production" }, { ...contact, name: "Former contact", active: false }];
+
+/** Split one CSV line back into cells (RFC 4180) so assertions read like the input. */
+function parseCsvLine(line: string) {
+  const cells: string[] = [];
+  let cell = "", quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quoted) {
+      if (ch === '"' && line[i + 1] === '"') { cell += '"'; i++; }
+      else if (ch === '"') quoted = false;
+      else cell += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ",") { cells.push(cell); cell = ""; }
+    else cell += ch;
+  }
+  cells.push(cell);
+  return cells;
+}
+const exportRow = (over: Partial<import("@/lib/contact-rules").ContactExportRow> = {}) => ({ ...contact, is_primary: false, plant: "Plant 1", customer: "Customer X", ...over });
+
 describe("customer contacts", () => {
   it("filters by plant", () => expect(filterContacts(rows, { plant: "p2" }).map(c => c.name)).toEqual(["Customer B"]));
   it("filters by area", () => expect(filterContacts(rows, { area: "Boiler" }).map(c => c.name)).toEqual(["Customer A"]));
