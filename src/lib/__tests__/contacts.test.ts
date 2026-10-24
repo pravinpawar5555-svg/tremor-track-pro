@@ -38,8 +38,9 @@ describe("customer contacts", () => {
     const lines = csv.trimEnd().split("\r\n");
     expect(lines).toHaveLength(3);
     expect(parseCsvLine(lines[0])).toEqual(["Name", "Position", "Department", "Area", "Plant", "Customer", "Phone", "Alternate phone", "Email", "Primary", "Active", "Notes"]);
-    expect(parseCsvLine(lines[1])).toEqual(["Customer A", "Manager", "Maintenance", "Boiler", "Plant 1", "Customer X", "+919876543210", "", "customer@example.org", "No", "Yes", ""]);
-    expect(parseCsvLine(lines[2])).toEqual(["Customer B", "Manager", "Maintenance", "Boiler", "Plant 1", "Customer X", "+919876543210", "", "customer@example.org", "Yes", "No", ""]);
+    expect(parseCsvLine(lines[1]).map(visible)).toEqual(["Customer A", "Manager", "Maintenance", "Boiler", "Plant 1", "Customer X", "+919876543210", "", "customer@example.org", "No", "Yes", ""]);
+    expect(parseCsvLine(lines[2]).map(visible)).toEqual(["Customer B", "Manager", "Maintenance", "Boiler", "Plant 1", "Customer X", "+919876543210", "", "customer@example.org", "Yes", "No", ""]);
+
   });
   it("exports only the contacts passed in, so the current filter is kept", () => {
     const csv = buildContactsCsv([exportRow({ name: "Customer B" })]);
@@ -48,7 +49,7 @@ describe("customer contacts", () => {
   });
   it("keeps a phone number readable instead of turning it into a formula", () => {
     const csv = buildContactsCsv([exportRow()]);
-    expect(parseCsvLine(csv.trimEnd().split("\r\n")[1])[6]).toBe("+919876543210");
+    expect(visible(parseCsvLine(csv.trimEnd().split("\r\n")[1])[6])).toBe("+919876543210");
   });
   it("quotes names containing commas or quotes", () => {
     const csv = buildContactsCsv([exportRow({ name: 'Doe, "Jr" Smith', notes: 'Said "hello, all"' })]);
