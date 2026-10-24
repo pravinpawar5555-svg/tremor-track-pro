@@ -46,8 +46,7 @@ export function CustomerContacts({ plantId }: { plantId?: string | undefined }) 
     {error ? <div className="text-sev-high">Contacts could not be loaded. <Button onClick={() => void retry()}>Retry</Button></div> : loading ? <Empty>Loading contacts…</Empty> : !filtered.length ? <Empty>No contacts found.</Empty> :
       <div className="overflow-hidden rounded-md border border-line bg-panel">
         <table className="w-full table-fixed text-sm">
-          <colgroup><col className="w-[34%] md:w-[24%]" /><col className="hidden md:table-column md:w-[24%]" /><col className="hidden lg:table-column lg:w-[18%]" /><col className="hidden md:table-column md:w-[20%]" /><col className="w-[66%] md:w-[14%]" /></colgroup>
-          <thead className="bg-ink/5 text-left text-xs text-mute"><tr><th className="px-3 py-2">Contact</th><th className="hidden px-3 py-2 md:table-cell">Plant / Customer</th><th className="hidden px-3 py-2 lg:table-cell">Department · Area</th><th className="hidden px-3 py-2 md:table-cell">Phone / Email</th><th className="px-3 py-2 text-right">Actions</th></tr></thead>
+          <thead className="bg-ink/5 text-left text-xs text-mute"><tr><th className="w-2/5 px-3 py-2 md:w-1/4">Contact</th><th className="hidden px-3 py-2 md:table-cell">Plant / Customer</th><th className="hidden px-3 py-2 lg:table-cell">Department · Area</th><th className="hidden px-3 py-2 md:table-cell">Phone / Email</th><th className="w-40 px-3 py-2 text-right">Actions</th></tr></thead>
           <tbody>{filtered.map(c => {
             const p = data.plants.find(p => p.id === c.plant_id);
             const wa = c.phone.replace(/\D/g, "");
