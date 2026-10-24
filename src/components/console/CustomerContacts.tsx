@@ -44,17 +44,29 @@ export function CustomerContacts({ plantId }: { plantId?: string | undefined }) 
     </div>
     <div className="mb-3 flex items-center justify-between gap-3 text-xs text-mute"><span>{filtered.length} contacts</span><label className="flex items-center gap-2"><input type="checkbox" checked={inactive} onChange={e => setInactive(e.target.checked)} />Include inactive</label></div>
     {error ? <div className="text-sev-high">Contacts could not be loaded. <Button onClick={() => void retry()}>Retry</Button></div> : loading ? <Empty>Loading contacts…</Empty> : !filtered.length ? <Empty>No contacts found.</Empty> :
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{filtered.map(c => {
-        const p = data.plants.find(p => p.id === c.plant_id);
-        const wa = c.phone.replace(/\D/g, "");
-        return <article key={c.id} className="min-w-0 rounded-md border border-line bg-panel p-4">
-          <div className="flex items-start justify-between gap-2"><div className="min-w-0"><h2 className="break-words font-semibold">{c.name}</h2><p className="break-words text-xs text-mute">{c.position || "Position not set"}</p></div><Button variant="ghost" onClick={() => edit(c)}><Pencil className="size-4" /><span className="sr-only">Edit {c.name}</span></Button></div>
-          <div className="mt-3 break-words text-xs"><div className="font-medium">{p?.name ?? "Plant"}</div><div className="text-mute">{p?.customer}</div><div className="mt-1">{[c.department, c.area].filter(Boolean).join(" · ") || "Department / area not set"}</div></div>
-          <div className="mt-3 space-y-2 text-sm">{c.phone && <a className="flex items-center gap-2 break-all text-signal" href={`tel:${c.phone}`}><Phone className="size-4 shrink-0" />{c.phone}</a>}{c.alternate_phone && <a className="flex items-center gap-2 break-all text-signal" href={`tel:${c.alternate_phone}`}><Phone className="size-4 shrink-0" />{c.alternate_phone} <span className="text-xs text-mute">Alt.</span></a>}{c.email && <a className="flex items-center gap-2 break-all text-signal" href={`mailto:${c.email}`}><Mail className="size-4 shrink-0" />{c.email}</a>}</div>
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">{wa && <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-signal"><MessageCircle className="size-4" />WhatsApp</a>}{c.is_primary && <span className="text-sev-low">Primary</span>}{!c.active && <span className="text-mute">Inactive</span>}</div>
-          {c.notes && <p className="mt-2 whitespace-pre-wrap break-words text-xs text-mute">{c.notes}</p>}
-        </article>;
-      })}</div>}
+      <div className="overflow-hidden rounded-md border border-line bg-panel">
+        <table className="w-full table-fixed text-sm">
+          <colgroup><col className="w-[34%] md:w-[24%]" /><col className="hidden md:table-column md:w-[24%]" /><col className="hidden lg:table-column lg:w-[18%]" /><col className="hidden md:table-column md:w-[20%]" /><col className="w-[66%] md:w-[14%]" /></colgroup>
+          <thead className="bg-ink/5 text-left text-xs text-mute"><tr><th className="px-3 py-2">Contact</th><th className="hidden px-3 py-2 md:table-cell">Plant / Customer</th><th className="hidden px-3 py-2 lg:table-cell">Department · Area</th><th className="hidden px-3 py-2 md:table-cell">Phone / Email</th><th className="px-3 py-2 text-right">Actions</th></tr></thead>
+          <tbody>{filtered.map(c => {
+            const p = data.plants.find(p => p.id === c.plant_id);
+            const wa = c.phone.replace(/\D/g, "");
+            const icon = "inline-flex size-8 items-center justify-center rounded-md border border-line text-signal hover:bg-signal/10";
+            return <tr key={c.id} className={`border-t border-line align-top ${c.active ? "" : "opacity-60"}`}>
+              <td className="px-3 py-2"><div className="truncate font-medium" title={c.name}>{c.name}</div><div className="truncate text-xs text-mute">{c.position || "—"}</div><div className="mt-0.5 flex gap-2 text-[11px]">{c.is_primary && <span className="text-sev-low">Primary</span>}{!c.active && <span className="text-mute">Inactive</span>}</div><div className="truncate text-xs text-mute md:hidden">{p?.name}{c.department ? ` · ${c.department}` : ""}</div></td>
+              <td className="hidden px-3 py-2 md:table-cell"><div className="truncate" title={p?.name}>{p?.name ?? "—"}</div><div className="truncate text-xs text-mute">{p?.customer}</div></td>
+              <td className="hidden px-3 py-2 lg:table-cell"><div className="truncate">{c.department || "—"}</div><div className="truncate text-xs text-mute">{c.area}</div></td>
+              <td className="hidden px-3 py-2 md:table-cell"><div className="truncate">{c.phone || "—"}</div><div className="truncate text-xs text-mute" title={c.email ?? ""}>{c.email}</div></td>
+              <td className="px-3 py-2"><div className="flex flex-wrap justify-end gap-1">
+                {c.phone && <a className={icon} href={`tel:${c.phone}`} title={`Call ${c.phone}`}><Phone className="size-4" /></a>}
+                {wa && <a className={icon} href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" title="WhatsApp"><MessageCircle className="size-4" /></a>}
+                {c.email && <a className={icon} href={`mailto:${c.email}`} title={c.email}><Mail className="size-4" /></a>}
+                <button type="button" className={icon} onClick={() => edit(c)} title="Edit"><Pencil className="size-4" /><span className="sr-only">Edit {c.name}</span></button>
+              </div></td>
+            </tr>;
+          })}</tbody>
+        </table>
+      </div>}
     <Sheet open={!!form} onOpenChange={o => { if (!o && !busy) setForm(null); }}><SheetContent className="w-full overflow-y-auto sm:max-w-xl"><SheetHeader><SheetTitle>{form?.id ? "Edit customer contact" : "Add customer contact"}</SheetTitle></SheetHeader>
       {form && <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2"><Field label="Plant *"><Select aria-label="Contact plant" required disabled={!!form.id || !!plantId} value={form.plant_id} onChange={e => setForm({ ...form, plant_id: e.target.value })}><option value="">Select plant</option>{data.plants.map(p => <option key={p.id} value={p.id}>{p.name} · {p.customer}</option>)}</Select></Field></div>
