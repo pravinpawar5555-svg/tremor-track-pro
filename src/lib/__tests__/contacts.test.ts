@@ -21,6 +21,9 @@ function parseCsvLine(line: string) {
   return cells;
 }
 const exportRow = (over: Partial<import("@/lib/contact-rules").ContactExportRow> = {}) => ({ ...contact, is_primary: false, plant: "Plant 1", customer: "Customer X", ...over });
+/** What a spreadsheet shows for a cell: the formula guard is stripped, the text remains. */
+const visible = (cell: string) => (/^="(.*)"$/.test(cell) ? cell.slice(2, -1) : cell);
+
 
 describe("customer contacts", () => {
   it("filters by plant", () => expect(filterContacts(rows, { plant: "p2" }).map(c => c.name)).toEqual(["Customer B"]));
