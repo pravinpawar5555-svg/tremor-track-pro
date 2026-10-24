@@ -4,8 +4,10 @@ const contact = { plant_id: "p1", name: "Customer A", area: "Boiler", department
 const rows = [contact, { ...contact, name: "Customer B", plant_id: "p2", area: "Turbine", department: "Production" }, { ...contact, name: "Former contact", active: false }];
 
 /** Split one CSV line back into cells (RFC 4180) so assertions read like the input. */
-function parseCsvLine(line: string) {
+function parseCsvLine(line?: string) {
   const cells: string[] = [];
+  line = line ?? "";
+
   let cell = "", quoted = false;
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
@@ -22,7 +24,7 @@ function parseCsvLine(line: string) {
 }
 const exportRow = (over: Partial<import("@/lib/contact-rules").ContactExportRow> = {}) => ({ ...contact, is_primary: false, plant: "Plant 1", customer: "Customer X", ...over });
 /** What a spreadsheet shows for a cell: the formula guard is stripped, the text remains. */
-const visible = (cell: string) => (/^="(.*)"$/.test(cell) ? cell.slice(2, -1) : cell);
+const visible = (cell?: string) => (cell && /^="(.*)"$/.test(cell) ? cell.slice(2, -1) : (cell ?? ""));
 
 
 describe("customer contacts", () => {
