@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Mail, MessageCircle, Pencil, Phone, Plus, RefreshCw } from "lucide-react";
+import { Download, Mail, MessageCircle, Pencil, Phone, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button, Empty, Field, PageHeader, Select, TextArea, TextInput } from "@/components/console/ui";
 import { useContacts, type ContactInput, type CustomerContact } from "@/lib/contacts";
-import { filterContacts } from "@/lib/contact-rules";
+import { buildContactsCsv, filterContacts, type ContactExportRow } from "@/lib/contact-rules";
 import { useData } from "@/lib/store";
 
 const departments = ["Maintenance", "Reliability", "Mechanical", "Electrical", "Instrumentation", "Production", "Utilities", "Purchase", "Management"];
