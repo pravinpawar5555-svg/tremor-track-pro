@@ -34,6 +34,24 @@ export function CustomerContacts({ plantId }: { plantId?: string | undefined }) 
     catch (err) { toast.error(err instanceof Error ? err.message : "Could not save contact"); }
     finally { setBusy(false); }
   };
+  const exportCsv = () => {
+    const rows: ContactExportRow[] = filtered.map(c => {
+      const p = data.plants.find(x => x.id === c.plant_id);
+      return { ...c, is_primary: !!c.is_primary, plant: p?.name ?? "", customer: p?.customer ?? "" };
+    });
+    const blob = new Blob(["\uFEFF" + buildContactsCsv(rows)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `customer-contacts-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    toast.success(`${rows.length} contact${rows.length === 1 ? "" : "s"} exported`);
+  };
+
   return <div className="min-w-0">
     <PageHeader title={plantId ? "Customer contacts" : "Customer Phonebook"} actions={<div className="flex gap-2"><Button onClick={() => void retry()}><RefreshCw className="size-4" />Refresh</Button><Button variant="solid" onClick={() => setForm(blank(plantId ?? plant))}><Plus className="size-4" />Add contact</Button></div>} />
     <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap">
