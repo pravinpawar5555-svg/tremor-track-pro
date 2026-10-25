@@ -20,5 +20,14 @@ export function useContacts() {
     await queryClient.invalidateQueries({ queryKey: key });
     return data;
   };
-  return { contacts: query.data ?? [], loading: query.isPending, error: query.error, retry: query.refetch, save };
+  const importContacts = async (inputs: ContactInput[]) => {
+    if (!currentUserId) throw new Error("Sign in before importing contacts.");
+    if (!inputs.length) return;
+    // One insert statement: all selected records commit together, with existing RLS.
+    const { error } = await supabase.from("customer_contacts").insert(inputs.map(input => ({ ...input, created_by: currentUserId })));
+    if (error) throw new Error(error.message);
+    await queryClient.invalidateQueries({ queryKey: key });
+  };
+  return { contacts: query.data ?? [], loading: query.isPending, error: query.error, retry: query.refetch, save, importContacts };
+};
 }
