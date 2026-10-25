@@ -9,6 +9,6 @@
 - [x] Verify the downloaded file matches the on-screen filter and stays readable in Excel.
 
 # Contact CSV import
-- [ ] Add upload, column matching and editable record preview.
-- [ ] Flag duplicates and missing details before protected batch saving.
-- [ ] Test parsing, validation and the signed-in import flow.
+- [x] Add upload, column matching and editable record preview.
+- [x] Flag duplicates and missing details before protected batch saving.
+- [x] Test parsing and validation (48 tests pass); signed-in save/read-back and duplicate warnings verified; temporary contact removed.
