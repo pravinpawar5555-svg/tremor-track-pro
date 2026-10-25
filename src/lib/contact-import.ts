@@ -16,7 +16,8 @@ const aliases: Record<ImportField, string[]> = {
 };
 export function parseContactCsv(text: string) {
   const parsed = Papa.parse<string[]>(text.replace(/^\uFEFF/, ""), { skipEmptyLines: "greedy" });
-  if (parsed.errors.length) throw new Error(`CSV could not be read: ${parsed.errors[0]?.message ?? "Invalid format"}`);
+  const errors = parsed.errors.filter(e => e.code !== "UndetectableDelimiter");
+  if (errors.length) throw new Error(`CSV could not be read: ${errors[0]?.message ?? "Invalid format"}`);
   const [headers, ...rows] = parsed.data;
   if (!headers?.length || !rows.length) throw new Error("The CSV needs a header and at least one contact.");
   if (rows.length > 1000) throw new Error("Upload up to 1,000 contacts at a time.");
