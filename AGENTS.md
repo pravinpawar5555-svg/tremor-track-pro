@@ -8,7 +8,7 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
-- Customer contacts use public.customer_contacts with plant-based RLS and identity-keyed query caching; the phonebook, plant lists and contact pickers share this source so saved MOM/communication snapshots remain unchanged; CSV exports build from the rows currently shown with spreadsheet-safe escaping.
+- Contacts share public.customer_contacts, plant RLS and identity-keyed caching; MOM/comms snapshots stay unchanged. CSV exports use shown rows; imports use Papa Parse, reviewed drafts and atomic RLS inserts, never overwrite contacts.
 - Auth: portal screens live under src/routes/_authenticated; the gate also requires profiles.status='approved' and reads the role from user_roles — manager approval is enforced in the database (is_approved/has_role in RLS, review_user RPC).
 - Store (src/lib/store.ts) loads only after startSession(); housekeeping() carries unfinished tasks to today and generates reports from recurring_reports — keeps the client-side store pattern without a scheduler.
 - Customer visits live in public.visits via src/lib/visits.ts (own small store, loaded on first use); completing an AMC visit creates the next visit row — keeps the big store untouched.
