@@ -24,7 +24,8 @@ export function useContacts() {
     if (!currentUserId) throw new Error("Sign in before importing contacts.");
     if (!inputs.length) return;
     // One insert statement: all selected records commit together, with existing RLS.
-    const { error } = await supabase.from("customer_contacts").insert(inputs.map(input => ({ ...input, created_by: currentUserId })));
+    // created_by defaults to auth.uid(); store identities may be legacy engineer IDs.
+    const { error } = await supabase.from("customer_contacts").insert(inputs);
     if (error) throw new Error(error.message);
     await queryClient.invalidateQueries({ queryKey: key });
   };
