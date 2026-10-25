@@ -6,13 +6,14 @@ import { Button, Empty, Field, PageHeader, Select, TextArea, TextInput } from "@
 import { useContacts, type ContactInput, type CustomerContact } from "@/lib/contacts";
 import { buildContactsCsv, filterContacts, type ContactExportRow } from "@/lib/contact-rules";
 import { useData } from "@/lib/store";
+import { ContactImport } from "./ContactImport";
 
 const departments = ["Maintenance", "Reliability", "Mechanical", "Electrical", "Instrumentation", "Production", "Utilities", "Purchase", "Management"];
 const blank = (plant: string): ContactInput => ({ plant_id: plant, name: "", area: "", department: "", position: "", phone: "", alternate_phone: "", email: "", notes: "", active: true, is_primary: false });
 
 export function CustomerContacts({ plantId }: { plantId?: string | undefined }) {
   const data = useData();
-  const { contacts, loading, error, retry, save } = useContacts();
+  const { contacts, loading, error, retry, save, importContacts } = useContacts();
   const [plant, setPlant] = useState(plantId ?? "");
   const [customer, setCustomer] = useState("");
   const [q, setQ] = useState("");
@@ -53,7 +54,7 @@ export function CustomerContacts({ plantId }: { plantId?: string | undefined }) 
   };
 
   return <div className="min-w-0">
-    <PageHeader title={plantId ? "Customer contacts" : "Customer Phonebook"} actions={<div className="flex gap-2"><Button onClick={() => void retry()}><RefreshCw className="size-4" />Refresh</Button><Button onClick={exportCsv} disabled={!filtered.length}><Download className="size-4" />Export CSV</Button><Button variant="solid" onClick={() => setForm(blank(plantId ?? plant))}><Plus className="size-4" />Add contact</Button></div>} />
+    <PageHeader title={plantId ? "Customer contacts" : "Customer Phonebook"} actions={<div className="flex flex-wrap gap-2"><Button onClick={() => void retry()}><RefreshCw className="size-4" />Refresh</Button><Button onClick={exportCsv} disabled={!filtered.length}><Download className="size-4" />Export CSV</Button>{!loading && !error && <ContactImport plants={plantId ? data.plants.filter(p => p.id === plantId) : data.plants} contacts={contacts} defaultPlant={plantId ?? plant} retry={retry} importContacts={importContacts} />}<Button variant="solid" onClick={() => setForm(blank(plantId ?? plant))}><Plus className="size-4" />Add contact</Button></div>} />
     <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap">
       <TextInput aria-label="Search contacts" placeholder="Search name, position, phone or email…" value={q} onChange={e => setQ(e.target.value)} className="lg:min-w-56 lg:flex-1" />
       {!plantId && <><Select aria-label="Customer filter" className="lg:w-44" value={customer} onChange={e => { setCustomer(e.target.value); setPlant(""); setArea(""); setDept(""); }}><option value="">All customers</option>{[...new Set(data.plants.map(p => p.customer).filter(Boolean))].sort().map(c => <option key={c}>{c}</option>)}</Select><Select aria-label="Plant filter" className="lg:w-44" value={plant} onChange={e => { setPlant(e.target.value); setArea(""); setDept(""); }}><option value="">All plants</option>{data.plants.filter(p => !customer || p.customer === customer).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</Select></>}

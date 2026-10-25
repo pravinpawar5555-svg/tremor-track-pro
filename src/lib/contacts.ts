@@ -29,5 +29,4 @@ export function useContacts() {
     await queryClient.invalidateQueries({ queryKey: key });
   };
   return { contacts: query.data ?? [], loading: query.isPending, error: query.error, retry: query.refetch, save, importContacts };
-};
 }
