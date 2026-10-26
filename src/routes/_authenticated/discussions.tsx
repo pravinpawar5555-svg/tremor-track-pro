@@ -1,4 +1,7 @@
 import { CustomerComms } from "@/components/console/CustomerComms";
+import { MachineAnalysisSection, MachinePicker, useKnownPlantMachines, type PickedMachine } from "@/components/console/TicketAnalysis";
+import { analysisRows, blankAnalysis } from "@/lib/ticket-analysis";
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useDomain } from "@/lib/domain";
@@ -39,7 +42,9 @@ import {
   plantThread,
   priorityLabel,
   removeTicket,
-  respondToTicket,
+  publishTicketAnalysis,
+  requestMachineInfo,
+  saveTicketAnalysis,
   sendMessage,
   setTicketStatus,
   threadMessages,
@@ -88,6 +93,8 @@ const emptyTicket = {
   area: "",
   machine: "",
   machines: [] as string[],
+  areas: [] as string[],
+  items: [] as PickedMachine[],
   subject: "",
   observation: "",
   askFor: "both" as AskFor,
@@ -111,7 +118,7 @@ function DiscussionsPage() {
   const [form, setForm] = useState(emptyTicket);
   const [notice, setNotice] = useState("");
   const [reply, setReply] = useState("");
-  const [response, setResponse] = useState("");
+  const [showMachines, setShowMachines] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
 
@@ -196,15 +203,8 @@ function DiscussionsPage() {
     }
   }, [jumped, meId, data.messages, search.thread, search.unread, search.tickets, tickets]);
 
-  const [machineDraft, setMachineDraft] = useState("");
-  const set = (k: keyof typeof emptyTicket, v: string) => setForm((f) => ({ ...f, [k]: v }));
-  const addMachine = () => {
-    const name = machineDraft.trim();
-    if (!name) return;
-    setForm((f) => (f.machines.includes(name) ? f : { ...f, machines: [...f.machines, name] }));
-    setMachineDraft("");
-  };
-  const removeMachine = (name: string) => setForm((f) => ({ ...f, machines: f.machines.filter((m) => m !== name) }));
+  const set = (k: "plantId" | "subject" | "observation" | "askFor" | "priority", v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const known = useKnownPlantMachines(data.tickets, form.plantId);
   const flash = (msg: string) => {
     setNotice(msg);
     window.setTimeout(() => setNotice(""), 3500);
@@ -212,11 +212,19 @@ function DiscussionsPage() {
 
   const raise = () => {
     const raisedBy = manager ? team[0]?.id ?? meId : meId;
-    const res = createTicket({ ...form, machine: form.machines[0] ?? "", raisedBy, assignedTo: managersOf(data)[0]?.id ?? "" });
+    const res = createTicket({
+      ...form,
+      area: form.areas.join(", "),
+      machine: form.items[0]?.machine ?? "",
+      machines: form.items.map((i) => i.machine),
+      areas: form.areas,
+      analysis: form.items.map((i) => blankAnalysis(i.machine, i.area, i.note.trim())),
+      raisedBy,
+      assignedTo: managersOf(data)[0]?.id ?? "",
+    });
     flash(res.message);
     if (res.ok) {
       setForm(emptyTicket);
-      setMachineDraft("");
       setShowNew(false);
       if (res.id) setSelectedTicket(res.id);
       setTab("tickets");
@@ -228,13 +236,6 @@ function DiscussionsPage() {
     const res = sendMessage(thread, meId, reply);
     if (res.ok) setReply("");
     else flash(res.message);
-  };
-
-  const respond = () => {
-    if (!ticket) return;
-    const res = respondToTicket(ticket.id, meId, response);
-    flash(res.message);
-    if (res.ok) setResponse("");
   };
 
   return (
@@ -268,46 +269,23 @@ function DiscussionsPage() {
         <Panel className="mt-4" title="Raise a ticket" meta={`Raised ${fmtDate(TODAY)}`}>
           <div className="grid gap-3 p-4 md:grid-cols-3">
             <Field label="Plant name">
-              <Select value={form.plantId} onChange={(e) => set("plantId", e.target.value)}>
+              <Select value={form.plantId} onChange={(e) => setForm((f) => ({ ...f, plantId: e.target.value, areas: [], items: [] }))}>
                 <option value="">Select plant…</option>
                 {data.plants.map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </Select>
             </Field>
-            <Field label="Area name">
-              <TextInput value={form.area} onChange={(e) => set("area", e.target.value)} placeholder="e.g. Boiler feed area" />
-            </Field>
-            <Field label="Machine names" hint="Add every machine in this plant that needs analysis support — one ticket can cover several machines.">
-              <div className="flex gap-2">
-                <TextInput
-                  value={machineDraft}
-                  onChange={(e) => setMachineDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addMachine();
-                    }
-                  }}
-                  placeholder="e.g. Boiler feed pump 2A"
-                />
-                <Button variant="outline" onClick={addMachine} disabled={!machineDraft.trim()}>
-                  + Add
-                </Button>
-              </div>
-              {form.machines.length ? (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {form.machines.map((m) => (
-                    <span key={m} className="inline-flex items-center gap-1.5 rounded-full bg-signal/10 px-2.5 py-1 text-xs text-signal ring-1 ring-signal/30">
-                      {m}
-                      <button type="button" aria-label={`Remove ${m}`} onClick={() => removeMachine(m)} className="text-signal/70 hover:text-signal">
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-            </Field>
+            <div className="md:col-span-3">
+              <MachinePicker
+                areas={form.areas}
+                onAreas={(areas) => setForm((f) => ({ ...f, areas }))}
+                items={form.items}
+                onItems={(items) => setForm((f) => ({ ...f, items }))}
+                knownAreas={known.areas}
+                knownMachines={known.machines}
+              />
+            </div>
             <Field label="Subject">
               <TextInput value={form.subject} onChange={(e) => set("subject", e.target.value)} placeholder="Short title of the issue" />
             </Field>
@@ -338,7 +316,7 @@ function DiscussionsPage() {
               </Field>
             </div>
             <div className="flex items-center gap-2 md:col-span-3">
-              <Button variant="solid" onClick={raise} disabled={!form.plantId || !form.machines.length || !form.subject.trim()}>
+              <Button variant="solid" onClick={raise} disabled={!form.plantId || !form.items.length || !form.subject.trim()}>
                 Send to manager
               </Button>
               <Button variant="ghost" onClick={() => setForm(emptyTicket)}>Clear</Button>
@@ -407,7 +385,7 @@ function DiscussionsPage() {
                       </div>
                       <div className="mt-0.5 truncate text-sm font-medium">{t.subject}</div>
                       <div className="truncate text-[11px] text-mute">
-                        {plantName(data, t.plantId)} · {t.area || "—"} · {(t.machines?.length ? t.machines : [t.machine]).join(", ")}
+                        {(() => { const n = t.machines?.length || (t.machine ? 1 : 0); const ar = t.areas?.length || (t.area ? 1 : 0); return `${plantName(data, t.plantId)} · ${n} machine${n === 1 ? "" : "s"} · ${ar} area${ar === 1 ? "" : "s"}`; })()}
                       </div>
                       <div className="mt-1 flex items-center gap-2">
                         <Chip severity={ticketSeverity(t.priority)} label={priorityLabel[t.priority]} />
@@ -504,12 +482,22 @@ function DiscussionsPage() {
                     <div>{plantName(data, ticket.plantId)}</div>
                   </div>
                   <div>
-                    <div className="label-caps">Area</div>
-                    <div>{ticket.area || "—"}</div>
+                    <div className="label-caps">Areas</div>
+                    <div>{(ticket.areas?.length ? ticket.areas : ticket.area ? [ticket.area] : []).map((a) => <div key={a}>{a}</div>)}{!ticket.areas?.length && !ticket.area ? "—" : null}</div>
                   </div>
                   <div>
                     <div className="label-caps">Machines</div>
-                    <div>{(ticket.machines?.length ? ticket.machines : [ticket.machine]).join(", ")}</div>
+                    <div>
+                      {(ticket.machines?.length || 1)} machine{(ticket.machines?.length || 1) === 1 ? "" : "s"} selected{" "}
+                      <button type="button" className="text-xs text-signal hover:underline" onClick={() => setShowMachines((v) => !v)}>
+                        {showMachines ? "Hide" : "View machines"}
+                      </button>
+                      {showMachines ? (
+                        <ul className="mt-1 text-xs text-mute">
+                          {analysisRows(ticket).map((a, i) => <li key={i}>{a.machine}{a.area ? ` · ${a.area}` : ""}</li>)}
+                        </ul>
+                      ) : null}
+                    </div>
                   </div>
                   <div>
                     <div className="label-caps">Raised by</div>
@@ -528,31 +516,40 @@ function DiscussionsPage() {
                 </div>
 
                 <div>
-                  <div className="label-caps">Engineer's observation</div>
+                  <div className="label-caps">Engineer observation / support request</div>
                   <p className="mt-1 text-sm text-mute">{ticket.observation || "—"}</p>
                 </div>
 
-                {ticket.response ? (
+                {ticket.response && !ticket.publishedOn && !ticket.analysis?.length ? (
                   <div className="panel-inset p-3">
                     <div className="label-caps">Manager's observation / recommendation</div>
-                    <p className="mt-1 text-sm">{ticket.response}</p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm">{ticket.response}</p>
                     <div className="num mt-1 text-[11px] text-mute">Given {fmtDate(ticket.respondedOn)}</div>
                   </div>
                 ) : null}
 
-                {manager ? (
-                  <Field
-                    label="Your observation / recommendation"
-                    hint="Keep the wording as possible / suspected / requires verification unless the fault is confirmed."
-                  >
-                    <TextArea value={response} onChange={(e) => setResponse(e.target.value)} placeholder="Advice to the engineer" />
-                  </Field>
-                ) : null}
+                <MachineAnalysisSection
+                  key={ticket.id}
+                  rows={analysisRows(ticket)}
+                  editable={manager}
+                  published={!!ticket.publishedOn}
+                  onSave={(rows) => saveTicketAnalysis(ticket.id, rows)}
+                  onRequestInfo={(rows, machine, text) => {
+                    const res = requestMachineInfo(ticket.id, meId, rows, machine, text);
+                    flash(res.ok ? `Information requested for ${machine}.` : res.message);
+                  }}
+                  onPublish={(rows) => flash(publishTicketAnalysis(ticket.id, meId, rows).message)}
+                />
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {manager ? (
-                    <Button variant="solid" onClick={respond} disabled={!response.trim()}>
-                      {ticket.response ? "Update recommendation" : "Give recommendation"}
+                  {ticket.publishedOn && ticket.response ? (
+                    <Button
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(ticket.response ?? "");
+                        toast("Analysis copied — review and edit the wording before adding it to the customer report.");
+                      }}
+                    >
+                      Use in report
                     </Button>
                   ) : null}
                   {ticket.status !== "closed" ? (
