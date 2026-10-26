@@ -7,6 +7,7 @@ import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, Kpi, Panel, PageHeader, Select, TextArea, TextInput, Td, Th, Tr } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
 import { AttendeesEditor, MomPanel } from "@/components/console/VisitMom";
+import { SalesVisitsSection } from "@/components/console/SalesVisits";
 import { TODAY, analystsOf, managersOf, engineerName, fmtDate, plantName, shiftDate, useData } from "@/lib/store";
 import {
   blankVisit,
