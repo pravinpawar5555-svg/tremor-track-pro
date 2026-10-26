@@ -145,7 +145,7 @@ function VisitsPage() {
             <Segmented
               value={who}
               onChange={setWho}
-              options={[{ v: "total", label: "Total" }, ...team.map((a) => ({ v: a.id, label: a.name.split(" ")[0]! }))]}
+              options={[{ v: "total", label: "Total" }, ...team.map((a) => ({ v: a.id, label: a.name.split(" ")[0]! })), ...(data.role === "manager" ? [{ v: "private", label: "🔒 Mine" }] : [])]}
             />
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">

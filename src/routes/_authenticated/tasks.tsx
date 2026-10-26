@@ -278,6 +278,7 @@ function DailyWorkPage() {
             <Select className="w-40" value={engFilter} onChange={(e) => setEngFilter(e.target.value)} aria-label="Engineer filter">
               <option value="all">All Engineers</option>
               {team.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              <option value={me}>🔒 My Tasks</option>
             </Select>
           ) : null}
           <div className="flex items-center gap-2">
@@ -509,7 +510,7 @@ function AddTaskDialog({ open, onClose, data, manager, me, date, defaultEngineer
         <form className="grid gap-3 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); submit(); }}>
           <div className="sm:col-span-2"><Field label="Task"><TextInput autoFocus value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="e.g. Prepare SWAS weekly report" /></Field></div>
           {manager ? (
-            <Field label="Engineer"><Select value={f.engineerId} onChange={(e) => setF({ ...f, engineerId: e.target.value })}>{team.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
+            <Field label="Assign to"><Select value={f.engineerId} onChange={(e) => setF({ ...f, engineerId: e.target.value })}>{team.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}<option value={me}>🔒 Myself (private)</option></Select></Field>
           ) : null}
           <Field label="Plant"><Select value={f.plantId} onChange={(e) => setF({ ...f, plantId: e.target.value })}><option value="">— None —</option>{plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select></Field>
           <Field label="Type"><Select value={f.taskType} onChange={(e) => setF({ ...f, taskType: e.target.value as TaskType })}>{types.map((t) => <option key={t} value={t}>{taskTypeLabel[t]}</option>)}</Select></Field>
