@@ -1291,7 +1291,9 @@ export type Database = {
       }
       tickets: {
         Row: {
+          analysis: Json
           area: string
+          areas: string[]
           ask_for: string
           assigned_to: string
           closed_on: string | null
@@ -1302,6 +1304,7 @@ export type Database = {
           observation: string
           plant_id: string
           priority: string
+          published_on: string | null
           raised_at: string
           raised_by: string
           raised_on: string
@@ -1312,7 +1315,9 @@ export type Database = {
           ticket_no: string
         }
         Insert: {
+          analysis?: Json
           area?: string
+          areas?: string[]
           ask_for?: string
           assigned_to?: string
           closed_on?: string | null
@@ -1323,6 +1328,7 @@ export type Database = {
           observation?: string
           plant_id?: string
           priority?: string
+          published_on?: string | null
           raised_at?: string
           raised_by?: string
           raised_on: string
@@ -1333,7 +1339,9 @@ export type Database = {
           ticket_no?: string
         }
         Update: {
+          analysis?: Json
           area?: string
+          areas?: string[]
           ask_for?: string
           assigned_to?: string
           closed_on?: string | null
@@ -1344,6 +1352,7 @@ export type Database = {
           observation?: string
           plant_id?: string
           priority?: string
+          published_on?: string | null
           raised_at?: string
           raised_by?: string
           raised_on?: string
