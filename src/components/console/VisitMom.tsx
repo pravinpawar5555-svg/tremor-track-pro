@@ -202,7 +202,7 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
   const [generating, setGenerating] = useState(false);
   const genFn = useServerFn(generateMomFromNotes);
   const generate = async () => {
-    if (notes.trim().length < 10) return toast.error("Paste your visit notes first");
+    if (notes.trim().length < 10) { toast.error("Paste your visit notes first"); return; }
     setGenerating(true);
     try {
       const d = new Date();
@@ -216,7 +216,7 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
         purpose: x.purpose.trim() ? x.purpose : m.purpose,
         discussionPoints: [...x.discussionPoints.filter((p) => p.trim()), ...m.discussionPoints],
         observations: [x.observations.trim(), m.observations.trim()].filter(Boolean).join("\n\n"),
-        actions: [...x.actions, ...m.actions.map((a) => ({ action: a.action, responsible: ids.has(a.responsibleId) || a.responsibleId === "customer" ? a.responsibleId : "", dueDate: /^\d{4}-\d{2}-\d{2}$/.test(a.dueDate) ? a.dueDate : undefined, status: "open" as const, remarks: a.remarks }))],
+        actions: [...x.actions, ...m.actions.map((a) => ({ action: a.action, responsible: ids.has(a.responsibleId) || a.responsibleId === "customer" ? a.responsibleId : "", dueDate: /^\d{4}-\d{2}-\d{2}$/.test(a.dueDate) ? a.dueDate : "", status: "open" as const, remarks: a.remarks }))],
       }));
       toast.success("Draft ready — review and click Save MOM");
       setMode("edit");
