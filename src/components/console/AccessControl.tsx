@@ -41,7 +41,7 @@ export function AccessControl() {
   const save = async () => {
     setSaving(true);
     try {
-      const changed: Perm[] = Object.entries(draft).map(([k, level]) => { const [role, module, action] = k.split("|"); return { role: role as PermRole, module, action, level }; });
+      const changed: Perm[] = Object.entries(draft).map(([k, level]) => { const [role, module, action] = k.split("|"); return { role: role as PermRole, module: module!, action: action!, level }; });
       const rs: Rule[] = Object.entries(ruleDraft).map(([k, allowed]) => { const [f, to] = k.split("|"); return { from_domain: f as PermRole, to_domain: to as PermRole, allowed }; });
       await savePermissions(changed, rs);
       setDraft({}); setRuleDraft({}); refresh();
