@@ -1,3 +1,4 @@
+import { analysisProgress, analysisSummaryText, blankAnalysis, type MachineAnalysis } from "./ticket-analysis";
 import { useSyncExternalStore } from "react";
 
 // ---------------------------------------------------------------- types
@@ -88,6 +89,9 @@ export interface Ticket {
   area: string;
   machine: string;
   machines: string[];
+  areas?: string[] | undefined;
+  analysis?: MachineAnalysis[] | undefined;
+  publishedOn?: string | undefined;
   subject: string;
   observation: string;
   askFor: AskFor;
@@ -659,6 +663,9 @@ const rowToTicket = (r: any): Ticket =>
     area: r.area ?? "",
     machine: r.machine ?? "",
     machines: Array.isArray(r.machines) ? r.machines : r.machine ? [r.machine] : [],
+    areas: Array.isArray(r.areas) && r.areas.length ? r.areas : r.area ? [r.area] : [],
+    analysis: Array.isArray(r.analysis) ? r.analysis : [],
+    ...(r.published_on ? { publishedOn: r.published_on } : {}),
     subject: r.subject ?? "",
     observation: r.observation ?? "",
     askFor: r.ask_for,
@@ -679,6 +686,9 @@ const ticketToRow = (t: Ticket) => ({
   area: t.area,
   machine: t.machine,
   machines: t.machines ?? [],
+  areas: t.areas ?? (t.area ? [t.area] : []),
+  analysis: (t.analysis ?? []) as any,
+  published_on: t.publishedOn ?? null,
   subject: t.subject,
   observation: t.observation,
   ask_for: t.askFor,
@@ -1342,6 +1352,8 @@ export function createTicket(input: {
   area: string;
   machine: string;
   machines?: string[];
+  areas?: string[];
+  analysis?: MachineAnalysis[];
   subject: string;
   observation: string;
   askFor: AskFor;
@@ -1358,7 +1370,9 @@ export function createTicket(input: {
     id: uid("tk"),
     ticketNo: nextTicketNo(),
     plantId: input.plantId,
-    area: input.area.trim(),
+    area: (input.areas?.length ? input.areas.join(", ") : input.area).trim(),
+    areas: input.areas?.length ? input.areas : input.area.trim() ? [input.area.trim()] : [],
+    analysis: input.analysis?.length ? input.analysis : machines.map((m) => blankAnalysis(m, input.area.trim())),
     machine: machines[0]!,
     machines,
     subject: input.subject.trim(),
@@ -1447,6 +1461,41 @@ export function respondToTicket(id: string, authorId: string, text: string) {
     ),
   });
   return { ok: true, message: "Recommendation recorded and shared in the chat." };
+}
+
+/** Manager saves machine-wise analysis rows; ticket moves to in-discussion while review is under way. */
+export function saveTicketAnalysis(id: string, analysis: MachineAnalysis[]) {
+  commit({
+    ...data,
+    tickets: data.tickets.map((t) =>
+      t.id === id ? { ...t, analysis, status: t.status === "open" ? ("in-discussion" as TicketStatus) : t.status } : t,
+    ),
+  });
+}
+
+/** Ask the raising engineer for more information on one machine — posted to the ticket chat so they are notified. */
+export function requestMachineInfo(id: string, authorId: string, analysis: MachineAnalysis[], machine: string, text: string) {
+  saveTicketAnalysis(id, analysis);
+  return sendMessage(ticketThread(id), authorId, `More information required — ${machine}:\n${text.trim()}`);
+}
+
+/** Publish the consolidated analysis: posts one summary in the ticket chat (notifies the engineer) and marks it responded. */
+export function publishTicketAnalysis(id: string, authorId: string, analysis: MachineAnalysis[]) {
+  const t = data.tickets.find((x) => x.id === id);
+  if (!t) return { ok: false, message: "Ticket not found." };
+  if (analysisProgress(analysis).pending) return { ok: false, message: "Complete every machine before publishing." };
+  const text = analysisSummaryText(analysis, engineerName(data, authorId), plantName(data, t.plantId), t.ticketNo);
+  const msg: ChatMessage = { id: uid("ms"), thread: ticketThread(id), authorId, text, date: TODAY, at: nowTime(), readBy: [authorId] };
+  commit({
+    ...data,
+    messages: [...data.messages, msg],
+    tickets: data.tickets.map((x) =>
+      x.id === id
+        ? { ...x, analysis, status: "responded" as TicketStatus, response: text, respondedOn: TODAY, publishedOn: TODAY }
+        : x,
+    ),
+  });
+  return { ok: true, message: "Analysis published and the engineer notified." };
 }
 
 export function setTicketStatus(id: string, status: TicketStatus) {
