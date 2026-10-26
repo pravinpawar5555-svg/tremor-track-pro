@@ -204,6 +204,13 @@
       "when": 1792975272522,
       "tag": "0028_ticket_machine_analysis",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1793005024512,
+      "tag": "0029_manager_private_work",
+      "breakpoints": true
     }
   ]
 }
