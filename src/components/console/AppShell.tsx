@@ -20,6 +20,7 @@ import {
   taskStats,
   chatUnread,
   ticketAttention,
+  escalatedTickets,
   useData,
 } from "@/lib/store";
 
@@ -50,6 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const me = currentUser(data);
   const unread = chatUnread(data);
   const tickets = ticketAttention(data);
+  const urgent = manager ? escalatedTickets(data).length : 0;
   const navigate = useNavigate();
   const perms = usePermissions();
   const items = nav.filter((n) => navAllowed(manager, domain, n.to, perms));
@@ -75,6 +77,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="grid size-7 shrink-0 place-items-center rounded-md bg-signal text-[11px] font-semibold text-signal-foreground">FM</div>
           <span className="min-w-0 truncate text-[15px] font-semibold tracking-tight">Forbes Marshall</span>
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            {urgent ? (
+              <Link to="/discussions" search={{ tickets: true }} className="num rounded-full bg-sev-high px-2 py-0.5 text-[11px] font-semibold text-signal-foreground">{urgent} urgent</Link>
+            ) : null}
             <NotificationBell />
             <Popover>
               <PopoverTrigger asChild>
@@ -155,6 +160,16 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="num">{tickets} tickets</span>
             </Link>
           )}
+          {urgent ? (
+            <Link
+              to="/discussions"
+              search={{ tickets: true }}
+              title="High-severity or info-needed tickets waiting more than 24 hours"
+              className="flex animate-pulse items-center gap-1.5 rounded-full bg-sev-high px-2.5 py-1 text-xs font-semibold text-signal-foreground"
+            >
+              <span className="num">{urgent} urgent &gt;24h</span>
+            </Link>
+          ) : null}
           <span className="hidden items-center gap-1.5 lg:flex">
             <span className="grid size-6 place-items-center rounded-full bg-base text-[10px] font-semibold text-mute ring-1 ring-line">
               {me?.initials ?? "—"}
