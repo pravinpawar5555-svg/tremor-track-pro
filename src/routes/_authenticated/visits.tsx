@@ -7,6 +7,7 @@ import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, Kpi, Panel, PageHeader, Select, TextArea, TextInput, Td, Th, Tr } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
 import { AttendeesEditor, MomPanel } from "@/components/console/VisitMom";
+import { SalesVisitsSection } from "@/components/console/SalesVisits";
 import { TODAY, analystsOf, managersOf, engineerName, fmtDate, plantName, shiftDate, useData } from "@/lib/store";
 import {
   blankVisit,
@@ -82,8 +83,8 @@ function VisitsPage() {
   const team = analystsOf(data);
 
   const [who, setWho] = useState<string>("total");
-  const isMgr = data.role === "manager";
   const [section, setSection] = useState<"customer" | "sales">("customer");
+  const [planSignal, setPlanSignal] = useState(0);
   const [filter, setFilter] = useState<Filter>("all");
   const [view, setView] = useState<"list" | "calendar">("list");
   const [customer, setCustomer] = useState("");
@@ -136,21 +137,20 @@ function VisitsPage() {
     <AppShell>
       <PageHeader
         title={section === "sales" ? "Sales Visits" : "Customer Visit Planner"}
-        subtitle="AMC planned and on-request customer visits, summaries and follow-up actions"
-        actions={manager ? <Button variant="solid" onClick={() => setEditing(section === "sales" ? { ...blankVisit(me), managerOnly: true, visitType: "request", frequency: "none", engineerIds: [me] } : blankVisit(me))}>{section === "sales" ? "+ Plan Sales Visit" : "+ Plan Customer Visit"}</Button> : undefined}
+        subtitle={section === "sales" ? "Plan customer meetings, capture outcomes and identify business opportunities." : "AMC planned and on-request customer visits, summaries and follow-up actions"}
+        actions={<Button variant="solid" onClick={() => (section === "sales" ? setPlanSignal((x) => x + 1) : setEditing(blankVisit(me)))}>{section === "sales" ? "+ Plan Sales Visit" : "+ Plan Customer Visit"}</Button>}
       />
 
-      {isMgr ? (
-        <div className="mb-3 inline-flex rounded-md border border-line p-0.5 text-sm">
-          {(["customer", "sales"] as const).map((k) => (
-            <button key={k} type="button" onClick={() => setSection(k)} className={cn("rounded px-3 py-1.5", section === k ? "bg-signal text-signal-foreground" : "text-mute")}>
-              {k === "customer" ? "Customer Visits" : "🔒 Sales Visits (mine)"}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <div className="mb-3 inline-flex rounded-md border border-line p-0.5 text-sm">
+        {(["customer", "sales"] as const).map((k) => (
+          <button key={k} type="button" onClick={() => setSection(k)} className={cn("rounded px-3 py-1.5", section === k ? "bg-signal text-signal-foreground" : "text-mute")}>
+            {k === "customer" ? "Customer Success Visits" : "Sales Visits"}
+          </button>
+        ))}
+      </div>
 
-      {manager && section === "customer" ? (
+      {section === "sales" ? <SalesVisitsSection planSignal={planSignal} /> : <>
+      {manager ? (
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-mute">Engineer:</span>
@@ -346,6 +346,7 @@ function VisitsPage() {
           </div>
         </Panel>
       ) : null}
+      </>}
     </AppShell>
   );
 }
