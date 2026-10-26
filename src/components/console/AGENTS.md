@@ -1,0 +1,5 @@
+- Execution module data lives in public.execution_* tables via src/lib/execution.ts (own small store); daily updates and activity are separate rows per job — keeps multi-day history accurate.
+- Manager Dashboard has three views (Management Overview / Customer Success / Execution) in src/components/console/ManagerDashboard.tsx, selected via ?view= on /; it only reads existing stores — engineers keep their own dashboards.
+- Engineers → Workload (src/components/console/Workload.tsx) is a read-only planning layer over tasks, reports, visits, comms and execution jobs; levels only appear when public.workload_settings thresholds are set (Settings → Workload) — no scoring from arbitrary numbers.
+- Workload day types (Office / Site / Holiday work / Leave / Off) derive in Workload.tsx from visits, job dates, engineer_leaves and non-working days — no attendance records.
+- Standalone Execution site visits (factory inspection, sensor collection, etc.) live in public.execution_site_visits via src/lib/execution.ts; they count as Site days in Workload and in the manager Execution view, with an optional related_job_id — avoids fake jobs for non-job visits.
