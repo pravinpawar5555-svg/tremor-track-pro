@@ -82,6 +82,8 @@ function VisitsPage() {
   const team = analystsOf(data);
 
   const [who, setWho] = useState<string>("total");
+  const isMgr = data.role === "manager";
+  const [section, setSection] = useState<"customer" | "sales">("customer");
   const [filter, setFilter] = useState<Filter>("all");
   const [view, setView] = useState<"list" | "calendar">("list");
   const [customer, setCustomer] = useState("");
@@ -94,8 +96,8 @@ function VisitsPage() {
   const [selected, setSelected] = useState<string | null>(null);
 
   const mine = useMemo(
-    () => all.filter((v) => (who === "private" ? v.managerOnly : who === "total" || v.engineerIds.includes(who))),
-    [all, manager, who, me],
+    () => all.filter((v) => (section === "sales" ? v.managerOnly : !v.managerOnly && (who === "total" || v.engineerIds.includes(who)))),
+    [all, section, who],
   );
   const pCust = (id: string) => data.plants.find((p) => p.id === id)?.customer ?? "";
   const customers = [...new Set(data.plants.map((p) => p.customer).filter(Boolean))].sort();
@@ -133,19 +135,29 @@ function VisitsPage() {
   return (
     <AppShell>
       <PageHeader
-        title="Customer Visit Planner"
+        title={section === "sales" ? "Sales Visits" : "Customer Visit Planner"}
         subtitle="AMC planned and on-request customer visits, summaries and follow-up actions"
-        actions={manager ? <Button variant="solid" onClick={() => setEditing(blankVisit(me))}>+ Add Visit</Button> : undefined}
+        actions={manager ? <Button variant="solid" onClick={() => setEditing(section === "sales" ? { ...blankVisit(me), managerOnly: true, visitType: "request", frequency: "none", engineerIds: [me] } : blankVisit(me))}>{section === "sales" ? "+ Plan Sales Visit" : "+ Plan Customer Visit"}</Button> : undefined}
       />
 
-      {manager ? (
+      {isMgr ? (
+        <div className="mb-3 inline-flex rounded-md border border-line p-0.5 text-sm">
+          {(["customer", "sales"] as const).map((k) => (
+            <button key={k} type="button" onClick={() => setSection(k)} className={cn("rounded px-3 py-1.5", section === k ? "bg-signal text-signal-foreground" : "text-mute")}>
+              {k === "customer" ? "Customer Visits" : "🔒 Sales Visits (mine)"}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {manager && section === "customer" ? (
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-mute">Engineer:</span>
             <Segmented
               value={who}
               onChange={setWho}
-              options={[{ v: "total", label: "Total" }, ...team.map((a) => ({ v: a.id, label: a.name.split(" ")[0]! })), ...(data.role === "manager" ? [{ v: "private", label: "🔒 Mine" }] : [])]}
+              options={[{ v: "total", label: "Total" }, ...team.map((a) => ({ v: a.id, label: a.name.split(" ")[0]! }))]}
             />
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -391,7 +403,6 @@ function MomToggle({ on, set }: { on: boolean; set: (v: boolean) => void }) {
 }
 
 function VisitForm({ initial, onClose }: { initial: Visit; onClose: () => void }) {
-  const isMgr = useData().role === "manager";
   const data = useData();
   const team = analystsOf(data);
   const [v, setV] = useState<Visit>(initial);
@@ -410,7 +421,7 @@ function VisitForm({ initial, onClose }: { initial: Visit; onClose: () => void }
     }
   };
   return (
-    <Panel className="mt-4" title={initial.plantId ? "Edit visit" : "Plan customer visit"} meta={<button type="button" className="text-signal" onClick={onClose}>Close</button>}>
+    <Panel className="mt-4" title={initial.plantId ? "Edit visit" : initial.managerOnly ? "Plan sales visit" : "Plan customer visit"} meta={<button type="button" className="text-signal" onClick={onClose}>Close</button>}>
       <div className="grid gap-3 p-4 md:grid-cols-3">
         <Field label="Customer name">
           <Select value={customer} onChange={(e) => { setCustomer(e.target.value); set({ plantId: "" }); }}>
@@ -426,7 +437,7 @@ function VisitForm({ initial, onClose }: { initial: Visit; onClose: () => void }
         </Field>
         <Field label="Assigned engineer(s)">
           <div className="flex flex-wrap gap-3 pt-1.5 text-sm">
-            {(isMgr ? [...managersOf(data), ...team] : team).map((a) => (
+            {(initial.managerOnly ? managersOf(data) : [...managersOf(data), ...team]).map((a) => (
               <label key={a.id} className="flex items-center gap-1.5">
                 <input
                   type="checkbox"
@@ -438,12 +449,6 @@ function VisitForm({ initial, onClose }: { initial: Visit; onClose: () => void }
             ))}
           </div>
         </Field>
-        {isMgr ? (
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input type="checkbox" checked={v.managerOnly} onChange={(e) => set({ managerOnly: e.target.checked })} />
-            🔒 Manager-only visit (hidden from engineers)
-          </label>
-        ) : null}
         <Field label="Visit type">
           <Select value={v.visitType} onChange={(e) => set({ visitType: e.target.value as Visit["visitType"] })}>
             <option value="amc">AMC Planned Visit</option>
