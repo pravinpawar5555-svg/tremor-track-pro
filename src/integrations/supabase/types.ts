@@ -788,6 +788,7 @@ export type Database = {
           related_execution_job_id: string
           requirement_summary: string
           sales_engineer_id: string
+          sales_visit_id: string | null
           stage: string
           updated_at: string
           updated_by: string
@@ -831,6 +832,7 @@ export type Database = {
           related_execution_job_id?: string
           requirement_summary?: string
           sales_engineer_id?: string
+          sales_visit_id?: string | null
           stage?: string
           updated_at?: string
           updated_by?: string
@@ -874,6 +876,7 @@ export type Database = {
           related_execution_job_id?: string
           requirement_summary?: string
           sales_engineer_id?: string
+          sales_visit_id?: string | null
           stage?: string
           updated_at?: string
           updated_by?: string
@@ -1213,6 +1216,123 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sales_visits: {
+        Row: {
+          actual_visit_date: string | null
+          applications: string[]
+          branch_id: string
+          company_name: string
+          contact_number: string
+          contact_person: string
+          created_at: string
+          created_by: string | null
+          customer_met: string
+          customer_requirement: string
+          customer_type: string
+          discussion_summary: string
+          email: string
+          fm_participants: string
+          history: Json
+          id: string
+          location: string
+          next_action: string
+          next_followup_date: string | null
+          next_step: string
+          next_step_owner_id: string
+          objective: string
+          opportunity_id: string | null
+          participants: Json
+          plant_id: string
+          potential: string
+          purpose: string
+          reminder_id: string | null
+          sales_engineer_id: string
+          status: string
+          updated_at: string
+          visit_date: string
+          visit_no: string
+          visit_outcome: string
+          visit_owner_id: string
+          visit_with: string
+        }
+        Insert: {
+          actual_visit_date?: string | null
+          applications?: string[]
+          branch_id?: string
+          company_name?: string
+          contact_number?: string
+          contact_person?: string
+          created_at?: string
+          created_by?: string | null
+          customer_met?: string
+          customer_requirement?: string
+          customer_type?: string
+          discussion_summary?: string
+          email?: string
+          fm_participants?: string
+          history?: Json
+          id?: string
+          location?: string
+          next_action?: string
+          next_followup_date?: string | null
+          next_step?: string
+          next_step_owner_id?: string
+          objective?: string
+          opportunity_id?: string | null
+          participants?: Json
+          plant_id?: string
+          potential?: string
+          purpose?: string
+          reminder_id?: string | null
+          sales_engineer_id?: string
+          status?: string
+          updated_at?: string
+          visit_date: string
+          visit_no?: string
+          visit_outcome?: string
+          visit_owner_id?: string
+          visit_with?: string
+        }
+        Update: {
+          actual_visit_date?: string | null
+          applications?: string[]
+          branch_id?: string
+          company_name?: string
+          contact_number?: string
+          contact_person?: string
+          created_at?: string
+          created_by?: string | null
+          customer_met?: string
+          customer_requirement?: string
+          customer_type?: string
+          discussion_summary?: string
+          email?: string
+          fm_participants?: string
+          history?: Json
+          id?: string
+          location?: string
+          next_action?: string
+          next_followup_date?: string | null
+          next_step?: string
+          next_step_owner_id?: string
+          objective?: string
+          opportunity_id?: string | null
+          participants?: Json
+          plant_id?: string
+          potential?: string
+          purpose?: string
+          reminder_id?: string | null
+          sales_engineer_id?: string
+          status?: string
+          updated_at?: string
+          visit_date?: string
+          visit_no?: string
+          visit_outcome?: string
+          visit_owner_id?: string
+          visit_with?: string
+        }
+        Relationships: []
       }
       tasks: {
         Row: {
