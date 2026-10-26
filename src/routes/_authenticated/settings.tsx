@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { AccessControl } from "@/components/console/AccessControl";
 import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, PageHeader, Panel, Select, TextInput } from "@/components/console/ui";
 import { peekDomain } from "@/lib/domain";
@@ -28,8 +29,8 @@ export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
 });
 
-type Tab = "kams" | "branches" | "sales" | "hierarchy" | "history" | "workload";
-const tabs: [Tab, string][] = [["kams", "HO Division KAMs"], ["branches", "Branches"], ["sales", "Sales Engineers"], ["hierarchy", "Hierarchy"], ["history", "Change history"], ["workload", "Workload"]];
+type Tab = "kams" | "branches" | "sales" | "hierarchy" | "history" | "workload" | "access";
+const tabs: [Tab, string][] = [["kams", "HO Division KAMs"], ["branches", "Branches"], ["sales", "Sales Engineers"], ["hierarchy", "Hierarchy"], ["history", "Change history"], ["workload", "Workload"], ["access", "Access Control"]];
 
 const wrap = async (p: Promise<void>, ok: string) => {
   try { await p; toast.success(ok); return true; } catch (e: any) { toast.error(e.message ?? "Could not save"); return false; }
@@ -55,6 +56,7 @@ function SettingsPage() {
       {tab === "hierarchy" && <Hierarchy />}
       {tab === "history" && <History />}
       {tab === "workload" && <WorkloadRules />}
+      {tab === "access" && <AccessControl />}
     </AppShell>
   );
 }

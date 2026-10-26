@@ -1,14 +1,18 @@
 // Pure role/count rules shared by the UI and covered by src/lib/__tests__/role-access.test.ts.
 import type { Domain } from "@/lib/domain";
 import type { ExecJob, ExecSiteVisit } from "@/lib/execution";
+import { levelOf, PATH_MODULE, type Perm } from "@/lib/permissions";
 
 export const NAV_PATHS = ["/", "/tasks", "/discussions", "/visits", "/execution", "/opportunities", "/reports", "/plants", "/contacts", "/engineers", "/settings"] as const;
 export type NavPath = (typeof NAV_PATHS)[number];
 
-/** Which main tabs a login sees. */
-export function navAllowed(manager: boolean, domain: Domain, to: string): boolean {
+/** Which main tabs a login sees. `perms` (role access matrix from Settings) overrides the defaults when loaded. */
+export function navAllowed(manager: boolean, domain: Domain, to: string, perms?: Perm[] | null): boolean {
   if (manager) return true;
-  if (to === "/settings" || to === "/engineers") return false;
+  if (to === "/settings") return false;
+  const mod = PATH_MODULE[to];
+  if (perms && perms.length && mod && (domain === "customer_success" || domain === "execution")) return levelOf(perms, domain, mod, "view") !== "none";
+  if (to === "/engineers") return false;
   if (domain === "execution") return to !== "/visits" && to !== "/reports";
   return to !== "/execution";
 }

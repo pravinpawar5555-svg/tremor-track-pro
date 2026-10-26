@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { startSession } from "@/lib/store";
 import { setDomain, type Domain } from "@/lib/domain";
+import { loadPermissions } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/_authenticated")({
     const role = (roles ?? []).some((r) => r.role === "manager") ? "manager" : "engineer";
     const domain = ((dom as string | null) ?? "customer_success") as Domain;
     setDomain(domain);
+    await loadPermissions().catch(() => null);
     startSession(profile.engineer_id || data.user.id, role);
     return { user: data.user, role, domain };
   },

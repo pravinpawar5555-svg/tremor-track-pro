@@ -25,4 +25,4 @@
 - Manager-private work: rows for a manager id get work_domain='manager' (stamp_work_domain); visits.manager_only is manager-only in RLS — engineers never read them.
 - Sales Visits live in public.sales_visits via src/lib/sales-visits.ts (own store; RLS: manager all, others own rows); leads/opportunities are created only on user action into public.opportunities (sales_visit_id link) and follow-ups reuse Daily Work reminders — separate from AMC/request visits.
 
-- src/components/console has its own AGENTS.md (dashboard, workload, execution rules) — read it before changing those areas.
+- src/components/console has its own AGENTS.md (dashboard, workload, execution rules) — read it before changing those areas.- Role access matrix lives in public.role_permissions/reminder_rules (src/lib/permissions.ts, Settings → Access Control): 'none' = restrictive RLS deny, 'own' = existing rules, 'all' = permissive widen via perm_level(); manager always full; changes audited in permission_audit — one central, data-enforced matrix.
