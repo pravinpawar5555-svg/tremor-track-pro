@@ -7,7 +7,7 @@ import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, Kpi, Panel, PageHeader, Select, TextArea, TextInput, Td, Th, Tr } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
 import { AttendeesEditor, MomPanel } from "@/components/console/VisitMom";
-import { TODAY, analystsOf, engineerName, fmtDate, plantName, shiftDate, useData } from "@/lib/store";
+import { TODAY, analystsOf, managersOf, engineerName, fmtDate, plantName, shiftDate, useData } from "@/lib/store";
 import {
   blankVisit,
   cancelVisit,
@@ -94,7 +94,7 @@ function VisitsPage() {
   const [selected, setSelected] = useState<string | null>(null);
 
   const mine = useMemo(
-    () => all.filter((v) => (manager ? who === "total" || v.engineerIds.includes(who) : v.engineerIds.includes(me))),
+    () => all.filter((v) => (who === "private" ? v.managerOnly : who === "total" || v.engineerIds.includes(who))),
     [all, manager, who, me],
   );
   const pCust = (id: string) => data.plants.find((p) => p.id === id)?.customer ?? "";
@@ -145,7 +145,7 @@ function VisitsPage() {
             <Segmented
               value={who}
               onChange={setWho}
-              options={[{ v: "total", label: "Total" }, ...team.map((a) => ({ v: a.id, label: a.name.split(" ")[0]! }))]}
+              options={[{ v: "total", label: "Total" }, ...team.map((a) => ({ v: a.id, label: a.name.split(" ")[0]! })), ...(data.role === "manager" ? [{ v: "private", label: "🔒 Mine" }] : [])]}
             />
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -391,6 +391,7 @@ function MomToggle({ on, set }: { on: boolean; set: (v: boolean) => void }) {
 }
 
 function VisitForm({ initial, onClose }: { initial: Visit; onClose: () => void }) {
+  const isMgr = useData().role === "manager";
   const data = useData();
   const team = analystsOf(data);
   const [v, setV] = useState<Visit>(initial);
@@ -425,7 +426,7 @@ function VisitForm({ initial, onClose }: { initial: Visit; onClose: () => void }
         </Field>
         <Field label="Assigned engineer(s)">
           <div className="flex flex-wrap gap-3 pt-1.5 text-sm">
-            {team.map((a) => (
+            {(isMgr ? [...managersOf(data), ...team] : team).map((a) => (
               <label key={a.id} className="flex items-center gap-1.5">
                 <input
                   type="checkbox"
@@ -437,6 +438,12 @@ function VisitForm({ initial, onClose }: { initial: Visit; onClose: () => void }
             ))}
           </div>
         </Field>
+        {isMgr ? (
+          <label className="flex items-center gap-2 text-sm sm:col-span-2">
+            <input type="checkbox" checked={v.managerOnly} onChange={(e) => set({ managerOnly: e.target.checked })} />
+            🔒 Manager-only visit (hidden from engineers)
+          </label>
+        ) : null}
         <Field label="Visit type">
           <Select value={v.visitType} onChange={(e) => set({ visitType: e.target.value as Visit["visitType"] })}>
             <option value="amc">AMC Planned Visit</option>

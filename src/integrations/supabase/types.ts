@@ -1396,6 +1396,7 @@ export type Database = {
           fm_attendees: Json
           frequency: string
           id: string
+          manager_only: boolean
           mom_no: string
           mom_required: boolean
           next_visit_date: string | null
@@ -1420,6 +1421,7 @@ export type Database = {
           fm_attendees?: Json
           frequency?: string
           id?: string
+          manager_only?: boolean
           mom_no?: string
           mom_required?: boolean
           next_visit_date?: string | null
@@ -1444,6 +1446,7 @@ export type Database = {
           fm_attendees?: Json
           frequency?: string
           id?: string
+          manager_only?: boolean
           mom_no?: string
           mom_required?: boolean
           next_visit_date?: string | null

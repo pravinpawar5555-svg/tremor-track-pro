@@ -40,6 +40,7 @@ export interface Visit {
   momNo: string;
   /** Whether the generated MOM ends with customer and Forbes Marshall signatures. */
   signOffRequired: boolean;
+  managerOnly: boolean;
   /** false = discussion-only visit: no MOM document/serial, still counted everywhere. */
   momRequired: boolean;
 }
@@ -138,6 +139,7 @@ const fromRow = (r: any): Visit => ({
   fmAttendees: Array.isArray(r.fm_attendees) ? r.fm_attendees : [],
   momNo: r.mom_no ?? "",
   signOffRequired: r.sign_off_required ?? false,
+  managerOnly: r.manager_only ?? false,
   momRequired: r.mom_required ?? true,
 });
 
@@ -161,6 +163,7 @@ const toRow = (v: Visit) => ({
   customer_attendees: v.customerAttendees,
   fm_attendees: v.fmAttendees,
   sign_off_required: v.signOffRequired,
+  manager_only: v.managerOnly,
   mom_required: v.momRequired,
 });
 
@@ -224,6 +227,7 @@ export function blankVisit(createdBy: string): Visit {
     fmAttendees: [],
     momNo: "",
     signOffRequired: false,
+    managerOnly: false,
     momRequired: true,
   };
 }
