@@ -954,6 +954,33 @@ export type Database = {
         }
         Relationships: []
       }
+      permission_audit: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          id: string
+          new_value: string
+          old_value: string
+          setting: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          new_value?: string
+          old_value?: string
+          setting: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          new_value?: string
+          old_value?: string
+          setting?: string
+        }
+        Relationships: []
+      }
       plants: {
         Row: {
           amc_end: string | null
@@ -1080,6 +1107,30 @@ export type Database = {
         }
         Relationships: []
       }
+      reminder_rules: {
+        Row: {
+          allowed: boolean
+          from_domain: string
+          to_domain: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          allowed?: boolean
+          from_domain: string
+          to_domain: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Update: {
+          allowed?: boolean
+          from_domain?: string
+          to_domain?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: []
+      }
       reminders: {
         Row: {
           completed_at: string | null
@@ -1170,6 +1221,33 @@ export type Database = {
           sent_date?: string | null
           status?: string
           type?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          action: string
+          level: string
+          module: string
+          role: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          action: string
+          level?: string
+          module: string
+          role: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Update: {
+          action?: string
+          level?: string
+          module?: string
+          role?: string
+          updated_at?: string
+          updated_by?: string
         }
         Relationships: []
       }
@@ -1633,6 +1711,11 @@ export type Database = {
       is_exec_engineer_id: { Args: { _id: string }; Returns: boolean }
       my_exec_ids: { Args: { _uid: string }; Returns: string[] }
       my_person_ids: { Args: { _uid: string }; Returns: string[] }
+      perm_level: {
+        Args: { _action: string; _module: string; _uid: string }
+        Returns: string
+      }
+      person_domain: { Args: { _id: string }; Returns: string }
       review_user: {
         Args: { _approve: boolean; _user_id: string }
         Returns: undefined

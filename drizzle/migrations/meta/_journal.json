@@ -218,6 +218,13 @@
       "when": 1793008918465,
       "tag": "0030_sales_visits",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793016919238,
+      "tag": "0031_role_access_control",
+      "breakpoints": true
     }
   ]
 }
