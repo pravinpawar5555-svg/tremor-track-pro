@@ -82,8 +82,8 @@ export function SalesVisitsSection({ planSignal }: { planSignal: number }) {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Kpi label="Planned" value={sum.planned} />
         <Kpi label="Completed" value={sum.completed} />
-        <Kpi label="Follow-up required" value={sum.followup} tone={sum.followup ? "high" : undefined} />
-        <Kpi label="Potential identified" value={sum.potential} tone={sum.potential ? "low" : undefined} />
+        <Kpi label="Follow-up required" value={sum.followup} {...(sum.followup ? { tone: "high" as const } : {})} />
+        <Kpi label="Potential identified" value={sum.potential} {...(sum.potential ? { tone: "low" as const } : {})} />
       </div>
       <p className="mt-2 text-[11px] text-mute">
         This month: {sum.month.visits} visits · {sum.month.newCustomers} new · {sum.month.existing} existing · {sum.month.linked} linked to a lead / opportunity
@@ -213,7 +213,7 @@ function PlanForm({ initial, onClose, onSaved }: { initial: SalesVisit; onClose:
     set("participants", v.participants.some((p) => p.salesEngineerId === id) ? v.participants.filter((p) => p.salesEngineerId !== id) : [...v.participants, { name, role: "Sales Engineer", salesEngineerId: id }]);
   const ok = v.visitDate && v.company.trim() && v.location.trim() && v.branchId && v.ownerId && v.purpose;
   const submit = async () => {
-    if (!ok) return toast.error("Fill the required fields marked *");
+    if (!ok) { toast.error("Fill the required fields marked *"); return; }
     setBusy(true);
     try {
       const notes: string[] = [];
@@ -288,7 +288,7 @@ function CompleteForm({ v: initial, onClose, onSaved }: { v: SalesVisit; onClose
   const set = <K extends keyof SalesVisit>(k: K, val: SalesVisit[K]) => setV((x) => ({ ...x, [k]: val }));
   const toggleApp = (a: string) => set("applications", v.applications.includes(a) ? v.applications.filter((x) => x !== a) : [...v.applications, a]);
   const submit = async () => {
-    if (!v.summary.trim() || !v.outcome || !v.nextStep) return toast.error("Discussion summary, outcome and next step are required");
+    if (!v.summary.trim() || !v.outcome || !v.nextStep) { toast.error("Discussion summary, outcome and next step are required"); return; }
     setBusy(true);
     try {
       const status = statusAfterCompletion(v.nextStep, v.outcome);
@@ -368,7 +368,7 @@ function Detail({ v, onClose, onEdit, onComplete }: { v: SalesVisit; onClose: ()
     setLinking(false);
   };
   const followUp = async () => {
-    if (!v.followupDate) return toast.error("Set a follow-up date first (Edit outcome)");
+    if (!v.followupDate) { toast.error("Set a follow-up date first (Edit outcome)"); return; }
     const r = { ...blankReminder(v.nextOwnerId || n.me, v.followupDate), createdBy: n.me, plantId: v.plantId,
       title: `Follow up with ${v.company}${v.nextAction ? ` — ${v.nextAction}` : ""}`, description: `Linked to Sales Visit ${v.visitNo}` };
     await saveReminder(r);
