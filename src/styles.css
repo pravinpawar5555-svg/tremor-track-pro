@@ -20,6 +20,9 @@
   --color-sev-medium: var(--sev-medium);
   --color-sev-high: var(--sev-high);
   --color-sev-critical: var(--sev-critical);
+  --color-sev-monitor: var(--sev-monitor);
+  --color-sev-info: var(--sev-info);
+  --color-sev-severe: var(--sev-severe);
 
   /* shadcn compatibility aliases */
   --color-background: var(--base);
@@ -61,6 +64,9 @@
   --sev-medium: oklch(0.651 0.121 85);
   --sev-high: oklch(0.585 0.176 43);
   --sev-critical: oklch(0.523 0.203 17);
+  --sev-monitor: oklch(0.546 0.215 262.9);
+  --sev-info: oklch(0.541 0.2 300);
+  --sev-severe: oklch(0.42 0.17 22);
 
   --flow-assigned: #2563eb;
   --flow-completed: #22a06b;
