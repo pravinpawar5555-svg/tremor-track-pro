@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { Download, Eye, Loader2, Pencil, Sparkles, X } from "lucide-react";
-import { useServerFn } from "@tanstack/react-start";
-import { generateMomFromNotes } from "@/lib/mom-ai.functions";
+import { Download, Eye, Loader2, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -197,35 +195,7 @@ async function downloadMom(data: AppData, v: Visit) {
 export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: boolean; onClose: () => void }) {
   const data = useData();
   const [v, setV] = useState<Visit>(visit);
-  const [mode, setMode] = useState<"preview" | "edit" | "ai">("preview");
-  const [notes, setNotes] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const genFn = useServerFn(generateMomFromNotes);
-  const generate = async () => {
-    if (notes.trim().length < 10) { toast.error("Paste your visit notes first"); return; }
-    setGenerating(true);
-    try {
-      const d = new Date();
-      const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      const res = await genFn({ data: { notes, today, people: data.engineers.map((e) => ({ id: e.id, name: e.name })) } });
-      if (!res.ok) return void toast.error(res.error);
-      const m = res.mom;
-      const ids = new Set(data.engineers.map((e) => e.id));
-      setV((x) => ({
-        ...x,
-        purpose: x.purpose.trim() ? x.purpose : m.purpose,
-        discussionPoints: [...x.discussionPoints.filter((p) => p.trim()), ...m.discussionPoints],
-        observations: [x.observations.trim(), m.observations.trim()].filter(Boolean).join("\n\n"),
-        actions: [...x.actions, ...m.actions.map((a) => ({ action: a.action, responsible: ids.has(a.responsibleId) || a.responsibleId === "customer" ? a.responsibleId : "", dueDate: /^\d{4}-\d{2}-\d{2}$/.test(a.dueDate) ? a.dueDate : "", status: "open" as const, remarks: a.remarks }))],
-      }));
-      toast.success("Draft ready — review and click Save MOM");
-      setMode("edit");
-    } catch {
-      toast.error("AI could not structure these notes. Please fill the MOM manually.");
-    } finally {
-      setGenerating(false);
-    }
-  };
+  const [mode, setMode] = useState<"preview" | "edit">("preview");
   const [downloading, setDownloading] = useState(false);
   const plant = data.plants.find((p) => p.id === v.plantId);
   const setAction = (i: number, p: Partial<VisitAction>) => setV((x) => ({ ...x, actions: x.actions.map((a, j) => (j === i ? { ...a, ...p } : a)) }));
@@ -275,14 +245,6 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
               >
                 <Pencil className="size-3.5" /> Edit
               </button>
-              <button
-                type="button"
-                title="AI Generate"
-                onClick={() => setMode("ai")}
-                className={cn("inline-flex items-center gap-1.5 border-l border-line px-2.5 py-1.5 text-xs font-medium transition-colors", mode === "ai" ? "bg-signal text-signal-foreground" : "bg-panel text-ink hover:bg-base")}
-              >
-                <Sparkles className="size-3.5" /> AI Generate
-              </button>
             </span>
           ) : null}
           <button type="button" title="Download PDF" disabled={downloading} onClick={() => void download()} className={cn(toolBtn, "disabled:opacity-50")}>
@@ -294,22 +256,7 @@ export function MomPanel({ visit, canEdit, onClose }: { visit: Visit; canEdit: b
         </span>
       }
     >
-      {mode === "ai" ? (
-        <div className="grid gap-3 p-4 text-sm">
-          <div>
-            <div className="font-medium">AI Generate MOM</div>
-            <p className="text-xs text-mute">Paste rough notes, bullet points or voice-to-text from the meeting. AI fills purpose, discussion points, observations and action items (owner + due date). You review and edit before saving — or use Edit to write it manually.</p>
-          </div>
-          <TextArea rows={10} placeholder="e.g. Met Mr Sharma and maintenance team. ID fan bearing vibration high 7.2 mm/s, discussed greasing. Customer to check alignment by next Friday. Laxmi to send trend report in 2 days…" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          <div className="flex flex-wrap gap-2">
-            <Button disabled={generating} onClick={() => void generate()}>
-              {generating ? <Loader2 className="mr-1.5 inline size-3.5 animate-spin" /> : <Sparkles className="mr-1.5 inline size-3.5" />}
-              {generating ? "Generating…" : "Generate draft"}
-            </Button>
-            <button type="button" className="text-xs text-mute" onClick={() => setMode("edit")}>Fill manually instead</button>
-          </div>
-        </div>
-      ) : mode === "preview" ? (
+      {mode === "preview" ? (
         <div className="p-4">
           <div className="mx-auto max-w-3xl bg-panel p-6 text-sm shadow ring-1 ring-line">
             <div className="relative -mx-6 -mt-6 mb-4 flex items-center gap-3 px-6 py-3 text-white" style={{ backgroundColor: "#182C54" }}>
