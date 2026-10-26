@@ -1,4 +1,4 @@
-import { analysisProgress, analysisSummaryText, blankAnalysis, type MachineAnalysis } from "./ticket-analysis";
+import { analysisProgress, analysisSummaryText, blankAnalysis, isEscalated, type MachineAnalysis } from "./ticket-analysis";
 import { useSyncExternalStore } from "react";
 
 // ---------------------------------------------------------------- types
@@ -1543,6 +1543,11 @@ export function ticketAttention(d: AppData, userId = d.currentUserId) {
   const open = (d.tickets ?? []).filter((t) => t.status !== "closed");
   if (isManager(d, userId)) return open.filter((t) => t.status !== "responded").length;
   return open.filter((t) => (t.raisedBy === userId || t.assignedTo === userId) && unreadCount(d, ticketThread(t.id), userId) > 0).length;
+}
+
+/** Tickets past the 24h escalation SLA (manager view only). */
+export function escalatedTickets(d: AppData, now: Date = new Date()) {
+  return (d.tickets ?? []).filter((t) => isEscalated(t, now));
 }
 
 export function ticketKpis(d: AppData, userId = d.currentUserId) {

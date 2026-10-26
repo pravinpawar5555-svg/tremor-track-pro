@@ -173,3 +173,27 @@ export function analysisSummaryText(rows: MachineAnalysis[], managerName: string
   );
   return [...head, "", ...body].join("\n");
 }
+
+/** Escalation SLA: a high/critical or "need more information" ticket still waiting on the manager after this many hours. */
+export const ESCALATION_HOURS = 24;
+
+export interface EscalationInput {
+  status: string;
+  priority: string;
+  raisedOn: string; // yyyy-mm-dd
+  raisedAt: string; // HH:MM
+  analysis?: MachineAnalysis[] | undefined;
+}
+
+export function needsEscalationWatch(t: EscalationInput): boolean {
+  if (t.status === "closed" || t.status === "responded") return false;
+  if (t.priority === "high" || t.priority === "critical") return true;
+  return (t.analysis ?? []).some((a) => a.status === "more-info" || a.severity === "high" || a.severity === "critical");
+}
+
+export function isEscalated(t: EscalationInput, now: Date = new Date()): boolean {
+  if (!needsEscalationWatch(t)) return false;
+  const raised = new Date(`${t.raisedOn}T${t.raisedAt || "00:00"}:00`);
+  if (Number.isNaN(raised.getTime())) return false;
+  return now.getTime() - raised.getTime() > ESCALATION_HOURS * 3600 * 1000;
+}

@@ -52,3 +52,22 @@ describe("ticket machine-wise analysis", () => {
     expect(reviewStage([done("a", "normal")], true)).toBe("published");
   });
 });
+
+import { isEscalated } from "../ticket-analysis";
+describe("ticket escalation SLA", () => {
+  const base = { status: "open", priority: "medium", raisedOn: "2026-10-01", raisedAt: "10:00", analysis: [] as never[] };
+  const now = new Date("2026-10-02T10:30:00");
+  it("escalates a high priority ticket unreviewed for more than 24 hours", () => {
+    expect(isEscalated({ ...base, priority: "high" }, now)).toBe(true);
+  });
+  it("does not escalate before 24 hours", () => {
+    expect(isEscalated({ ...base, priority: "high" }, new Date("2026-10-02T09:59:00"))).toBe(false);
+  });
+  it("escalates when a machine needs more information", () => {
+    expect(isEscalated({ ...base, analysis: [{ status: "more-info", severity: "" }] as never }, now)).toBe(true);
+  });
+  it("ignores normal tickets and responded ones", () => {
+    expect(isEscalated(base, now)).toBe(false);
+    expect(isEscalated({ ...base, priority: "critical", status: "responded" }, now)).toBe(false);
+  });
+});
