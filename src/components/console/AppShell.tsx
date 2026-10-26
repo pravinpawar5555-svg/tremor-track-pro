@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { cn } from "@/lib/utils";
 import { useDomain } from "@/lib/domain";
 import { navAllowed } from "@/lib/access";
+import { usePermissions } from "@/lib/permissions";
 import { RefreshControls } from "@/components/console/RefreshControls";
 import { NotificationBell } from "@/components/console/NotificationBell";
 import {
@@ -50,7 +51,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const unread = chatUnread(data);
   const tickets = ticketAttention(data);
   const navigate = useNavigate();
-  const items = nav.filter((n) => navAllowed(manager, domain, n.to));
+  const perms = usePermissions();
+  const items = nav.filter((n) => navAllowed(manager, domain, n.to, perms));
   const [moreOpen, setMoreOpen] = useState(false);
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
   const primary = [
