@@ -345,18 +345,21 @@ function Detail({ v, onClose, onEdit, onComplete }: { v: SalesVisit; onClose: ()
   const create = async (asOpp: boolean) => {
     setBusy(true);
     try {
+      // RLS requires created_by to be the login id (auth.uid), not the engineer-record id.
+      const { data: auth } = await (await import("@/integrations/supabase/client")).supabase.auth.getUser();
+      const authId = auth.user?.id ?? n.me;
       const plant = n.data.plants.find((p) => p.id === v.plantId);
       const o: Opp = {
-        ...blankOpp(n.me), leadSource: "Other", leadSourceOther: `Sales Visit ${v.visitNo}`, plantId: v.plantId,
+        ...blankOpp(authId), leadSource: "Other", leadSourceOther: `Sales Visit ${v.visitNo}`, plantId: v.plantId,
         customerName: plant?.customer || v.company, plantName: plant?.name ?? "", location: v.location, branchId: v.branchId, salesEngineerId: v.salesEngineerId,
         type: v.outcome === "Demo Proposed" || v.nextStep === "Arrange Demo" ? "Demo" : "Order",
         requirement: [v.requirement, v.applications.length ? `Applications: ${v.applications.join(", ")}` : ""].filter(Boolean).join("\n"),
         contactName: v.contactPerson, contactMobile: v.contactNumber, contactEmail: v.email, stage: asOpp ? "qualified" : "new",
         nextAction: v.nextAction || v.nextStep, nextActionOwner: engineerName(n.data, v.nextOwnerId), nextActionDate: v.followupDate,
         notes: `From Sales Visit ${v.visitNo} on ${fmtDate(v.actualDate || v.visitDate)} by ${engineerName(n.data, v.ownerId)}.\n${v.summary}`,
+        salesVisitId: v.id,
       };
       const saved = await saveOpp(o, undefined, n.me, n.meName);
-      await (await import("@/integrations/supabase/client")).supabase.from("opportunities").update({ sales_visit_id: v.id } as never).eq("id", saved.id);
       await saveSalesVisit({ ...v, opportunityId: saved.id }, n.meName, `${asOpp ? "Opportunity" : "Lead"} created: ${saved.number}`);
       toast.success(`${asOpp ? "Opportunity" : "Lead"} ${saved.number} created — open it to complete the details`);
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }

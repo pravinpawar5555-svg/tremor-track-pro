@@ -71,7 +71,7 @@ export interface Opp {
   priority: "normal" | "high"; stage: Stage;
   nextAction: string; nextActionOwner: string; nextActionDate: string;
   notes: string; attachments: string; value: number | null;
-  jobId: string; execHandover: ExecHandover; csHandover: CsHandover; csEngineerId: string;
+  jobId: string; salesVisitId: string; execHandover: ExecHandover; csHandover: CsHandover; csEngineerId: string;
   lostReason: string; lostRemark: string; holdReason: string; holdReviewDate: string;
   archived: boolean; createdBy: string; createdByDomain: string; createdAt: string; updatedAt: string; closedAt: string | null;
 }
@@ -86,7 +86,7 @@ const toOpp = (r: any): Opp => ({
   priority: r.priority === "high" ? "high" : "normal", stage: r.stage as Stage,
   nextAction: r.next_action, nextActionOwner: r.next_action_owner, nextActionDate: r.next_action_date ?? "",
   notes: r.notes, attachments: r.attachment_links, value: r.estimated_value === null || r.estimated_value === undefined ? null : Number(r.estimated_value),
-  jobId: r.related_execution_job_id, execHandover: r.exec_handover ?? {}, csHandover: r.cs_handover ?? {}, csEngineerId: r.customer_success_engineer_id,
+  jobId: r.related_execution_job_id, salesVisitId: r.sales_visit_id ?? "", execHandover: r.exec_handover ?? {}, csHandover: r.cs_handover ?? {}, csEngineerId: r.customer_success_engineer_id,
   lostReason: r.lost_reason, lostRemark: r.lost_remark, holdReason: r.hold_reason, holdReviewDate: r.hold_review_date ?? "",
   archived: !!r.archived, createdBy: r.created_by, createdByDomain: r.created_by_domain, createdAt: r.created_at, updatedAt: r.updated_at, closedAt: r.closed_at,
 });
@@ -98,7 +98,7 @@ const fromOpp = (o: Opp, by: string) => ({
   expected_sensor_qty: o.sensors || 0, expected_machine_qty: o.machines || 0, expected_date: o.expectedDate || null,
   priority: o.priority, stage: o.stage, next_action: o.nextAction, next_action_owner: o.nextActionOwner, next_action_date: o.nextActionDate || null,
   notes: o.notes, attachment_links: o.attachments, estimated_value: o.value,
-  related_execution_job_id: o.jobId, exec_handover: o.execHandover, cs_handover: o.csHandover, customer_success_engineer_id: o.csEngineerId,
+  related_execution_job_id: o.jobId, sales_visit_id: o.salesVisitId || null, exec_handover: o.execHandover, cs_handover: o.csHandover, customer_success_engineer_id: o.csEngineerId,
   lost_reason: o.lostReason, lost_remark: o.lostRemark, hold_reason: o.holdReason, hold_review_date: o.holdReviewDate || null,
   archived: o.archived, created_by: o.createdBy, updated_by: by,
   closed_at: closedStages.includes(o.stage) ? (o.closedAt ?? new Date().toISOString()) : null,
@@ -132,7 +132,7 @@ export function blankOpp(createdBy: string): Opp {
     id: crypto.randomUUID(), number: "", leadSource: "Branch Sales", leadSourceOther: "", plantId: "", customerName: "", plantName: "", location: "",
     branchId: "", salesEngineerId: "", type: "Order", requirement: "", contactName: "", contactMobile: "", contactEmail: "",
     sensors: 0, machines: 0, expectedDate: "", priority: "normal", stage: "new", nextAction: "", nextActionOwner: "", nextActionDate: "",
-    notes: "", attachments: "", value: null, jobId: "", execHandover: {}, csHandover: {}, csEngineerId: "",
+    notes: "", attachments: "", value: null, jobId: "", salesVisitId: "", execHandover: {}, csHandover: {}, csEngineerId: "",
     lostReason: "", lostRemark: "", holdReason: "", holdReviewDate: "", archived: false, createdBy, createdByDomain: "",
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), closedAt: null,
   };
