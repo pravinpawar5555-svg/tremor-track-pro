@@ -170,3 +170,8 @@ export async function upsertPeriod(input: Partial<BillingRecord> & { plantId: st
   const { error } = await supabase.from("billing_periods").upsert(row as never, { onConflict: "plant_id,period_start" });
   if (error) throw error;
 }
+
+export async function removePeriod(plantId: string, periodStart: string) {
+  const { error } = await supabase.from("billing_periods").delete().eq("plant_id", plantId).eq("period_start", periodStart);
+  if (error) throw error;
+}
