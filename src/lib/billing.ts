@@ -37,7 +37,7 @@ export const blankConfig = (plantId = ""): BillingConfig => ({
 
 // ---------------------------------------------------------------- pure date helpers
 function addMonths(iso: string, n: number) {
-  const [y, m, d] = iso.split("-").map(Number);
+  const [y = 0, m = 1, d = 1] = iso.split("-").map(Number);
   const t = new Date(Date.UTC(y, m - 1 + n, 1));
   const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate();
   t.setUTCDate(Math.min(d, last));
@@ -100,7 +100,7 @@ export function effectiveStatus(rec: BillingRecord | undefined, derived: "waitin
 
 export interface PlantBillingView {
   config: BillingConfig; period: { start: string; end: string } | null; reports: ReportRow[];
-  sent: number; total: number; status: PeriodStatus | null; record?: BillingRecord;
+  sent: number; total: number; status: PeriodStatus | null; record?: BillingRecord | undefined;
 }
 export function plantBilling(config: BillingConfig | undefined, plantId: string, reports: ReportRow[], records: BillingRecord[], today: string, at?: { start: string; end: string }): PlantBillingView {
   const cfg = config ?? blankConfig(plantId);

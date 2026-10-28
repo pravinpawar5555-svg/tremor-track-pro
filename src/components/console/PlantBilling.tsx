@@ -87,7 +87,7 @@ export function BillingDialog({ plant, open, onClose }: { plant: Plant | null; o
   const view = plant ? plantBilling(cfg, plant.id, data.reports, b.records, TODAY, at) : null;
   const [mode, setMode] = useState<"" | "handoff" | "hold" | "invoice">("");
   const [note, setNote] = useState("");
-  const [hold, setHold] = useState(HOLD_REASONS[0]);
+  const [hold, setHold] = useState<string>(HOLD_REASONS[0] ?? "Other");
   const [inv, setInv] = useState({ no: "", date: TODAY, link: "", comment: "" });
   const [busy, setBusy] = useState(false);
 
@@ -105,7 +105,7 @@ export function BillingDialog({ plant, open, onClose }: { plant: Plant | null; o
     ...base, status: "sent_to_team", reportIds: view.reports.map((r) => r.id), reportsSent: view.sent, reportsTotal: view.total,
     poRef: view.config.poRef, note, sentBy: actor, sentAt: new Date().toISOString(), holdReason: "",
   }, actor), `Ready for Invoice — ${plant.name} · ${periodLabel(base.periodStart, base.periodEnd)} sent to invoice team`);
-  const putHold = () => base && run(() => upsertPeriod({ ...base, status: "on_hold", holdReason: hold, note: note || rec?.note || "", reportsSent: view.sent, reportsTotal: view.total }, actor), `On hold — ${hold}`);
+  const putHold = () => base && run(() => upsertPeriod({ ...base, status: "on_hold", holdReason: hold ?? "", note: note || rec?.note || "", reportsSent: view.sent, reportsTotal: view.total }, actor), `On hold — ${hold}`);
   const release = () => base && run(() => rec?.sentAt ? upsertPeriod({ ...base, status: rec.invoiceNo ? "generated" : "sent_to_team", holdReason: "" }, actor) : removePeriod(base.plantId, base.periodStart), "Hold released");
   const generate = () => base && run(() => upsertPeriod({ ...base, status: "generated", invoiceNo: inv.no.trim(), invoiceDate: inv.date, invoiceLink: inv.link.trim(), invoiceComment: inv.comment }, actor), `Invoice Generated — ${inv.no}`);
   const markSent = () => base && run(() => upsertPeriod({ ...base, status: "invoice_sent", invoiceSentDate: TODAY }, actor), `Invoice Sent — ${plant.name}`);
