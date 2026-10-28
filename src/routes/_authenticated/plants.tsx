@@ -5,6 +5,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ownershipOf, useBranches } from "@/lib/branches";
 import { useDomain } from "@/lib/domain";
 import { amcStatus } from "@/lib/amc";
+import { BillingDialog, BillingFormSection, BillingLine, BillingTracker } from "@/components/console/PlantBilling";
+import { blankConfig, plantBilling, saveBillingConfig, useBilling, type BillingConfig } from "@/lib/billing";
+import { toast } from "sonner";
 import { CustomerContacts } from "@/components/console/CustomerContacts";
 import { AppShell } from "@/components/console/AppShell";
 import {
@@ -88,7 +91,14 @@ function PlantsPage() {
   const [catFilter, setCatFilter] = useState<"total" | CustomerCategory>("total");
   const [form, setForm] = useState<typeof blank & { id?: string }>(blank);
   const bs = useBranches();
-  const isManager = useDomain() === "manager";
+  const domain = useDomain();
+  const isManager = domain === "manager";
+  const canBilling = domain === "manager" || domain === "customer_success";
+  const billing = useBilling();
+  const [bill, setBill] = useState<BillingConfig>(blankConfig());
+  const [billPlant, setBillPlant] = useState<Plant | null>(null);
+  const [tab, setTab] = useState<"master" | "billing">("master");
+  const bv = (p: Plant) => plantBilling(billing.configOf(p.id), p.id, data.reports, billing.records, TODAY);
   const [kamF, setKamF] = useState("");
   const [branchF, setBranchF] = useState("");
   const [salesF, setSalesF] = useState("");
@@ -137,6 +147,7 @@ function PlantsPage() {
       amcStart: p.amcStart ?? "",
       amcEnd: p.amcEnd ?? "",
     });
+    setBill(billing.configOf(p.id) ?? blankConfig(p.id));
     setOpen(true);
   };
 
@@ -150,7 +161,8 @@ function PlantsPage() {
 
   const save = () => {
     if (!canSave) return;
-    savePlant({
+    const cfg = bill;
+    const plantId = savePlant({
       ...(form.id ? { id: form.id } : {}),
       name: form.name.trim(),
       customer: form.customer.trim(),
@@ -170,6 +182,15 @@ function PlantsPage() {
       amcStart: form.amcStart,
       amcEnd: form.amcEnd,
     });
+    const prev = billing.configOf(plantId);
+    if (isManager && (prev || cfg.model !== "none")) {
+      const attempt = async (n: number): Promise<void> => {
+        try { await saveBillingConfig({ ...cfg, plantId }, engineerName(data, data.currentUserId)); await billing.refresh(); }
+        catch (e) { if (n > 0) { await new Promise((r) => setTimeout(r, 1500)); return attempt(n - 1); } toast.error(`Billing settings not saved: ${e instanceof Error ? e.message : "error"}`); }
+      };
+      void attempt(form.id ? 1 : 4);
+    }
+    setBill(blankConfig());
     setForm(blank);
     setOpen(false);
   };
@@ -185,6 +206,7 @@ function PlantsPage() {
               variant={open ? "ghost" : "solid"}
               onClick={() => {
                 setForm(blank);
+                setBill(blankConfig());
                 setOpen((o) => !o);
               }}
             >
@@ -289,6 +311,7 @@ function PlantsPage() {
                 </span>
               </Field>
             </div>
+            {isManager ? <BillingFormSection value={bill} onChange={setBill} /> : null}
             <div className="flex items-end sm:col-span-2 xl:col-span-4">
               <Button variant="solid" onClick={save} disabled={!canSave}>{form.id ? "Save changes" : "Add plant"}</Button>
             </div>
@@ -326,6 +349,17 @@ function PlantsPage() {
         </Select>
         {(q || kamF || branchF || salesF || csF) ? <Button variant="ghost" onClick={() => { setQ(""); setKamF(""); setBranchF(""); setSalesF(""); setCsF(""); }}>Clear filters</Button> : null}
       </div>
+      {canBilling ? (
+        <div className="mb-3 inline-flex rounded-md p-0.5 ring-1 ring-line/80">
+          {([["master", "Plant master"], ["billing", "Billing tracker"]] as const).map(([k, l]) => (
+            <button key={k} type="button" onClick={() => setTab(k)} className={`rounded px-3 py-1.5 text-sm ${tab === k ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"}`}>{l}</button>
+          ))}
+        </div>
+      ) : null}
+      {canBilling ? <BillingDialog plant={billPlant} open={!!billPlant} onClose={() => setBillPlant(null)} /> : null}
+      {tab === "billing" && canBilling ? (
+        <Panel title="Billing tracker" meta="Current billing period per rental plant"><BillingTracker plants={shownPlants} onOpen={setBillPlant} /></Panel>
+      ) : (
       <Panel
         title="Plant master"
         meta={
@@ -361,6 +395,7 @@ function PlantsPage() {
                   <div className="mt-2 flex flex-wrap gap-1">
                     {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : <span className="text-sm text-mute">No report cycle</span>}
                   </div>
+                  {canBilling ? <BillingLine view={bv(p)} onOpen={() => setBillPlant(p)} /> : null}
                   <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
                     <span className="text-mute">CS Engineer</span><span>{engineerName(data, p.engineerId)}</span>
                     <span className="text-mute">Branch</span><span>{ownershipOf(bs, p).branch?.name ?? "—"}</span>
@@ -439,6 +474,7 @@ function PlantsPage() {
                         <Td className="align-top">
                           <span className="flex flex-wrap gap-1">{cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : "—"}</span>
                           <div className="num mt-1 text-xs text-mute">Last: {fmtDate(s.lastReportSent)}</div>
+                          {canBilling ? <BillingLine view={bv(p)} onOpen={() => setBillPlant(p)} /> : null}
                         </Td>
                         <Td className="align-top">
                           <div className="truncate text-xs"><span className="text-mute">CS:</span> {engineerName(data, p.engineerId)}</div>
@@ -454,7 +490,9 @@ function PlantsPage() {
                                   <button type="button" aria-label={`More actions for ${p.name}`} className="grid size-7 place-items-center rounded-md text-mute ring-1 ring-line hover:bg-black/5"><MoreHorizontal className="size-4" /></button>
                                 </PopoverTrigger>
                                 <PopoverContent align="end" className="w-44 p-1">
+                                  <button type="button" onClick={() => setExpanded(p.id)} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-black/5">View plant</button>
                                   <button type="button" onClick={() => edit(p)} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-black/5">Edit plant</button>
+                                  {canBilling ? <button type="button" onClick={() => setBillPlant(p)} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-black/5">Billing & Invoice</button> : null}
                                   <Link to="/opportunities" search={{ plant: p.id }} className="block rounded px-3 py-2 text-sm text-signal hover:bg-black/5">+ Opportunity</Link>
                                   <button type="button" onClick={() => { if (window.confirm(`Delete ${p.name}?`)) removePlant(p.id); }} className="block w-full rounded px-3 py-2 text-left text-sm text-red-600 hover:bg-black/5">Delete</button>
                                 </PopoverContent>
@@ -482,6 +520,15 @@ function PlantsPage() {
                                 </div>
                               </div>
                             </div>
+                            {canBilling ? (() => { const v = bv(p); return (
+                              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3 text-xs">
+                                <span className="label-caps">Billing</span>
+                                <span><span className="text-mute">Model:</span> {v.config.model === "rental" ? "Rental" : v.config.model === "none" ? "Not configured" : v.config.model === "one_time" ? "One-Time / Order" : "Not Applicable"}</span>
+                                {v.period ? <><span><span className="text-mute">Cycle:</span> {v.config.frequency.replace("_", "-")}</span><span><span className="text-mute">Reports:</span> <span className="num">{v.sent} / {v.total}</span></span></> : null}
+                                <BillingLine view={v} />
+                                <button type="button" onClick={() => setBillPlant(p)} className="text-signal">Open billing</button>
+                              </div>
+                            ); })() : null}
                             <div className="mt-4 border-t border-line pt-4"><CustomerContacts plantId={p.id} /></div>
                           </td>
                         </tr>
@@ -497,6 +544,7 @@ function PlantsPage() {
           <Empty>No plants yet. Add your first plant.</Empty>
         )}
       </Panel>
+      )}
     </AppShell>
   );
 }
