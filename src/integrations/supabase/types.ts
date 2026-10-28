@@ -14,6 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_periods: {
+        Row: {
+          frequency: string
+          hold_reason: string
+          id: string
+          invoice_comment: string
+          invoice_date: string | null
+          invoice_link: string
+          invoice_no: string
+          invoice_sent_date: string | null
+          note: string
+          period_end: string
+          period_start: string
+          plant_id: string
+          po_ref: string
+          report_ids: string[]
+          reports_sent: number
+          reports_total: number
+          sent_at: string | null
+          sent_by: string
+          status: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          frequency: string
+          hold_reason?: string
+          id?: string
+          invoice_comment?: string
+          invoice_date?: string | null
+          invoice_link?: string
+          invoice_no?: string
+          invoice_sent_date?: string | null
+          note?: string
+          period_end: string
+          period_start: string
+          plant_id: string
+          po_ref?: string
+          report_ids?: string[]
+          reports_sent?: number
+          reports_total?: number
+          sent_at?: string | null
+          sent_by?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Update: {
+          frequency?: string
+          hold_reason?: string
+          id?: string
+          invoice_comment?: string
+          invoice_date?: string | null
+          invoice_link?: string
+          invoice_no?: string
+          invoice_sent_date?: string | null
+          note?: string
+          period_end?: string
+          period_start?: string
+          plant_id?: string
+          po_ref?: string
+          report_ids?: string[]
+          reports_sent?: number
+          reports_total?: number
+          sent_at?: string | null
+          sent_by?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_periods_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branches: {
         Row: {
           branch_name: string
@@ -980,6 +1060,59 @@ export type Database = {
           setting?: string
         }
         Relationships: []
+      }
+      plant_billing: {
+        Row: {
+          contact_email: string
+          contact_name: string
+          frequency: string
+          model: string
+          note: string
+          plant_id: string
+          po_ref: string
+          report_required: boolean
+          start_date: string | null
+          status: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          contact_email?: string
+          contact_name?: string
+          frequency?: string
+          model?: string
+          note?: string
+          plant_id: string
+          po_ref?: string
+          report_required?: boolean
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Update: {
+          contact_email?: string
+          contact_name?: string
+          frequency?: string
+          model?: string
+          note?: string
+          plant_id?: string
+          po_ref?: string
+          report_required?: boolean
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plant_billing_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: true
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       plants: {
         Row: {
