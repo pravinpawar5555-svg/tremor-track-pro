@@ -1177,11 +1177,13 @@ export function removeEngineer(id: string, reassignTo?: string) {
   return { ok: true, message: "Engineer removed and their work reassigned." };
 }
 
-export function savePlant(plant: Omit<Plant, "id"> & { id?: string }) {
+export function savePlant(plant: Omit<Plant, "id"> & { id?: string }): string {
+  const id = plant.id ?? uid("pl");
   const plants = plant.id
     ? data.plants.map((p) => (p.id === plant.id ? ({ ...p, ...plant } as Plant) : p))
-    : [...data.plants, { ...plant, id: uid("pl") } as Plant];
+    : [...data.plants, { ...plant, id } as Plant];
   commit({ ...data, plants });
+  return id;
 }
 
 export function removePlant(id: string) {
