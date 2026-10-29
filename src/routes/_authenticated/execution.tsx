@@ -505,6 +505,7 @@ function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; b
   const [confirm, setConfirm] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [upd, setUpd] = useState({ workDate: todayIso(), remark: "", workCompleted: "", pendingNextAction: "", attachmentLink: "" });
+  const [savingUpdate, setSavingUpdate] = useState(false);
   const [comment, setComment] = useState("");
   const [link, setLink] = useState({ label: "", url: "" });
   const set = (p: Partial<ExecJob>) => setJ((x) => ({ ...x, ...p }));
@@ -620,18 +621,24 @@ function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; b
             <div className="sm:col-span-2">
               <Button
                 variant="solid"
+                disabled={savingUpdate}
                 onClick={async () => {
+                  if (savingUpdate) return;
                   if (!upd.remark.trim()) { toast.error("Add a short work remark"); return; }
+                  if (!upd.workDate) { toast.error("Choose the work date"); return; }
+                  setSavingUpdate(true);
                   try {
                     await addDailyUpdate({ ...upd, jobId: job.id, createdBy: byUser }, byUser);
                     setUpd({ workDate: todayIso(), remark: "", workCompleted: "", pendingNextAction: "", attachmentLink: "" });
                     toast.success("Daily update added");
                   } catch {
-                    toast.error("Could not add update");
+                    toast.error("Could not save the update. Your remark is still here; please try again.");
+                  } finally {
+                    setSavingUpdate(false);
                   }
                 }}
               >
-                + Add Daily Update
+                {savingUpdate ? "Saving…" : "+ Add Daily Update"}
               </Button>
             </div>
           </div>

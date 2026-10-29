@@ -131,7 +131,10 @@ let activity: ExecActivity[] = [];
 let siteVisits: ExecSiteVisit[] = [];
 let loaded = false;
 const listeners = new Set<() => void>();
-const emit = () => listeners.forEach((l) => l());
+const emit = () => {
+  snapshot = { engineers, jobs, updates, activity, siteVisits };
+  listeners.forEach((l) => l());
+};
 
 const eFrom = (r: any): ExecEngineer => ({
   id: r.id,
@@ -236,7 +239,7 @@ export function useExecution() {
   );
 }
 
-const snapshot = { get engineers() { return engineers; }, get jobs() { return jobs; }, get updates() { return updates; }, get activity() { return activity; }, get siteVisits() { return siteVisits; } };
+let snapshot = { engineers, jobs, updates, activity, siteVisits };
 
 export function execEngineerName(id: string) {
   return engineers.find((e) => e.id === id)?.name ?? "";
@@ -245,7 +248,9 @@ export function execEngineerName(id: string) {
 async function log(jobId: string, text: string, byUser: string, kind: "system" | "comment" = "system") {
   const { data, error } = await db.from("execution_activity").insert({ job_id: jobId, kind, text, by_user: byUser }).select("*");
   if (error) return console.error("execution activity failed", error);
-  activity = [aFrom(data![0]), ...activity];
+  const saved = data?.[0];
+  if (!saved) return;
+  activity = [aFrom(saved), ...activity];
   emit();
 }
 
@@ -381,14 +386,24 @@ export async function deleteJob(id: string) {
 }
 
 export async function addDailyUpdate(u: Omit<ExecUpdate, "id" | "createdAt">, byUser: string) {
-  const row = { ...u, id: crypto.randomUUID() };
-  updates = [...updates, { ...row, createdAt: new Date().toISOString() }].sort((a, b) => (a.workDate < b.workDate ? -1 : 1));
-  emit();
-  const { error } = await db.from("execution_daily_updates").insert(row);
+  const row = {
+    id: crypto.randomUUID(),
+    job_id: u.jobId,
+    work_date: u.workDate,
+    remark: u.remark.trim(),
+    work_completed: u.workCompleted,
+    pending_next_action: u.pendingNextAction,
+    attachment_link: u.attachmentLink,
+    created_by: u.createdBy,
+  };
+  const { data, error } = await db.from("execution_daily_updates").insert(row).select("*").single();
   if (error) {
     console.error("execution update save failed", error);
     throw error;
   }
+  if (!data) throw new Error("The saved update could not be retrieved. Refresh before trying again.");
+  updates = [...updates, uFrom(data)].sort((a, b) => a.workDate.localeCompare(b.workDate));
+  emit();
   await log(u.jobId, `Daily update added for ${fmtDate(u.workDate)}`, byUser);
 }
 

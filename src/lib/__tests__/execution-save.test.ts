@@ -30,7 +30,8 @@ describe("Execution remark saving", () => {
     mocks.single.mockResolvedValue({ data: saved, error: null });
     const { addDailyUpdate, updatesFor } = await import("@/lib/execution");
     await addDailyUpdate(input, "Engineer");
-    expect(mocks.insert).toHaveBeenCalledWith({ ...saved, id: expect.any(String), created_at: undefined });
+    const { created_at: _createdAt, ...expectedRow } = saved;
+    expect(mocks.insert).toHaveBeenCalledWith({ ...expectedRow, id: expect.any(String) });
     expect(updatesFor("job-1")).toEqual([{ ...input, id: saved.id, createdAt: saved.created_at }]);
   });
 
