@@ -583,6 +583,7 @@ export type Database = {
           created_by: string
           customer_name: string
           email: string
+          engineer_ids: string[]
           expected_execution_date: string | null
           id: string
           installation_type: string
@@ -625,6 +626,7 @@ export type Database = {
           created_by?: string
           customer_name?: string
           email?: string
+          engineer_ids?: string[]
           expected_execution_date?: string | null
           id?: string
           installation_type?: string
@@ -667,6 +669,7 @@ export type Database = {
           created_by?: string
           customer_name?: string
           email?: string
+          engineer_ids?: string[]
           expected_execution_date?: string | null
           id?: string
           installation_type?: string
