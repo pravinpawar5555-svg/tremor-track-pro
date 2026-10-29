@@ -27,3 +27,4 @@
 
 - src/components/console has its own AGENTS.md (dashboard, workload, execution rules) — read it before changing those areas.- Role access matrix lives in public.role_permissions/reminder_rules (src/lib/permissions.ts, Settings → Access Control): 'none' = restrictive RLS deny, 'own' = existing rules, 'all' = permissive widen via perm_level(); manager always full; changes audited in permission_audit — one central, data-enforced matrix.
 - Rental billing lives in public.plant_billing (per-plant config) and public.billing_periods (handoff/invoice records only) via src/lib/billing.ts; readiness is derived live from existing reports (scheduled reports due in the period), never copied — manager writes, CS reads, execution has no access.
+- Execution daily updates map client fields to database columns explicitly and enter history only after insert/read-back succeeds; the Execution store replaces its snapshot on emit so saved remarks render immediately without a reload.
