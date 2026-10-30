@@ -111,6 +111,8 @@ export function buildTechCsv(d: TechData, plantName: string, areaId?: string) {
   return lines.join("\r\n");
 }
 
+const TODAY_ISO = () => new Date().toISOString().slice(0, 10);
+
 // ---------- cloud store
 
 const key = (plantId: string) => ["technical", plantId];
@@ -154,7 +156,7 @@ export async function saveRecord<K extends Table>(table: K, row: T[K]["Insert"] 
   const payload = { ...row, updated_at: new Date().toISOString(), ...(isNew ? { created_by: by } : {}) };
   const { data, error } = await supabase.from(table).upsert(payload as never).select().single();
   if (error) throw new Error(friendly(error.message));
-  const saved = data as { id: string };
+  const saved = data as unknown as { id: string };
   await logEvent({ plant_id: row.plant_id, entity: entityOf[table], entity_id: saved.id, kind: isNew ? "created" : "updated", remark: `${isNew ? "Added" : "Updated"} ${label}`, by_user: by });
   return saved;
 }
@@ -185,8 +187,8 @@ export async function replaceSensor(old: Sensor, input: { removalDate: string; r
   }
   await supabase.from("plant_sensors").update({ replaced_by: r2.data.id }).eq("id", old.id);
   const detail = { old: old.serial_no, new: r2.data.serial_no, reason: input.reason };
-  await logEvent({ plant_id: old.plant_id, entity: "sensor", entity_id: old.id, kind: "replaced", issue_type: input.reason, remark: input.comments, detail, event_date: input.removalDate || undefined, by_user: by });
-  await logEvent({ plant_id: old.plant_id, entity: "sensor", entity_id: r2.data.id, kind: "installed", remark: `Replaced ${old.serial_no}`, detail, event_date: input.installDate || undefined, by_user: by });
+  await logEvent({ plant_id: old.plant_id, entity: "sensor", entity_id: old.id, kind: "replaced", issue_type: input.reason, remark: input.comments, detail, event_date: input.removalDate || TODAY_ISO(), by_user: by });
+  await logEvent({ plant_id: old.plant_id, entity: "sensor", entity_id: r2.data.id, kind: "installed", remark: `Replaced ${old.serial_no}`, detail, event_date: input.installDate || TODAY_ISO(), by_user: by });
   return r2.data;
 }
 
@@ -196,5 +198,5 @@ export async function moveSensor(s: Sensor, toPointId: string, date: string, rea
   const { error } = await supabase.from("plant_sensors").update({ point_id: toPointId || null, updated_at: new Date().toISOString() }).eq("id", s.id);
   if (error) throw new Error(error.message);
   const name = (p: ReturnType<typeof sensorPath>) => [p.area?.name, p.machine?.name, p.point?.name].filter(Boolean).join(" / ") || "Not mapped";
-  await logEvent({ plant_id: s.plant_id, entity: "sensor", entity_id: s.id, kind: "moved", remark: reason, detail: { from: name(from), to: name(to) }, event_date: date || undefined, by_user: by });
+  await logEvent({ plant_id: s.plant_id, entity: "sensor", entity_id: s.id, kind: "moved", remark: reason, detail: { from: name(from), to: name(to) }, event_date: date || TODAY_ISO(), by_user: by });
 }

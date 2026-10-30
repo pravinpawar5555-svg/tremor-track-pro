@@ -148,7 +148,7 @@ function RecentEvents({ data, entityId }: { data: TechData; entityId?: string })
       {ev.length ? (
         <ol className="space-y-1.5 border-l border-line pl-3">
           {ev.map((e) => {
-            const d = e.detail as Record<string, string>;
+            const d = (e.detail ?? {}) as { old?: string; new?: string; from?: string; to?: string };
             return (
               <li key={e.id} className="text-xs">
                 <span className="num text-mute">{fmtDate(e.event_date)}</span> · <span className="font-medium capitalize">{e.kind}</span>
