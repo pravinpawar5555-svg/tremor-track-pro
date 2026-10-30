@@ -8,6 +8,7 @@ import { amcStatus } from "@/lib/amc";
 import { BillingDialog, BillingFormSection, BillingLine, BillingTracker } from "@/components/console/PlantBilling";
 import { blankConfig, plantBilling, saveBillingConfig, useBilling, type BillingConfig } from "@/lib/billing";
 import { toast } from "sonner";
+import { PlantTechnical } from "@/components/console/PlantTechnical";
 import { CustomerContacts } from "@/components/console/CustomerContacts";
 import { AppShell } from "@/components/console/AppShell";
 import {
@@ -125,6 +126,7 @@ function PlantsPage() {
   };
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [techPlant, setTechPlant] = useState<Plant | null>(null);
 
   const edit = (p: Plant) => {
     setForm({
@@ -356,6 +358,7 @@ function PlantsPage() {
           ))}
         </div>
       ) : null}
+      <PlantTechnical plant={techPlant} onClose={() => setTechPlant(null)} />
       {canBilling ? <BillingDialog plant={billPlant} open={!!billPlant} onClose={() => setBillPlant(null)} /> : null}
       {tab === "billing" && canBilling ? (
         <Panel title="Billing tracker" meta="Current billing period per rental plant"><BillingTracker plants={shownPlants} onOpen={setBillPlant} /></Panel>
@@ -409,7 +412,8 @@ function PlantsPage() {
                   <Ownership o={ownershipOf(bs, p)} />
                   <div className="mt-3"><Link to="/contacts" search={{ plant: p.id }} className="text-sm text-signal">Customer contacts</Link></div>
                   <div className="mt-3 flex gap-2">
-                    <Link to="/visits" search={{ plant: p.id }} className="grid h-11 flex-1 place-items-center rounded-md bg-signal text-sm font-medium text-signal-foreground">Visit history</Link>
+                    <button type="button" onClick={() => setTechPlant(p)} className="rounded-md px-2 py-1 text-xs text-signal ring-1 ring-signal/40 hover:bg-signal/10">Technical</button>
+<Link to="/visits" search={{ plant: p.id }} className="grid h-11 flex-1 place-items-center rounded-md bg-signal text-sm font-medium text-signal-foreground">Visit history</Link>
                     {manager ? (
                       <>
                         <button onClick={() => edit(p)} className="h-11 rounded-md px-4 text-sm ring-1 ring-line">Edit</button>
@@ -483,7 +487,8 @@ function PlantsPage() {
                         </Td>
                         <Td align="right" className="align-top">
                           <span className="inline-flex items-center justify-end gap-1">
-                            <Link to="/visits" search={{ plant: p.id }} className="rounded-md px-2 py-1 text-xs text-signal ring-1 ring-signal/40 hover:bg-signal/10">Visits</Link>
+                            <button type="button" onClick={() => setTechPlant(p)} className="rounded-md px-2 py-1 text-xs text-signal ring-1 ring-signal/40 hover:bg-signal/10">Technical</button>
+<Link to="/visits" search={{ plant: p.id }} className="rounded-md px-2 py-1 text-xs text-signal ring-1 ring-signal/40 hover:bg-signal/10">Visits</Link>
                             {manager ? (
                               <Popover>
                                 <PopoverTrigger asChild>
@@ -515,7 +520,8 @@ function PlantsPage() {
                               <div>
                                 <div className="label-caps mb-1">Quick links</div>
                                 <div className="flex flex-wrap gap-2">
-                                  <Link to="/visits" search={{ plant: p.id }} className="text-signal">Visit history</Link>
+                                  <button type="button" onClick={() => setTechPlant(p)} className="rounded-md px-2 py-1 text-xs text-signal ring-1 ring-signal/40 hover:bg-signal/10">Technical</button>
+<Link to="/visits" search={{ plant: p.id }} className="text-signal">Visit history</Link>
                                   {manager ? <><Link to="/opportunities" search={{ plant: p.id }} className="text-signal">+ Opportunity</Link><button type="button" onClick={() => edit(p)} className="text-signal">Edit plant</button></> : null}
                                 </div>
                               </div>
