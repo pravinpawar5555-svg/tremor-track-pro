@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTechnical } from "@/lib/technical";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { Button, Field, Select, TextArea, TextInput } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
@@ -132,6 +133,13 @@ export function MachinePicker({
             {knownAreas.filter((a) => !areas.includes(a)).map((a) => <option key={a} value={a} />)}
           </datalist>
         </div>
+        {knownAreas.some((a) => !areas.includes(a)) ? (
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {knownAreas.filter((a) => !areas.includes(a)).map((a) => (
+              <button key={a} type="button" onClick={() => addArea(a)} className="rounded-full px-2.5 py-1 text-xs text-mute ring-1 ring-line hover:bg-signal/10 hover:text-signal">+ {a}</button>
+            ))}
+          </div>
+        ) : null}
       </Field>
 
       {areas.length ? (
@@ -402,19 +410,27 @@ export function useKnownPlantMachines(
   tickets: { plantId: string; areas?: string[] | undefined; area: string; analysis?: MachineAnalysis[] | undefined; machines?: string[] | undefined }[],
   plantId: string,
 ) {
+  const { data: reg } = useTechnical(plantId);
   return useMemo(() => {
     const areas = new Set<string>();
     const machines: Record<string, string[]> = {};
+    const add = (a: string, m: string) => { const l = (machines[a] ??= []); if (m && !l.includes(m)) l.push(m); };
+    // Plant technical register first (areas and active machines), then names used on past tickets.
+    for (const a of reg.areas) {
+      if (a.status === "inactive") continue;
+      areas.add(a.name);
+      reg.machines.filter((m) => m.area_id === a.id && m.status !== "inactive").forEach((m) => add(a.name, m.name));
+    }
     for (const t of tickets) {
       if (t.plantId !== plantId) continue;
       (t.areas?.length ? t.areas : t.area ? [t.area] : []).forEach((a) => areas.add(a));
       for (const a of t.analysis ?? []) {
         if (!a.area) continue;
         areas.add(a.area);
-        const l = (machines[a.area] ??= []);
-        if (!l.includes(a.machine)) l.push(a.machine);
+        add(a.area, a.machine);
       }
     }
+    Object.values(machines).forEach((l) => l.sort());
     return { areas: [...areas].sort(), machines };
-  }, [tickets, plantId]);
+  }, [tickets, plantId, reg]);
 }
