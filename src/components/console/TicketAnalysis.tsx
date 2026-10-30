@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTechnical } from "@/lib/technical";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { Button, Field, Select, TextArea, TextInput } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
