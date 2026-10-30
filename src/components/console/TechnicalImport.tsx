@@ -27,8 +27,8 @@ export function TechnicalImport({ plantId, data, by, onDone }: { plantId: string
     try {
       let grid: unknown[][];
       if (/\.xlsx$/i.test(f.name)) {
-        const readXlsx = (await import("read-excel-file/browser")).default;
-        grid = (await readXlsx(f)) as unknown[][];
+        const { readSheet } = await import("read-excel-file/browser");
+        grid = (await readSheet(f)) as unknown as unknown[][];
       } else {
         grid = Papa.parse<string[]>(await f.text(), { skipEmptyLines: true }).data;
       }
