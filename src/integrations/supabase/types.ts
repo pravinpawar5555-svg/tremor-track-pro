@@ -792,6 +792,69 @@ export type Database = {
         }
         Relationships: []
       }
+      measurement_points: {
+        Row: {
+          bearing_no: string
+          component: string
+          created_at: string
+          created_by: string
+          id: string
+          machine_id: string
+          name: string
+          notes: string
+          orientation: string
+          plant_id: string
+          position: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bearing_no?: string
+          component?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          machine_id: string
+          name: string
+          notes?: string
+          orientation?: string
+          plant_id: string
+          position?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bearing_no?: string
+          component?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          machine_id?: string
+          name?: string
+          notes?: string
+          orientation?: string
+          plant_id?: string
+          position?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "measurement_points_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "plant_machines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "measurement_points_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           acked_by: string[]
@@ -1064,6 +1127,50 @@ export type Database = {
         }
         Relationships: []
       }
+      plant_areas: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          name: string
+          plant_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          name: string
+          plant_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          name?: string
+          plant_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plant_areas_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plant_billing: {
         Row: {
           contact_email: string
@@ -1113,6 +1220,244 @@ export type Database = {
             columns: ["plant_id"]
             isOneToOne: true
             referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plant_gateways: {
+        Row: {
+          area_id: string | null
+          connectivity: string
+          created_at: string
+          created_by: string
+          firmware: string
+          id: string
+          install_date: string | null
+          ip_address: string
+          location: string
+          model: string
+          name: string
+          network_type: string
+          notes: string
+          plant_id: string
+          serial_no: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          area_id?: string | null
+          connectivity?: string
+          created_at?: string
+          created_by?: string
+          firmware?: string
+          id?: string
+          install_date?: string | null
+          ip_address?: string
+          location?: string
+          model?: string
+          name: string
+          network_type?: string
+          notes?: string
+          plant_id: string
+          serial_no: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          area_id?: string | null
+          connectivity?: string
+          created_at?: string
+          created_by?: string
+          firmware?: string
+          id?: string
+          install_date?: string | null
+          ip_address?: string
+          location?: string
+          model?: string
+          name?: string
+          network_type?: string
+          notes?: string
+          plant_id?: string
+          serial_no?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plant_gateways_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "plant_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plant_gateways_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plant_machines: {
+        Row: {
+          area_id: string
+          created_at: string
+          created_by: string
+          criticality: string
+          id: string
+          machine_type: string
+          manufacturer: string
+          model: string
+          name: string
+          notes: string
+          operating_rpm: string
+          plant_id: string
+          rated_kw: string
+          rated_rpm: string
+          status: string
+          tag: string
+          updated_at: string
+        }
+        Insert: {
+          area_id: string
+          created_at?: string
+          created_by?: string
+          criticality?: string
+          id?: string
+          machine_type?: string
+          manufacturer?: string
+          model?: string
+          name: string
+          notes?: string
+          operating_rpm?: string
+          plant_id: string
+          rated_kw?: string
+          rated_rpm?: string
+          status?: string
+          tag?: string
+          updated_at?: string
+        }
+        Update: {
+          area_id?: string
+          created_at?: string
+          created_by?: string
+          criticality?: string
+          id?: string
+          machine_type?: string
+          manufacturer?: string
+          model?: string
+          name?: string
+          notes?: string
+          operating_rpm?: string
+          plant_id?: string
+          rated_kw?: string
+          rated_rpm?: string
+          status?: string
+          tag?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plant_machines_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "plant_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plant_machines_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plant_sensors: {
+        Row: {
+          battery: string
+          comm_status: string
+          commission_date: string | null
+          created_at: string
+          created_by: string
+          firmware: string
+          gateway_id: string | null
+          id: string
+          install_date: string | null
+          model: string
+          notes: string
+          plant_id: string
+          point_id: string | null
+          removed_date: string | null
+          replaced_by: string | null
+          sensor_type: string
+          serial_no: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          battery?: string
+          comm_status?: string
+          commission_date?: string | null
+          created_at?: string
+          created_by?: string
+          firmware?: string
+          gateway_id?: string | null
+          id?: string
+          install_date?: string | null
+          model?: string
+          notes?: string
+          plant_id: string
+          point_id?: string | null
+          removed_date?: string | null
+          replaced_by?: string | null
+          sensor_type: string
+          serial_no: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          battery?: string
+          comm_status?: string
+          commission_date?: string | null
+          created_at?: string
+          created_by?: string
+          firmware?: string
+          gateway_id?: string | null
+          id?: string
+          install_date?: string | null
+          model?: string
+          notes?: string
+          plant_id?: string
+          point_id?: string | null
+          removed_date?: string | null
+          replaced_by?: string | null
+          sensor_type?: string
+          serial_no?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plant_sensors_gateway_id_fkey"
+            columns: ["gateway_id"]
+            isOneToOne: false
+            referencedRelation: "plant_gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plant_sensors_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plant_sensors_point_id_fkey"
+            columns: ["point_id"]
+            isOneToOne: false
+            referencedRelation: "measurement_points"
             referencedColumns: ["id"]
           },
         ]
@@ -1622,6 +1967,56 @@ export type Database = {
           work_domain?: string
         }
         Relationships: []
+      }
+      technical_events: {
+        Row: {
+          by_user: string
+          created_at: string
+          detail: Json
+          entity: string
+          entity_id: string
+          event_date: string
+          id: string
+          issue_type: string
+          kind: string
+          plant_id: string
+          remark: string
+        }
+        Insert: {
+          by_user?: string
+          created_at?: string
+          detail?: Json
+          entity: string
+          entity_id: string
+          event_date?: string
+          id?: string
+          issue_type?: string
+          kind: string
+          plant_id: string
+          remark?: string
+        }
+        Update: {
+          by_user?: string
+          created_at?: string
+          detail?: Json
+          entity?: string
+          entity_id?: string
+          event_date?: string
+          id?: string
+          issue_type?: string
+          kind?: string
+          plant_id?: string
+          remark?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technical_events_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tickets: {
         Row: {

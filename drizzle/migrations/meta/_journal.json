@@ -239,6 +239,13 @@
       "when": 1793295609472,
       "tag": "0033_execution_multi_engineers",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793374679056,
+      "tag": "0034_plant_technical_register",
+      "breakpoints": true
     }
   ]
 }
