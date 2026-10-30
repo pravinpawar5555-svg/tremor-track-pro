@@ -152,7 +152,8 @@ function DailyWorkPage() {
   const execDomain = useDomain() === "execution";
   const manager = data.role === "manager";
   const me = data.currentUserId;
-  const team = analystsOf(data);
+  // Daily Work team = customer-success + execution engineers (manager sees both).
+  const team = data.engineers.filter((e) => e.role === "analyst" || e.role === "execution");
   const user = currentUser(data);
 
   const today = useToday();
