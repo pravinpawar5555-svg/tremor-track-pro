@@ -12,3 +12,13 @@
 - [x] Add upload, column matching and editable record preview.
 - [x] Flag duplicates and missing details before protected batch saving.
 - [x] Test parsing and validation (48 tests pass); signed-in save/read-back and duplicate warnings verified; temporary contact removed.
+
+# Plant technical register
+- [x] Areas, machines, measurement points, sensors, gateways with history (issue / resolve / replace / move), search, totals, CSV export, fault history from tickets.
+- [ ] Bulk import (CSV/XLSX) with validation preview.
+- [ ] Ticket form picking machine/point/sensor from the register; "View previous analysis" in tickets.
+- [ ] Execution job → "Update Plant Technical Register".
+
+# Execution multiple engineers
+- [x] Database stores several engineers per job; all of them can edit.
+- [ ] Multi-select in job form and counts across lists/workload.
