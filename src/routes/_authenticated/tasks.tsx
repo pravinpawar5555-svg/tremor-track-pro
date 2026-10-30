@@ -11,7 +11,6 @@ import {
   todayIso,
   addTask,
   addTaskNote,
-  analystsOf,
   carryTasks,
   currentUser,
   dayDiff,
@@ -152,7 +151,8 @@ function DailyWorkPage() {
   const execDomain = useDomain() === "execution";
   const manager = data.role === "manager";
   const me = data.currentUserId;
-  const team = analystsOf(data);
+  // Daily Work team = customer-success + execution engineers (manager sees both).
+  const team = data.engineers.filter((e) => e.role === "analyst" || e.role === "execution");
   const user = currentUser(data);
 
   const today = useToday();
@@ -490,7 +490,7 @@ function TaskRow({ t, data, manager, onOpen, onComplete, onStart, onWait }: { t:
 
 function AddTaskDialog({ open, onClose, data, manager, me, date, defaultEngineer }: { open: boolean; onClose: () => void; data: AppData; manager: boolean; me: string; date: string; defaultEngineer: string }) {
   const today = useToday();
-  const team = analystsOf(data);
+  const team = data.engineers.filter((e) => e.role === "analyst" || e.role === "execution");
   const [f, setF] = useState({ title: "", description: "", engineerId: "", plantId: "", taskType: "report" as TaskType, priority: "normal" as TaskPriority, dueDate: "", dueTime: "" });
   useEffect(() => {
     if (open) setF({ title: "", description: "", engineerId: manager ? defaultEngineer : me, plantId: "", taskType: "report", priority: "normal", dueDate: date < today ? today : date, dueTime: "" });
@@ -554,7 +554,7 @@ function WaitingDialog({ id, onClose }: { id: string | null; onClose: () => void
 
 function TaskDrawer({ task: t, data, manager, me, onClose, onWait, onRemind }: { task: Task | null; data: AppData; manager: boolean; me: string; onClose: () => void; onWait: (id: string) => void; onRemind: (t: Task) => void }) {
   const [note, setNote] = useState("");
-  const team = analystsOf(data);
+  const team = data.engineers.filter((e) => e.role === "analyst" || e.role === "execution");
   return (
     <Sheet open={!!t} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-md">
@@ -852,7 +852,7 @@ const dayKey = (t: Task) => t.completedAt?.slice(0, 10) ?? t.taskDate;
 
 function TaskHistory({ data, manager, scopeIds, onOpen }: { data: AppData; manager: boolean; scopeIds: string[]; onOpen: (id: string) => void }) {
   const today = useToday();
-  const team = analystsOf(data);
+  const team = data.engineers.filter((e) => e.role === "analyst" || e.role === "execution");
   const [view, setView] = useState<"list" | "calendar" | "team">("list");
   const [range, setRange] = useState("7");
   const [day, setDay] = useState("");
