@@ -27,7 +27,7 @@ export function TechnicalImport({ plantId, data, by, onDone }: { plantId: string
     try {
       let grid: unknown[][];
       if (/\.xlsx$/i.test(f.name)) {
-        const readXlsx = (await import("read-excel-file")).default;
+        const readXlsx = (await import("read-excel-file/browser")).default;
         grid = (await readXlsx(f)) as unknown[][];
       } else {
         grid = Papa.parse<string[]>(await f.text(), { skipEmptyLines: true }).data;
@@ -44,7 +44,7 @@ export function TechnicalImport({ plantId, data, by, onDone }: { plantId: string
     const { data: res, error } = await supabase.rpc("import_technical", { p_plant: plantId, p_rows: rows.map((r) => r.row) as never, p_by: by });
     setBusy(false);
     if (error) { toast.error(`Nothing saved: ${error.message}`); return; }
-    const c = res as Record<string, number>;
+    const c = res as { areas: number; machines: number; points: number; sensors: number; gateways: number; skipped: number };
     toast.success(`Imported ${c.areas} areas, ${c.machines} machines, ${c.points} points, ${c.sensors} sensors, ${c.gateways} gateways${c.skipped ? ` (${c.skipped} sensors already present)` : ""}`);
     setOpen(false); setRows([]); setFile(""); onDone();
   };
