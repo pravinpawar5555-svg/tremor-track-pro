@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { analysisRows, type MachineAnalysis } from "@/lib/ticket-analysis";
+import type { Ticket } from "@/lib/store";
 
 type T = Database["public"]["Tables"];
 export type Area = T["plant_areas"]["Row"];
@@ -73,7 +74,7 @@ export function searchTech(d: TechData, q: string): Hit[] {
 
 export interface FaultEntry { date: string; ticketNo: string; ticketId: string; area: string; machine: string; a: MachineAnalysis }
 /** Reviewed machine rows from this plant's tickets, newest first. Matches by machine name (tickets store names). */
-export function faultHistory(tickets: { id: string; ticketNo: string; plantId: string; raisedOn: string; publishedOn?: string | null | undefined; analysis?: MachineAnalysis[]; machines?: string[]; machine?: string; area?: string }[], plantId: string, machineName?: string): FaultEntry[] {
+export function faultHistory(tickets: Ticket[], plantId: string, machineName?: string): FaultEntry[] {
   const n = machineName?.trim().toLowerCase();
   const out: FaultEntry[] = [];
   for (const t of tickets) {
