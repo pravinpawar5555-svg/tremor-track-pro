@@ -2238,6 +2238,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      import_technical: {
+        Args: { p_by: string; p_plant: string; p_rows: Json }
+        Returns: Json
+      }
       is_approved: { Args: { _user_id: string }; Returns: boolean }
       is_exec_engineer_id: { Args: { _id: string }; Returns: boolean }
       my_exec_ids: { Args: { _uid: string }; Returns: string[] }

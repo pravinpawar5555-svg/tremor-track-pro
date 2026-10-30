@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button, Empty, Field, Select, TextArea, TextInput } from "@/components/console/ui";
 import { TODAY, engineerName, fmtDate, useData, type Plant } from "@/lib/store";
 import { conditionLabel } from "@/lib/ticket-analysis";
+import { TechnicalImport } from "@/components/console/TechnicalImport";
 import {
   GATEWAY_ISSUES, GATEWAY_STATUS, MACHINE_STATUS, MACHINE_TYPES, SENSOR_ISSUES, SENSOR_STATUS, SENSOR_TYPES, STANDARD_POINTS,
   buildTechCsv, faultHistory, gatewaySensorCount, hasIssue, isActiveSensor, moveSensor, pointSensors, replaceSensor, reportIssue,
@@ -111,6 +112,7 @@ function Body({ plant }: { plant: Plant }) {
                 <Button onClick={() => setForm({ kind: "sensor", row: { plant_id: plant.id } })}><Plus className="size-3.5" />Sensor</Button>
                 <Button onClick={() => setForm({ kind: "gateway", row: { plant_id: plant.id } })}><Plus className="size-3.5" />Gateway</Button>
                 <Button variant="ghost" onClick={() => exportCsv()}><Download className="size-3.5" />Export CSV</Button>
+                <TechnicalImport plantId={plant.id} data={data} by={by} onDone={refresh} />
               </div>
               <div>
                 <div className="label-caps mb-1">Open issues</div>
