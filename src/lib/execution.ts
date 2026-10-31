@@ -131,10 +131,11 @@ let jobs: ExecJob[] = [];
 let updates: ExecUpdate[] = [];
 let activity: ExecActivity[] = [];
 let siteVisits: ExecSiteVisit[] = [];
+let archivedSiteVisits: ExecSiteVisit[] = [];
 let loaded = false;
 const listeners = new Set<() => void>();
 const emit = () => {
-  snapshot = { engineers, jobs, updates, activity, siteVisits };
+  snapshot = { engineers, jobs, updates, activity, siteVisits, archivedSiteVisits };
   listeners.forEach((l) => l());
 };
 
@@ -217,7 +218,9 @@ export async function loadExecution() {
   ]);
   const sv = await db.from("execution_site_visits").select("*").order("visit_date", { ascending: false });
   if (sv.error) console.error("execution site visits load failed", sv.error);
-  siteVisits = (sv.data ?? []).map(svFrom);
+  const allSv = (sv.data ?? []).map(svFrom);
+  siteVisits = allSv.filter((v) => !v.archived);
+  archivedSiteVisits = allSv.filter((v) => v.archived);
   for (const [res, label] of [[e, "engineers"], [j, "jobs"], [u, "updates"], [a, "activity"]] as const) {
     if (res.error) console.error(`execution ${label} load failed`, res.error);
   }
@@ -243,7 +246,7 @@ export function useExecution() {
   );
 }
 
-let snapshot = { engineers, jobs, updates, activity, siteVisits };
+let snapshot = { engineers, jobs, updates, activity, siteVisits, archivedSiteVisits };
 
 export function execEngineerName(id: string) {
   return engineers.find((e) => e.id === id)?.name ?? "";
@@ -532,6 +535,7 @@ export interface ExecSiteVisit {
   attachmentLink: string;
   relatedJobId: string;
   createdBy: string;
+  archived: boolean;
 }
 
 function svFrom(r: any): ExecSiteVisit {
@@ -552,11 +556,12 @@ function svFrom(r: any): ExecSiteVisit {
     attachmentLink: r.attachment_link ?? "",
     relatedJobId: r.related_job_id ?? "",
     createdBy: r.created_by ?? "",
+    archived: !!r.archived,
   };
 }
 
 export function blankSiteVisit(today: string, engineerId: string, createdBy: string): ExecSiteVisit {
-  return { id: "", visitDate: today, startTime: "", endTime: "", engineerIds: engineerId ? [engineerId] : [], plantId: "", location: "", visitType: "factory_inspection", purpose: "", notes: "", sensorsCollected: 0, sensorsDelivered: 0, outcome: "completed", attachmentLink: "", relatedJobId: "", createdBy };
+  return { id: "", visitDate: today, startTime: "", endTime: "", engineerIds: engineerId ? [engineerId] : [], plantId: "", location: "", visitType: "factory_inspection", purpose: "", notes: "", sensorsCollected: 0, sensorsDelivered: 0, outcome: "completed", attachmentLink: "", relatedJobId: "", createdBy, archived: false };
 }
 
 export async function saveSiteVisit(v: ExecSiteVisit) {
@@ -577,6 +582,16 @@ export async function saveSiteVisit(v: ExecSiteVisit) {
   siteVisits = [next, ...siteVisits.filter((x) => x.id !== id)].sort((a, b) => (a.visitDate < b.visitDate ? 1 : -1));
   emit();
   if (v.relatedJobId) await log(v.relatedJobId, `${siteVisitTypeLabel[v.visitType]} visit on ${fmtDate(v.visitDate)}${v.purpose ? ` — ${v.purpose}` : ""}`, v.createdBy).catch(() => {});
+}
+
+/** Archive hides a visit from lists and all counts; restore brings it back. Nothing is deleted. */
+export async function setSiteVisitArchived(id: string, archived: boolean) {
+  const { error } = await db.from("execution_site_visits").update({ archived, updated_at: new Date().toISOString() }).eq("id", id);
+  if (error) throw error;
+  const all = [...siteVisits, ...archivedSiteVisits].map((v) => (v.id === id ? { ...v, archived } : v));
+  siteVisits = all.filter((v) => !v.archived).sort((a, b) => (a.visitDate < b.visitDate ? 1 : -1));
+  archivedSiteVisits = all.filter((v) => v.archived);
+  emit();
 }
 
 export async function deleteSiteVisit(id: string) {
