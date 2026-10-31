@@ -38,7 +38,8 @@ import {
   type YesNoNa,
 } from "@/lib/execution";
 import { execScope } from "@/lib/access";
-import { filterToday, jobTone, mapsUrl, needsRemark, type TodayFilter } from "@/lib/exec-today";
+import { attentionItems, filterToday, focusJobs, isOverdue, isReadyToClose, jobBucket, jobTone, mapsUrl, needsRemark, type JobBucket, type TodayFilter } from "@/lib/exec-today";
+const lastUpdateOf = (id: string) => updatesFor(id).map((u) => u.workDate).sort().pop();
 
 export const Route = createFileRoute("/_authenticated/execution")({
   validateSearch: (s: Record<string, unknown>): { add?: "visit" | "lead" } => (s["add"] === "visit" || s["add"] === "lead" ? { add: s["add"] as "visit" | "lead" } : {}),
@@ -63,7 +64,9 @@ type Tab = "overview" | "leads" | "schedule" | "jobs" | "visits" | "team";
 const iso = (v: string | null | undefined) => v ?? undefined;
 const closed = (s: ExecStatus) => s === "completed" || s === "cancelled";
 
-function StatusBadge({ s }: { s: ExecStatus }) {
+function StatusBadge({ s, j }: { s: ExecStatus; j?: ExecJob }) {
+  if (j && isReadyToClose(j)) return <span className="whitespace-nowrap rounded-full bg-signal/10 px-2 py-0.5 text-[11px] font-medium text-signal ring-1 ring-signal/40">Ready to Close</span>;
+  if (j && isOverdue(j, todayIso()) && s !== "pending") return <span className="whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium text-sev-high ring-1 ring-sev-high/40">Overdue</span>;
   return <span className={cn("whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ring-1", execStatusTone[s])}>{execStatusLabel[s]}</span>;
 }
 
@@ -96,6 +99,8 @@ function ExecutionPage() {
   const today = todayIso();
   const [quickVisit, setQuickVisit] = useState<ExecSiteVisit | null>(search.add === "visit" ? blankSiteVisit(today, meExec?.id ?? "", myName) : null);
   const [todayF, setTodayF] = useState<TodayFilter | null>(null);
+  const [preset, setPreset] = useState<{ title: string; jobs: ExecJob[] } | null>(null);
+  const showList = (title: string, jobs: ExecJob[]) => { setTodayF(null); setPreset({ title, jobs }); };
 
   const { visible, myVisits, leadCount, visitsMonth } = useMemo(
     () => execScope(ex.jobs, ex.siteVisits, mineOnly ? meExec!.id : null, today),
@@ -106,14 +111,14 @@ function ExecutionPage() {
   const newVisit = (t?: SiteVisitType) => setQuickVisit({ ...blankSiteVisit(today, meExec?.id ?? "", myName), ...(t ? { visitType: t } : {}) });
 
   const tabs: { v: Tab; label: string }[] = mineOnly
-    ? [{ v: "overview", label: "My Work" }, { v: "visits", label: `📍 My Site Visits (${visitsMonth})` }, { v: "schedule", label: "My Schedule" }, { v: "jobs", label: `My Jobs (${visible.length})` }]
+    ? [{ v: "overview", label: "My Work" }, { v: "schedule", label: "Schedule" }, { v: "visits", label: `Site Visits (${visitsMonth})` }, { v: "jobs", label: `Jobs (${visible.length})` }]
     : [
         { v: "overview", label: "Overview" },
-        { v: "visits", label: `📍 Site Visits (${visitsMonth})` },
-        { v: "leads", label: `Leads (${leadCount})` },
+        { v: "jobs", label: `Jobs (${visible.length})` },
         { v: "schedule", label: "Schedule" },
-        { v: "jobs", label: `All Jobs (${visible.length})` },
-        ...(manager ? [{ v: "team" as Tab, label: "Execution Team" }] : []),
+        { v: "visits", label: `Site Visits (${visitsMonth})` },
+        { v: "leads", label: `Leads (${leadCount})` },
+        ...(manager ? [{ v: "team" as Tab, label: "Team" }] : []),
       ];
 
   return (
@@ -123,24 +128,29 @@ function ExecutionPage() {
         subtitle="Demo installation, order execution and troubleshooting site work"
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="solid" onClick={() => newVisit()}>📍 Record Site Visit</Button>
-            <Button onClick={newLead}>+ New Execution Lead</Button>
+            <Button variant="solid" onClick={() => newVisit()}>+ Record Site Visit</Button>
+            {!mineOnly ? <Button onClick={newLead}>+ New Execution Lead</Button> : null}
           </div>
         }
       />
-      <TodayStrip jobs={visible} visitsToday={myVisits.filter((v) => v.visitDate === today).length} value={todayF}
-        onChange={(f) => { if (f === "visits") { setTab("visits"); setTodayF(null); } else setTodayF(f); }} />
-      <div className="-mx-1 mb-4 overflow-x-auto px-1"><div className="w-max"><Seg value={tab} options={tabs} onChange={(t) => { setTab(t); setTodayF(null); }} /></div></div>
+      {tab !== "overview" ? <TodayStrip jobs={visible} visitsToday={myVisits.filter((v) => v.visitDate === today).length} value={todayF}
+        onChange={(f) => { if (f === "visits") { setTab("visits"); setTodayF(null); } else { setPreset(null); setTodayF(f); } }} /> : null}
+      <div className="-mx-1 mb-4 overflow-x-auto px-1"><div className="w-max"><Seg value={tab} options={tabs} onChange={(t) => { setTab(t); setTodayF(null); setPreset(null); }} /></div></div>
 
-      {todayF ? (
+      {preset ? (
+        <div className="grid gap-2">
+          <div><Button variant="ghost" onClick={() => setPreset(null)}>‹ Back</Button></div>
+          <JobsList jobs={preset.jobs} onOpen={setOpenId} title={preset.title} />
+        </div>
+      ) : todayF ? (
         <JobsList jobs={filterToday(visible, todayF, today)} onOpen={setOpenId}
           title={todayF === "active" ? "Active jobs" : todayF === "due" ? "Due today" : "Overdue"} />
       ) : (
       <>
-      {tab === "overview" ? (mineOnly ? <EngineerOverview jobs={visible} onOpen={setOpenId} /> : <ManagerOverview jobs={visible} onOpen={setOpenId} />) : null}
-      {tab === "leads" ? <JobsList jobs={visible.filter((j) => j.status === "lead" || j.status === "planning")} onOpen={setOpenId} title="Leads" /> : null}
+      {tab === "overview" ? (mineOnly ? <EngineerOverview jobs={visible} onOpen={setOpenId} onList={showList} /> : <ManagerOverview jobs={visible} onOpen={setOpenId} onList={showList} onNew={newLead} />) : null}
+      {tab === "leads" && !mineOnly ? <JobsList jobs={visible.filter((j) => j.status === "lead" || j.status === "planning")} onOpen={setOpenId} title="Leads" /> : null}
       {tab === "schedule" ? <ScheduleView jobs={visible} onOpen={setOpenId} /> : null}
-      {tab === "jobs" ? <JobsPage jobs={visible} onOpen={setOpenId} /> : null}
+      {tab === "jobs" ? <JobsPage jobs={visible} onOpen={setOpenId} manager={!mineOnly} /> : null}
       {tab === "visits" ? (
         <ExecSiteVisits data={data} manager={!mineOnly} meId={meExec?.id ?? ""} myName={myName} engineers={ex.engineers} jobs={visible}
           visits={myVisits} />
@@ -196,66 +206,129 @@ function JobLine({ j, onOpen, extra, cta = "Open" }: { j: ExecJob; onOpen: (id: 
           {extra ? <> · {extra}</> : null}
         </div>
       </div>
-      <StatusBadge s={j.status} />
+      <StatusBadge s={j.status} j={j} />
       <Button onClick={() => onOpen(j.id)}>{cta}</Button>
     </div>
   );
 }
 
-function ManagerOverview({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => void }) {
-  const month = todayIso().slice(0, 7);
-  const count = (s: ExecStatus) => jobs.filter((j) => j.status === s).length;
-  const doneMonth = jobs.filter((j) => j.status === "completed" && (j.completedAt ?? "").slice(0, 7) === month).length;
-  const upcoming = jobs.filter((j) => j.status === "scheduled" || j.status === "planning").sort((a, b) => ((a.plannedStart ?? "9") < (b.plannedStart ?? "9") ? -1 : 1));
-  const pending = jobs.filter((j) => j.status === "pending");
-  const awaitingCustomer = pending.filter((j) => j.pendingReason === "Customer Confirmation Pending").length;
-  const notClosed = jobs.filter((j) => j.status === "in_progress" && j.plannedEnd && j.plannedEnd < todayIso()).length;
-  const aipPending = jobs.filter((j) => !closed(j.status) && j.status !== "lead" && j.installationType !== "troubleshooting" && j.aip === "no" && (j.status === "in_progress" || j.status === "pending")).length;
+const progress = (j: ExecJob) => <span className="num">{j.sensorsInstalled} sensors · {j.machinesCovered} machines</span>;
+
+function KpiBtn({ label, n, tone, onClick }: { label: string; n: number; tone?: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="rounded-lg bg-card px-3 py-2.5 text-left ring-1 ring-line transition hover:ring-signal">
+      <div className={cn("num text-2xl font-semibold leading-none", n ? tone : "text-mute")}>{n}</div>
+      <div className="mt-1 text-xs text-mute">{label}</div>
+    </button>
+  );
+}
+
+function AttentionPanel({ jobs, onList, title }: { jobs: ExecJob[]; onList: (t: string, j: ExecJob[]) => void; title: string }) {
+  const items = attentionItems(jobs, lastUpdateOf, todayIso());
+  return (
+    <Panel title={title}>
+      <div className="grid gap-1.5 p-3 text-sm">
+        {items.length ? items.map((i) => (
+          <button key={i.key} type="button" onClick={() => onList(i.label, i.jobs)} className="flex items-center justify-between rounded-md px-3 py-2 text-left ring-1 ring-line hover:ring-signal">
+            <span>{i.label}</span>
+            <span className={cn("num font-semibold", i.tone === "high" ? "text-sev-high" : "text-sev-medium")}>{i.jobs.length}</span>
+          </button>
+        )) : <div className="px-1 py-2 text-mute">Nothing needs attention. ✓</div>}
+      </div>
+    </Panel>
+  );
+}
+
+function bucketList(jobs: ExecJob[], b: JobBucket) { return jobs.filter((j) => jobBucket(j) === b); }
+
+function ManagerOverview({ jobs, onOpen, onList, onNew }: { jobs: ExecJob[]; onOpen: (id: string) => void; onList: (t: string, j: ExecJob[]) => void; onNew: () => void }) {
+  const ex = useExecution();
+  const today = todayIso();
+  const focus = focusJobs(jobs);
+  const overdue = jobs.filter((j) => isOverdue(j, today));
+  const recentDone = jobs.filter((j) => j.status === "completed").sort((a, b) => ((a.completedAt ?? "") > (b.completedAt ?? "") ? -1 : 1)).slice(0, 4);
+  const team = ex.engineers.filter((e) => e.status === "active").map((e) => {
+    const cur = jobs.find((j) => j.status === "in_progress" && (j.assignedEngineerId === e.id || j.secondaryEngineerId === e.id));
+    return { e, cur };
+  });
+  const k = (label: string, b: JobBucket, tone: string) => { const l = bucketList(jobs, b); return <KpiBtn key={b} label={label} n={l.length} tone={tone} onClick={() => onList(label, l)} />; };
   return (
     <div className="grid gap-4">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <Kpi label="New leads" value={count("lead")} />
-        <Kpi label="Scheduled" value={count("scheduled")} />
-        <Kpi label="In progress" value={count("in_progress")} />
-        <Kpi label="Pending" value={count("pending")} tone={count("pending") ? "medium" : "low"} />
-        <Kpi label="Completed this month" value={doneMonth} tone="low" />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        {k("Scheduled", "scheduled", "text-signal")}
+        {k("In Progress", "in_progress", "text-signal")}
+        {k("Pending / Blocked", "pending", "text-sev-medium")}
+        {k("Ready to Close", "ready", "text-signal")}
+        <KpiBtn label="Overdue" n={overdue.length} tone="text-sev-high" onClick={() => onList("Overdue", overdue)} />
       </div>
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <Panel title={`Upcoming execution (${upcoming.length})`}>
-          {upcoming.length ? upcoming.slice(0, 10).map((j) => <JobLine key={j.id} j={j} onOpen={onOpen} />) : <Empty>No upcoming jobs scheduled.</Empty>}
+        <Panel title="Current / upcoming execution">
+          {focus.length ? focus.map((j) => <JobLine key={j.id} j={j} onOpen={onOpen} extra={j.status === "in_progress" ? progress(j) : undefined} />) : (
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm text-mute">
+              No upcoming execution scheduled.
+              <Button onClick={onNew}>+ New Execution Lead</Button>
+            </div>
+          )}
         </Panel>
-        <Panel title="Needs attention">
-          <div className="grid gap-2 p-4 text-sm">
-            {[
-              [pending.length, "Pending jobs"],
-              [awaitingCustomer, "Awaiting customer"],
-              [notClosed, "Execution past end date, not closed"],
-              [aipPending, "AIP sheet pending"],
-            ].map(([n, l]) => (
-              <div key={l as string} className="flex items-center justify-between rounded-md px-3 py-2 ring-1 ring-line">
-                <span>{l}</span>
-                <span className={cn("num font-semibold", n ? "text-sev-high" : "text-sev-low")}>{n}</span>
-              </div>
-            ))}
-          </div>
-          {pending.map((j) => <JobLine key={j.id} j={j} onOpen={onOpen} extra={j.pendingReason || "No reason given"} />)}
+        <AttentionPanel jobs={jobs} onList={onList} title="Needs attention" />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Panel title="Execution team today">
+          {team.length ? team.map(({ e, cur }) => (
+            <div key={e.id} className="flex items-center justify-between gap-2 border-t border-line/60 px-4 py-2 text-sm first:border-t-0">
+              <span className="font-medium">{e.name}</span>
+              {cur ? <button type="button" className="truncate text-signal" onClick={() => onOpen(cur.id)}>{cur.plantName || cur.customerName}</button> : <span className="text-mute">No active job</span>}
+            </div>
+          )) : <Empty>No active engineers.</Empty>}
+        </Panel>
+        <Panel title="Recently completed">
+          {recentDone.length ? recentDone.map((j) => <JobLine key={j.id} j={j} onOpen={onOpen} cta="View" />) : <Empty>No completed jobs yet.</Empty>}
         </Panel>
       </div>
     </div>
   );
 }
 
-function EngineerOverview({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => void }) {
-  const next = jobs.filter((j) => j.status === "scheduled" || j.status === "planning" || j.status === "lead").sort((a, b) => ((a.plannedStart ?? "9") < (b.plannedStart ?? "9") ? -1 : 1));
+function EngineerOverview({ jobs, onOpen, onList }: { jobs: ExecJob[]; onOpen: (id: string) => void; onList: (t: string, j: ExecJob[]) => void }) {
+  const today = todayIso();
+  const todays = jobs.filter((j) => !closed(j.status) && j.plannedStart && j.plannedStart <= today && (j.plannedEnd ?? j.plannedStart) >= today);
+  const upcoming = jobs.filter((j) => (j.status === "scheduled" || j.status === "planning") && (j.plannedStart ?? "9") > today).sort((a, b) => ((a.plannedStart ?? "9") < (b.plannedStart ?? "9") ? -1 : 1));
   const active = jobs.filter((j) => j.status === "in_progress");
   const pending = jobs.filter((j) => j.status === "pending" || j.status === "on_hold");
-  const recent = jobs.filter((j) => j.status === "completed").sort((a, b) => ((a.completedAt ?? "") > (b.completedAt ?? "") ? -1 : 1)).slice(0, 5);
+  const current = active[0];
+  const next = current ? undefined : focusJobs(jobs, 1)[0];
+  const lead = current ?? next;
+  const recent = jobs.flatMap((j) => updatesFor(j.id).map((u) => ({ u, j }))).sort((a, b) => (a.u.workDate > b.u.workDate ? -1 : 1)).slice(0, 5);
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="My next execution">{next.length ? next.slice(0, 5).map((j) => <JobLine key={j.id} j={j} onOpen={onOpen} cta="Open Job" />) : <Empty>Nothing scheduled.</Empty>}</Panel>
-      <Panel title="Current / active">{active.length ? active.map((j) => <JobLine key={j.id} j={j} onOpen={onOpen} cta="Continue" />) : <Empty>No job in progress.</Empty>}</Panel>
-      <Panel title="My pending">{pending.length ? pending.map((j) => <JobLine key={j.id} j={j} onOpen={onOpen} extra={j.pendingReason} />) : <Empty>No pending jobs.</Empty>}</Panel>
-      <Panel title="Recently completed">{recent.length ? recent.map((j) => <JobLine key={j.id} j={j} onOpen={onOpen} />) : <Empty>No completed jobs yet.</Empty>}</Panel>
+    <div className="grid gap-4">
+      <div className="grid grid-cols-4 gap-2">
+        <KpiBtn label="Today" n={todays.length} tone="text-signal" onClick={() => onList("Today", todays)} />
+        <KpiBtn label="Upcoming" n={upcoming.length} tone="text-signal" onClick={() => onList("Upcoming", upcoming)} />
+        <KpiBtn label="In Progress" n={active.length} tone="text-signal" onClick={() => onList("In Progress", active)} />
+        <KpiBtn label="Pending" n={pending.length} tone="text-sev-medium" onClick={() => onList("Pending", pending)} />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Panel title={current ? "Current job" : "Next job"}>
+          {lead ? (
+            <div className="grid gap-1 p-4 text-sm">
+              <div className="text-base font-semibold">{lead.plantName || lead.customerName}</div>
+              <div className="text-mute">{installTypeLabel[lead.installationType]} · <span className="num">{dateRange(lead)}</span></div>
+              {current ? <div>{progress(current)}</div> : null}
+              <div className="mt-2"><Button variant="solid" onClick={() => onOpen(lead.id)}>{current ? (isReadyToClose(current) ? "Complete Job" : "Continue Job") : "Open Job"}</Button></div>
+            </div>
+          ) : <Empty>No job assigned yet.</Empty>}
+        </Panel>
+        <AttentionPanel jobs={jobs} onList={onList} title="Needs my attention" />
+        <Panel title="Upcoming jobs">{upcoming.length ? upcoming.slice(0, 5).map((j) => <JobLine key={j.id} j={j} onOpen={onOpen} cta="Open Job" />) : <Empty>No upcoming jobs.</Empty>}</Panel>
+        <Panel title="Recent updates">
+          {recent.length ? recent.map(({ u, j }) => (
+            <button key={u.id} type="button" onClick={() => onOpen(j.id)} className="block w-full border-t border-line/60 px-4 py-2 text-left text-sm first:border-t-0">
+              <div className="font-medium">{j.plantName || j.customerName} <span className="num text-xs text-mute">· {fmtDate(u.workDate)}</span></div>
+              <div className="truncate text-xs text-mute">{u.remark || u.workCompleted || "—"}</div>
+            </button>
+          )) : <Empty>No updates yet.</Empty>}
+        </Panel>
+      </div>
     </div>
   );
 }
@@ -282,7 +355,7 @@ function JobCards({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => v
                   {stale ? <span title="No remark for 2+ days" className="size-2 shrink-0 rounded-full bg-sev-high" /> : null}
                   <span className="truncate">{j.plantName || j.customerName || "—"}</span>
                 </div>
-                <StatusBadge s={j.status} />
+                <StatusBadge s={j.status} j={j} />
               </div>
               <div className="truncate text-xs text-mute">{j.customerName} · {installTypeLabel[j.installationType]}</div>
               <div className="mt-1 flex items-center justify-between gap-2 text-xs">
@@ -331,20 +404,18 @@ function JobsTable({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => 
     <div className="hidden overflow-x-auto md:block">
       <table className="w-full text-sm">
         <thead>
-          <tr><Th>Customer / Plant</Th><Th>Type</Th><Th>Location</Th><Th>Engineer</Th><Th>Planned</Th><Th>Actual</Th><Th align="right">Sensors</Th><Th align="right">Machines</Th><Th>Status</Th><Th>Action</Th></tr>
+          <tr><Th>Customer / Plant</Th><Th>Type</Th><Th>Location</Th><Th>Engineer</Th><Th>Planned</Th><Th>Progress</Th><Th>Status</Th><Th>Action</Th></tr>
         </thead>
         <tbody>
           {jobs.map((j) => (
             <Tr key={j.id}>
               <Td><div className="font-medium">{j.customerName}</div><div className="text-xs text-mute">{j.plantName}</div></Td>
               <Td>{installTypeLabel[j.installationType]}{j.priority === "high" ? <span className="ml-1 text-[10px] font-semibold text-sev-high">HIGH</span> : null}</Td>
-              <Td>{j.location}</Td>
+              <Td>{j.location || "—"}</Td>
               <Td>{execEngineerName(j.assignedEngineerId) || "—"}{j.secondaryEngineerId ? <div className="text-xs text-mute">+ {execEngineerName(j.secondaryEngineerId)}</div> : null}</Td>
               <Td mono>{dateRange(j)}</Td>
-              <Td mono>{j.actualStart ? dateRange({ plannedStart: j.actualStart, plannedEnd: j.actualEnd }) : "—"}</Td>
-              <Td align="right" mono>{j.sensorsInstalled}</Td>
-              <Td align="right" mono>{j.machinesCovered}</Td>
-              <Td><StatusBadge s={j.status} /></Td>
+              <Td><div className="num text-xs">{j.sensorsInstalled} sensors</div><div className="num text-xs text-mute">{j.machinesCovered} machines</div></Td>
+              <Td><StatusBadge s={j.status} j={j} /></Td>
               <Td><Button onClick={() => onOpen(j.id)}>Open</Button></Td>
             </Tr>
           ))}
@@ -362,8 +433,9 @@ function JobsList({ jobs, onOpen, title }: { jobs: ExecJob[]; onOpen: (id: strin
   );
 }
 
-type QF = "all" | "lead" | "scheduled" | "in_progress" | "pending" | "completed";
-function JobsPage({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => void }) {
+type QF = "all" | JobBucket;
+const QF_LABEL: Record<Exclude<QF, "other">, string> = { all: "All", scheduled: "Scheduled", in_progress: "In Progress", pending: "Pending", ready: "Ready to Close", completed: "Completed" };
+function JobsPage({ jobs, onOpen, manager }: { jobs: ExecJob[]; onOpen: (id: string) => void; manager: boolean }) {
   const ex = useExecution();
   const [qf, setQf] = useState<QF>("all");
   const [q, setQ] = useState("");
@@ -371,10 +443,9 @@ function JobsPage({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => v
   const [eng, setEng] = useState("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [more, setMore] = useState(false);
   const list = jobs.filter((j) => {
-    if (qf === "lead" && !(j.status === "lead" || j.status === "planning")) return false;
-    if (qf === "pending" && !(j.status === "pending" || j.status === "on_hold")) return false;
-    if (!["all", "lead", "pending"].includes(qf) && j.status !== qf) return false;
+    if (qf !== "all" && jobBucket(j) !== qf) return false;
     if (type !== "all" && j.installationType !== type) return false;
     if (eng !== "all" && j.assignedEngineerId !== eng && j.secondaryEngineerId !== eng) return false;
     const d = j.plannedStart ?? j.expectedDate ?? "";
@@ -384,25 +455,32 @@ function JobsPage({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => v
     if (s && ![j.customerName, j.plantName, j.location, execEngineerName(j.assignedEngineerId)].join(" ").toLowerCase().includes(s)) return false;
     return true;
   });
-  const n = (f: QF) => jobs.filter((j) => (f === "all" ? true : f === "lead" ? j.status === "lead" || j.status === "planning" : f === "pending" ? j.status === "pending" || j.status === "on_hold" : j.status === f)).length;
+  const n = (f: QF) => (f === "all" ? jobs.length : jobs.filter((j) => jobBucket(j) === f).length);
   return (
     <div className="grid gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <Seg value={qf} onChange={setQf} options={(["all", "lead", "scheduled", "in_progress", "pending", "completed"] as QF[]).map((v) => ({ v, label: `${v === "all" ? "All" : v === "lead" ? "Lead" : v === "pending" ? "Pending" : execStatusLabel[v as ExecStatus]} (${n(v)})` }))} />
+      <div className="-mx-1 overflow-x-auto px-1"><div className="w-max">
+        <Seg value={qf} onChange={setQf} options={(Object.keys(QF_LABEL) as QF[]).map((v) => ({ v, label: `${QF_LABEL[v as keyof typeof QF_LABEL]} (${n(v)})` }))} />
+      </div></div>
+      <div className="flex flex-wrap gap-2">
+        <div className="min-w-0 flex-1"><TextInput placeholder="Search customer / plant / location" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        <Button onClick={() => setMore((m) => !m)}>Filters{type !== "all" || eng !== "all" || from || to ? " •" : ""}</Button>
       </div>
-      <div className="grid gap-2 md:grid-cols-5">
-        <TextInput placeholder="Search customer, plant, location, engineer" value={q} onChange={(e) => setQ(e.target.value)} />
-        <Select value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="all">All types</option>
-          {Object.entries(installTypeLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </Select>
-        <Select value={eng} onChange={(e) => setEng(e.target.value)}>
-          <option value="all">All engineers</option>
-          {ex.engineers.map((e) => <option key={e.id} value={e.id}>{e.name}{e.status === "inactive" ? " (inactive)" : ""}</option>)}
-        </Select>
-        <TextInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-        <TextInput type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-      </div>
+      {more ? (
+        <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4">
+          <Select value={type} onChange={(e) => setType(e.target.value)}>
+            <option value="all">All job types</option>
+            {Object.entries(installTypeLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </Select>
+          {manager ? (
+            <Select value={eng} onChange={(e) => setEng(e.target.value)}>
+              <option value="all">All engineers</option>
+              {ex.engineers.map((e) => <option key={e.id} value={e.id}>{e.name}{e.status === "inactive" ? " (inactive)" : ""}</option>)}
+            </Select>
+          ) : null}
+          <TextInput type="date" aria-label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <TextInput type="date" aria-label="To" value={to} onChange={(e) => setTo(e.target.value)} />
+        </div>
+      ) : null}
       <JobsList jobs={list} onOpen={onOpen} title="Jobs" />
     </div>
   );
@@ -410,8 +488,13 @@ function JobsPage({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => v
 
 function ScheduleView({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => void }) {
   const [view, setView] = useState<"list" | "calendar">("list");
+  const [sf, setSf] = useState<"upcoming" | "in_progress" | "completed" | "all">("upcoming");
   const [month, setMonth] = useState(todayIso().slice(0, 7));
+  const today = todayIso();
   const scheduled = jobs.filter((j) => j.plannedStart && !["cancelled"].includes(j.status)).sort((a, b) => (a.plannedStart! < b.plannedStart! ? -1 : 1));
+  const shown = scheduled.filter((j) =>
+    sf === "all" ? true : sf === "completed" ? j.status === "completed" : sf === "in_progress" ? j.status === "in_progress" : !closed(j.status) && j.status !== "lead" && (j.plannedEnd ?? j.plannedStart)! >= today,
+  );
   const [y = 2026, m = 1] = month.split("-").map(Number);
   const first = new Date(y, m - 1, 1);
   const days = new Date(y, m, 0).getDate();
@@ -423,10 +506,10 @@ function ScheduleView({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) 
   return (
     <Panel
       title="Schedule"
-      meta={<Seg value={view} onChange={setView} options={[{ v: "list", label: "List View" }, { v: "calendar", label: "Calendar View" }]} />}
+      meta={<div className="flex flex-wrap gap-2"><Seg value={sf} onChange={setSf} options={[{ v: "upcoming", label: "Upcoming" }, { v: "in_progress", label: "In Progress" }, { v: "completed", label: "Completed" }, { v: "all", label: "All" }]} /><Seg value={view} onChange={setView} options={[{ v: "list", label: "List View" }, { v: "calendar", label: "Calendar View" }]} /></div>}
     >
       {view === "list" ? (
-        scheduled.length ? scheduled.map((j) => <JobLine key={j.id} j={j} onOpen={onOpen} />) : <Empty>No scheduled jobs yet. Open a lead and set planned dates.</Empty>
+        shown.length ? shown.map((j) => <JobLine key={j.id} j={j} onOpen={onOpen} />) : <Empty>No jobs in this view.</Empty>
       ) : (
         <div className="p-3">
           <div className="mb-2 flex items-center justify-between">
@@ -439,7 +522,7 @@ function ScheduleView({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) 
             {Array.from({ length: lead }, (_, i) => <div key={`b${i}`} />)}
             {Array.from({ length: days }, (_, i) => {
               const d = `${month}-${String(i + 1).padStart(2, "0")}`;
-              const on = scheduled.filter((j) => j.plannedStart! <= d && (j.plannedEnd ?? j.plannedStart)! >= d);
+              const on = shown.filter((j) => j.plannedStart! <= d && (j.plannedEnd ?? j.plannedStart)! >= d);
               return (
                 <div key={d} className={cn("min-h-16 rounded p-1 ring-1 ring-line/70", d === todayIso() && "ring-signal")}>
                   <div className="num text-mute">{i + 1}</div>
