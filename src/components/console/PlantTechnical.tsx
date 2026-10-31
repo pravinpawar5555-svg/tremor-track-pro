@@ -36,7 +36,7 @@ function Stat({ n, l, warn }: { n: number; l: string; warn?: boolean }) {
 export function PlantTechnical({ plant, onClose }: { plant: Plant | null; onClose: () => void }) {
   return (
     <Sheet open={!!plant} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-screen max-w-none overflow-y-auto sm:max-w-none">
+      <SheetContent side="right" className="w-screen max-w-none overflow-y-auto p-3 sm:max-w-none sm:p-6">
         <div className="mx-auto w-full max-w-6xl">
         {plant ? <Body plant={plant} /> : null}
         </div>
@@ -78,12 +78,13 @@ function Body({ plant }: { plant: Plant }) {
   return (
     <>
       <SheetHeader>
-        <SheetTitle>{plant.name} · Technical register</SheetTitle>
+        <SheetTitle className="pr-8 text-left text-base sm:text-lg"><span className="block truncate">{plant.name}</span><span className="block text-xs font-normal text-mute">Technical register</span></SheetTitle>
         <p className="text-xs text-mute">{plant.customer}{plant.location ? ` · ${plant.location}` : ""}</p>
       </SheetHeader>
-      <div className="relative mt-3">
+      <div className="sticky -top-3 z-30 -mx-3 bg-panel px-3 pb-1 pt-2 sm:-top-6 sm:mx-0 sm:px-0">
+      <div className="relative">
         <Search className="pointer-events-none absolute left-2.5 top-2 size-4 text-mute" />
-        <TextInput className="pl-8" placeholder="Search area, machine, tag, point, sensor or gateway serial…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <TextInput className="pl-8" placeholder="Search machine, tag, sensor serial…" value={q} onChange={(e) => setQ(e.target.value)} />
         {q ? (
           <div className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-md bg-panel p-1 shadow-lg ring-1 ring-line">
             {hits.length ? hits.map((h) => (
@@ -95,10 +96,11 @@ function Body({ plant }: { plant: Plant }) {
           </div>
         ) : null}
       </div>
-      <div className="mt-3 flex flex-wrap gap-1 border-b border-line pb-2">
+      <div className="-mx-3 mt-2 flex gap-1 overflow-x-auto border-b border-line px-3 pb-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
         {([["overview", "Overview"], ["machines", "Areas & Machines"], ["sensors", "Sensors"], ["gateways", "Gateways"], ["history", "Analysis History"]] as [Tab, string][]).map(([k, l]) => (
-          <button key={k} type="button" onClick={() => setTab(k)} className={`rounded px-3 py-1.5 text-sm ${tab === k ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"}`}>{l}</button>
+          <button key={k} type="button" onClick={() => setTab(k)} className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm ${tab === k ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"}`}>{l}</button>
         ))}
+      </div>
       </div>
       {error ? <p className="mt-3 text-sm text-sev-high">Could not load: {error.message}</p> : loading ? <p className="mt-3 text-sm text-mute">Loading…</p> : (
         <div className="mt-3 text-sm">
@@ -108,7 +110,7 @@ function Body({ plant }: { plant: Plant }) {
                 <Stat n={t.areas} l="Areas" /><Stat n={t.machines} l="Machines" /><Stat n={t.points} l="Points" />
                 <Stat n={t.sensors} l="Sensors" /><Stat n={t.gateways} l="Gateways" /><Stat n={t.issues} l="Issues" warn />
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap [&>button]:justify-center">
                 <Button onClick={() => setForm({ kind: "area", row: { plant_id: plant.id } })}><Plus className="size-3.5" />Area</Button>
                 <Button onClick={() => data.areas.length ? setForm({ kind: "machine", row: { plant_id: plant.id, area_id: data.areas[0]!.id } }) : toast.error("Add an area first")}><Plus className="size-3.5" />Machine</Button>
                 <Button onClick={() => setForm({ kind: "sensor", row: { plant_id: plant.id } })}><Plus className="size-3.5" />Sensor</Button>
@@ -188,7 +190,7 @@ function MachinesTab({ plant, data, by, refresh, setForm, openMachine, onExport 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Select value={area} onChange={(e) => setArea(e.target.value)} className="max-w-56"><option value="">All areas</option>{data.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select>
+        <Select value={area} onChange={(e) => setArea(e.target.value)} className="w-full sm:max-w-56"><option value="">All areas</option>{data.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select>
         <Button onClick={() => setForm({ kind: "area", row: { plant_id: plant.id } })}><Plus className="size-3.5" />Add Area</Button>
         <Button variant="ghost" onClick={() => onExport(area || undefined)}><Download className="size-3.5" />{area ? "Export filtered" : "Export CSV"}</Button>
         {removedCount ? <label className="ml-auto flex items-center gap-1.5 text-xs text-mute"><input type="checkbox" checked={showRemoved} onChange={(e) => setShowRemoved(e.target.checked)} />Show deleted ({removedCount})</label> : null}
@@ -208,9 +210,9 @@ function MachinesTab({ plant, data, by, refresh, setForm, openMachine, onExport 
         const ms = data.machines.filter((m) => m.area_id === a.id && (showRemoved || m.status !== "inactive"));
         return (
           <div key={a.id} className="rounded-md ring-1 ring-line">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/70 px-3 py-2">
+            <div className="flex flex-col gap-2 border-b border-line/70 bg-black/[0.02] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <div><span className="font-semibold">{a.name}</span>{a.code ? <span className="text-xs text-mute"> · {a.code}</span> : null} <Pill s={a.status} map={{ active: "Active", inactive: "Inactive" }} /></div>
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1">
                 {a.status === "inactive" ? <Button variant="ghost" onClick={() => doRemove("area", a.id, a.name, true)}><RotateCcw className="size-3.5" />Restore</Button> : <>
                 <Button variant="ghost" onClick={() => setForm({ kind: "area", row: a })}>Edit</Button>
                 <Button variant="ghost" onClick={() => askDelete("area", a.id, a.name)}><Trash2 className="size-3.5 text-sev-high" /></Button></>}
@@ -221,10 +223,10 @@ function MachinesTab({ plant, data, by, refresh, setForm, openMachine, onExport 
               const pts = data.points.filter((p) => p.machine_id === m.id);
               const sens = pts.filter((p) => pointSensors(data, p.id).current).length;
               return (
-                <div key={m.id} className="flex items-center hover:bg-black/5">
+                <div key={m.id} className="flex items-center border-t border-line/40 first:border-t-0 hover:bg-black/5">
                 <button type="button" onClick={() => openMachine(m.id)} className="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-2 text-left">
-                  <span className="min-w-0"><span className="font-medium">{m.name}</span> <span className="text-xs text-mute">{[m.tag, m.machine_type].filter(Boolean).join(" · ")}</span></span>
-                  <span className="flex shrink-0 items-center gap-2 text-xs text-mute"><span className="num">{pts.length} pts · {sens} sensors</span><Pill s={m.status} map={MACHINE_STATUS} /><ChevronRight className="size-4" /></span>
+                  <span className="min-w-0"><span className="block truncate font-medium">{m.name}</span><span className="block truncate text-xs text-mute">{[m.tag, m.machine_type].filter(Boolean).join(" · ") || "—"}</span><span className="num mt-0.5 block text-xs text-mute sm:hidden">{pts.length} pts · {sens} sensors</span></span>
+                  <span className="flex shrink-0 items-center gap-2 text-xs text-mute"><span className="num hidden sm:inline">{pts.length} pts · {sens} sensors</span><Pill s={m.status} map={MACHINE_STATUS} /><ChevronRight className="size-4" /></span>
                 </button>
                 {m.status === "inactive"
                   ? <button type="button" className="px-3 py-2 text-xs text-signal hover:underline" onClick={() => doRemove("machine", m.id, m.name, true)}>Restore</button>
@@ -252,7 +254,7 @@ function SensorsTab({ plant, data, setForm, openSensor }: Ctx) {
         const p = sensorPath(data, s);
         return (
           <button key={s.id} type="button" onClick={() => openSensor(s.id)} className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left ring-1 ring-line hover:bg-black/5">
-            <span className="min-w-0"><span className="num font-medium">{s.serial_no}</span> <span className="text-xs text-mute">{s.sensor_type}</span>
+            <span className="min-w-0 flex-1"><span className="num font-medium">{s.serial_no}</span> <span className="text-xs text-mute">{s.sensor_type}</span>
               <span className="block truncate text-xs text-mute">{[p.area?.name, p.machine?.name, p.point?.name].filter(Boolean).join(" / ") || "Not mapped to a point"}</span></span>
             <Pill s={s.status} map={SENSOR_STATUS} />
           </button>
