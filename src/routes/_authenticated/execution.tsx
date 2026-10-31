@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
-import { ExternalLink, Trash2 } from "lucide-react";
+import { ExternalLink, MapPin, Phone, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { peekDomain } from "@/lib/domain";
 import { AppShell } from "@/components/console/AppShell";
@@ -38,6 +38,7 @@ import {
   type YesNoNa,
 } from "@/lib/execution";
 import { execScope } from "@/lib/access";
+import { filterToday, jobTone, mapsUrl, needsRemark, type TodayFilter } from "@/lib/exec-today";
 
 export const Route = createFileRoute("/_authenticated/execution")({
   validateSearch: (s: Record<string, unknown>): { add?: "visit" | "lead" } => (s["add"] === "visit" || s["add"] === "lead" ? { add: s["add"] as "visit" | "lead" } : {}),
@@ -94,6 +95,7 @@ function ExecutionPage() {
   const [openId, setOpenId] = useState<string | null>(null);
   const today = todayIso();
   const [quickVisit, setQuickVisit] = useState<ExecSiteVisit | null>(search.add === "visit" ? blankSiteVisit(today, meExec?.id ?? "", myName) : null);
+  const [todayF, setTodayF] = useState<TodayFilter | null>(null);
 
   const { visible, myVisits, leadCount, visitsMonth } = useMemo(
     () => execScope(ex.jobs, ex.siteVisits, mineOnly ? meExec!.id : null, today),
@@ -126,8 +128,15 @@ function ExecutionPage() {
           </div>
         }
       />
-      <div className="mb-4 overflow-x-auto"><Seg value={tab} options={tabs} onChange={setTab} /></div>
+      <TodayStrip jobs={visible} visitsToday={myVisits.filter((v) => v.visitDate === today).length} value={todayF}
+        onChange={(f) => { if (f === "visits") { setTab("visits"); setTodayF(null); } else setTodayF(f); }} />
+      <div className="-mx-1 mb-4 overflow-x-auto px-1"><div className="w-max"><Seg value={tab} options={tabs} onChange={(t) => { setTab(t); setTodayF(null); }} /></div></div>
 
+      {todayF ? (
+        <JobsList jobs={filterToday(visible, todayF, today)} onOpen={setOpenId}
+          title={todayF === "active" ? "Active jobs" : todayF === "due" ? "Due today" : "Overdue"} />
+      ) : (
+      <>
       {tab === "overview" ? (mineOnly ? <EngineerOverview jobs={visible} onOpen={setOpenId} /> : <ManagerOverview jobs={visible} onOpen={setOpenId} />) : null}
       {tab === "leads" ? <JobsList jobs={visible.filter((j) => j.status === "lead" || j.status === "planning")} onOpen={setOpenId} title="Leads" /> : null}
       {tab === "schedule" ? <ScheduleView jobs={visible} onOpen={setOpenId} /> : null}
@@ -137,6 +146,8 @@ function ExecutionPage() {
           visits={myVisits} />
       ) : null}
       {tab === "team" && manager ? <TeamPanel /> : null}
+      </>
+      )}
       {quickVisit ? <VisitForm v={quickVisit} data={data} engineers={ex.engineers} jobs={visible} onClose={() => setQuickVisit(null)} /> : null}
 
       {editing ? (
@@ -251,19 +262,64 @@ function EngineerOverview({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: stri
 
 // ---------- lists
 
+const toneRing = { overdue: "border-l-sev-high", today: "border-l-sev-medium", done: "border-l-sev-low", normal: "border-l-line" } as const;
+
 function JobCards({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => void }) {
+  const today = todayIso();
   return (
     <div className="grid gap-2 p-3 md:hidden">
-      {jobs.map((j) => (
-        <button key={j.id} type="button" onClick={() => onOpen(j.id)} className="rounded-lg p-3 text-left ring-1 ring-line">
-          <div className="flex items-start justify-between gap-2">
-            <div className="font-semibold">{j.customerName || "—"}</div>
-            <StatusBadge s={j.status} />
+      {jobs.map((j) => {
+        const tone = jobTone(j, today);
+        const last = updatesFor(j.id).map((u) => u.workDate).sort().pop();
+        const stale = needsRemark(j, last, today);
+        const map = mapsUrl(j.plantName, j.location, j.customerName);
+        const engs = [execEngineerName(j.assignedEngineerId), execEngineerName(j.secondaryEngineerId)].filter(Boolean).join(" + ");
+        return (
+          <div key={j.id} className={cn("rounded-lg border-l-4 bg-card p-3 ring-1 ring-line", toneRing[tone])}>
+            <button type="button" onClick={() => onOpen(j.id)} className="block w-full text-left">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-1.5 font-semibold">
+                  {stale ? <span title="No remark for 2+ days" className="size-2 shrink-0 rounded-full bg-sev-high" /> : null}
+                  <span className="truncate">{j.plantName || j.customerName || "—"}</span>
+                </div>
+                <StatusBadge s={j.status} />
+              </div>
+              <div className="truncate text-xs text-mute">{j.customerName}{j.plantName ? "" : ""} · {installTypeLabel[j.installationType]}</div>
+              <div className="mt-1 flex items-center justify-between gap-2 text-xs">
+                <span className={cn("num", tone === "overdue" && "font-semibold text-sev-high", tone === "today" && "font-semibold text-sev-medium")}>
+                  {dateRange(j)}{tone === "overdue" ? " · Overdue" : tone === "today" ? " · Today" : ""}
+                </span>
+                <span className="truncate text-mute">{engs || "Unassigned"}</span>
+              </div>
+              {stale ? <div className="mt-1 text-[11px] font-medium text-sev-high">No remark for 2+ days</div> : null}
+            </button>
+            <div className="mt-2 flex flex-wrap gap-3 border-t border-line/60 pt-2 text-xs font-medium">
+              <button type="button" className="text-signal" onClick={() => onOpen(j.id)}>{j.status === "in_progress" ? "Add remark →" : "Open job →"}</button>
+              {map ? <a className="inline-flex items-center gap-1 text-signal" href={map} target="_blank" rel="noopener noreferrer"><MapPin className="size-3.5" /> Map</a> : null}
+              {j.contactNumber ? <a className="inline-flex items-center gap-1 text-signal" href={`tel:${j.contactNumber}`}><Phone className="size-3.5" /> Call</a> : null}
+            </div>
           </div>
-          <div className="text-xs text-mute">{installTypeLabel[j.installationType]}{j.location ? ` · ${j.location}` : ""}</div>
-          <div className="num mt-1 text-xs">{dateRange(j)}</div>
-          <div className="mt-1 text-xs">Engineer: {execEngineerName(j.assignedEngineerId) || "Unassigned"}</div>
-          <div className="mt-2 text-xs font-medium text-signal">Open Job →</div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TodayStrip({ jobs, visitsToday, value, onChange }: { jobs: ExecJob[]; visitsToday: number; value: TodayFilter | null; onChange: (f: TodayFilter | null) => void }) {
+  const today = todayIso();
+  const items: { f: TodayFilter; label: string; n: number; cls: string }[] = [
+    { f: "active", label: "Active jobs", n: filterToday(jobs, "active", today).length, cls: "text-signal" },
+    { f: "due", label: "Due today", n: filterToday(jobs, "due", today).length, cls: "text-sev-medium" },
+    { f: "visits", label: "Site visits today", n: visitsToday, cls: "text-sev-low" },
+    { f: "overdue", label: "Overdue", n: filterToday(jobs, "overdue", today).length, cls: "text-sev-high" },
+  ];
+  return (
+    <div className="mb-4 grid grid-cols-4 gap-2">
+      {items.map((i) => (
+        <button key={i.f} type="button" onClick={() => onChange(value === i.f ? null : i.f)}
+          className={cn("rounded-lg bg-card px-2 py-2 text-left ring-1 ring-line transition", value === i.f && "ring-2 ring-signal")}>
+          <div className={cn("num text-xl font-semibold leading-none sm:text-2xl", i.n ? i.cls : "text-mute")}>{i.n}</div>
+          <div className="mt-1 text-[10px] leading-tight text-mute sm:text-xs">{i.label}</div>
         </button>
       ))}
     </div>
@@ -504,7 +560,15 @@ function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; b
   const [j, setJ] = useState(job);
   const [confirm, setConfirm] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
-  const [upd, setUpd] = useState({ workDate: todayIso(), remark: "", workCompleted: "", pendingNextAction: "", attachmentLink: "" });
+  const draftKey = `exec-remark-draft:${job.id}`;
+  const [upd, setUpdRaw] = useState(() => {
+    const blank = { workDate: todayIso(), remark: "", workCompleted: "", pendingNextAction: "", attachmentLink: "" };
+    try { const s = window.localStorage.getItem(draftKey); return s ? { ...blank, ...JSON.parse(s) } : blank; } catch { return blank; }
+  });
+  const setUpd = (v: typeof upd) => {
+    setUpdRaw(v);
+    try { if (v.remark || v.workCompleted || v.pendingNextAction) window.localStorage.setItem(draftKey, JSON.stringify(v)); else window.localStorage.removeItem(draftKey); } catch { /* storage unavailable */ }
+  };
   const [savingUpdate, setSavingUpdate] = useState(false);
   const [comment, setComment] = useState("");
   const [link, setLink] = useState({ label: "", url: "" });
