@@ -25,6 +25,8 @@ import {
   execStatusLabel,
   execStatusTone,
   installTypeLabel,
+  jobEngineerIds,
+  onJob,
   pendingReasons,
   reassignJobs,
   saveEngineer,
@@ -39,6 +41,14 @@ import {
 } from "@/lib/execution";
 import { execScope } from "@/lib/access";
 import { attentionItems, filterToday, focusJobs, isOverdue, isReadyToClose, jobBucket, jobTone, mapsUrl, needsRemark, type JobBucket, type TodayFilter } from "@/lib/exec-today";
+/** Name of anyone who can be on a job: execution engineer, customer success engineer or manager. */
+function personName(id: string) {
+  if (!id) return "";
+  return execEngineerName(id) || portalPeople().find((p) => p.id === id)?.name || "";
+}
+let portalCache: { id: string; name: string; role: string }[] = [];
+const portalPeople = () => portalCache;
+const teamLabel = (j: ExecJob) => jobEngineerIds(j).map(personName).filter(Boolean).join(" + ");
 const lastUpdateOf = (id: string) => updatesFor(id).map((u) => u.workDate).sort().pop();
 
 export const Route = createFileRoute("/_authenticated/execution")({
@@ -84,6 +94,7 @@ function Seg<T extends string>({ value, options, onChange }: { value: T; options
 
 function ExecutionPage() {
   const data = useData();
+  portalCache = data.engineers.map((e) => ({ id: e.id, name: e.name, role: e.role }));
   const ex = useExecution();
   const manager = data.role === "manager";
   const me = currentUser(data);
@@ -183,7 +194,7 @@ function ExecutionPage() {
             <JobDetail
               job={open}
               byUser={myName}
-              canEdit={manager || !mineOnly || open.assignedEngineerId === meExec?.id || open.secondaryEngineerId === meExec?.id}
+              canEdit={manager || !mineOnly || onJob(open, meExec?.id ?? "")}
               onEdit={() => setEditing({ job: open, isNew: false })}
               onDelete={() => setOpenId(null)}
             />
@@ -249,7 +260,7 @@ function ManagerOverview({ jobs, onOpen, onList, onNew }: { jobs: ExecJob[]; onO
   const overdue = jobs.filter((j) => isOverdue(j, today));
   const recentDone = jobs.filter((j) => j.status === "completed").sort((a, b) => ((a.completedAt ?? "") > (b.completedAt ?? "") ? -1 : 1)).slice(0, 4);
   const team = ex.engineers.filter((e) => e.status === "active").map((e) => {
-    const cur = jobs.find((j) => j.status === "in_progress" && (j.assignedEngineerId === e.id || j.secondaryEngineerId === e.id));
+    const cur = jobs.find((j) => j.status === "in_progress" && onJob(j, e.id));
     return { e, cur };
   });
   const k = (label: string, b: JobBucket, tone: string) => { const l = bucketList(jobs, b); return <KpiBtn key={b} label={label} n={l.length} tone={tone} onClick={() => onList(label, l)} />; };
@@ -347,7 +358,7 @@ function JobCards({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => v
         const last = updatesFor(j.id).map((u) => u.workDate).sort().pop();
         const stale = needsRemark(j, last, today);
         const map = mapsUrl(j.plantName, j.location, j.customerName);
-        const engs = [execEngineerName(j.assignedEngineerId), execEngineerName(j.secondaryEngineerId)].filter(Boolean).join(" + ");
+        const engs = teamLabel(j);
         return (
           <div key={j.id} className={cn("rounded-lg border-l-4 bg-card p-3 ring-1 ring-line", toneRing[tone])}>
             <button type="button" onClick={() => onOpen(j.id)} className="block w-full text-left">
@@ -413,7 +424,7 @@ function JobsTable({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => 
               <Td><div className="font-medium">{j.customerName}</div><div className="text-xs text-mute">{j.plantName}</div></Td>
               <Td>{installTypeLabel[j.installationType]}{j.priority === "high" ? <span className="ml-1 text-[10px] font-semibold text-sev-high">HIGH</span> : null}</Td>
               <Td>{j.location || "—"}</Td>
-              <Td>{execEngineerName(j.assignedEngineerId) || "—"}{j.secondaryEngineerId ? <div className="text-xs text-mute">+ {execEngineerName(j.secondaryEngineerId)}</div> : null}</Td>
+              <Td>{personName(j.assignedEngineerId) || "—"}{jobEngineerIds(j).length > 1 ? <div className="text-xs text-mute">+ {jobEngineerIds(j).slice(1).map(personName).join(", ")}</div> : null}</Td>
               <Td mono>{dateRange(j)}</Td>
               <Td><div className="num text-xs">{frac(j.sensorsInstalled, j.plannedSensors)} sensors</div><div className="num text-xs text-mute">{frac(j.machinesCovered, j.plannedMachines)} machines</div>{j.plannedSensors > 0 && <div className="mt-1 h-1 w-20 rounded bg-muted"><div className="h-1 rounded bg-signal" style={{ width: `${Math.min(100, (j.sensorsInstalled / j.plannedSensors) * 100)}%` }} /></div>}</Td>
               <Td><StatusBadge s={j.status} j={j} /></Td>
@@ -448,12 +459,12 @@ function JobsPage({ jobs, onOpen, manager }: { jobs: ExecJob[]; onOpen: (id: str
   const list = jobs.filter((j) => {
     if (qf !== "all" && jobBucket(j) !== qf) return false;
     if (type !== "all" && j.installationType !== type) return false;
-    if (eng !== "all" && j.assignedEngineerId !== eng && j.secondaryEngineerId !== eng) return false;
+    if (eng !== "all" && !onJob(j, eng)) return false;
     const d = j.plannedStart ?? j.expectedDate ?? "";
     if (from && d && d < from) return false;
     if (to && d && d > to) return false;
     const s = q.trim().toLowerCase();
-    if (s && ![j.customerName, j.plantName, j.location, execEngineerName(j.assignedEngineerId)].join(" ").toLowerCase().includes(s)) return false;
+    if (s && ![j.customerName, j.plantName, j.location, teamLabel(j)].join(" ").toLowerCase().includes(s)) return false;
     return true;
   });
   const n = (f: QF) => (f === "all" ? jobs.length : jobs.filter((j) => jobBucket(j) === f).length);
@@ -549,7 +560,7 @@ function JobForm({ job, isNew, onClose, onSave }: { job: ExecJob; isNew: boolean
   const ex = useExecution();
   const [j, setJ] = useState(job);
   const set = (p: Partial<ExecJob>) => setJ((x) => ({ ...x, ...p }));
-  const active = ex.engineers.filter((e) => e.status === "active" || e.id === j.assignedEngineerId || e.id === j.secondaryEngineerId);
+  const active = ex.engineers.filter((e) => e.status === "active" || onJob(j, e.id));
   const pickPlant = (id: string) => {
     const p = data.plants.find((x) => x.id === id);
     if (!p) { set({ plantId: "" }); return; }
@@ -597,18 +608,18 @@ function JobForm({ job, isNew, onClose, onSave }: { job: ExecJob; isNew: boolean
               {Object.entries(execStatusLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </Select>
           </Field>
-          <Field label="Assigned engineer">
-            <Select value={j.assignedEngineerId} onChange={(e) => set({ assignedEngineerId: e.target.value })}>
-              <option value="">— Unassigned —</option>
-              {active.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </Select>
-          </Field>
-          <Field label="Second engineer (optional)">
-            <Select value={j.secondaryEngineerId} onChange={(e) => set({ secondaryEngineerId: e.target.value })}>
-              <option value="">— None —</option>
-              {active.filter((e) => e.id !== j.assignedEngineerId).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </Select>
-          </Field>
+          <div className="sm:col-span-2">
+            <TeamPicker
+              lead={j.assignedEngineerId}
+              ids={jobEngineerIds(j)}
+              exec={active.map((e) => ({ id: e.id, name: e.name }))}
+              others={data.engineers.filter((e) => e.role === "analyst" || e.role === "manager").map((e) => ({ id: e.id, name: e.name, role: e.role }))}
+              onChange={(lead, ids) => {
+                const execIds = ids.filter((x) => ex.engineers.some((e) => e.id === x));
+                set({ assignedEngineerId: lead, secondaryEngineerId: execIds.find((x) => x !== lead) ?? "", engineerIds: ids });
+              }}
+            />
+          </div>
           <Field label="Planned start"><TextInput type="date" value={j.plannedStart ?? ""} onChange={(e) => set({ plannedStart: e.target.value || null })} /></Field>
           <Field label="Planned end"><TextInput type="date" value={j.plannedEnd ?? ""} onChange={(e) => set({ plannedEnd: e.target.value || null })} /></Field>
           <div className="sm:col-span-2"><Field label="Lead notes"><TextArea rows={2} value={j.notes} onChange={(e) => set({ notes: e.target.value })} /></Field></div>
@@ -621,6 +632,56 @@ function JobForm({ job, isNew, onClose, onSave }: { job: ExecJob; isNew: boolean
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function TeamPicker({ lead, ids, exec, others, onChange }: {
+  lead: string; ids: string[];
+  exec: { id: string; name: string }[];
+  others: { id: string; name: string; role: string }[];
+  onChange: (lead: string, ids: string[]) => void;
+}) {
+  const toggle = (id: string) => {
+    const next = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+    const execNext = next.filter((x) => exec.some((e) => e.id === x));
+    const nextLead = next.includes(lead) && exec.some((e) => e.id === lead) ? lead : execNext[0] ?? "";
+    onChange(nextLead, nextLead ? [nextLead, ...next.filter((x) => x !== nextLead)] : next);
+  };
+  const chip = (p: { id: string; name: string }, tag?: string) => {
+    const on = ids.includes(p.id);
+    return (
+      <button key={p.id} type="button" onClick={() => toggle(p.id)} aria-pressed={on}
+        className={cn("min-h-9 rounded-full px-3 py-1.5 text-xs ring-1 transition-colors", on ? "bg-signal text-primary-foreground ring-signal" : "bg-background text-ink ring-line hover:ring-signal/60")}>
+        {on ? "✓ " : ""}{p.name}{tag ? <span className="ml-1 opacity-70">· {tag}</span> : null}
+      </button>
+    );
+  };
+  const execOn = ids.filter((x) => exec.some((e) => e.id === x));
+  return (
+    <div className="grid gap-3 rounded-md p-3 ring-1 ring-line">
+      <div>
+        <div className="label-caps">Team on this job</div>
+        <p className="text-xs text-mute">Tick everyone going. Every ticked execution engineer can open the job and add work updates.</p>
+      </div>
+      <div>
+        <div className="mb-1.5 text-[11px] text-mute">Execution engineers</div>
+        <div className="flex flex-wrap gap-2">{exec.length ? exec.map((p) => chip(p)) : <span className="text-xs text-mute">None added yet</span>}</div>
+      </div>
+      {others.length ? (
+        <div>
+          <div className="mb-1.5 text-[11px] text-mute">Customer success engineers &amp; managers joining</div>
+          <div className="flex flex-wrap gap-2">{others.map((p) => chip(p, p.role === "manager" ? "Manager" : "CS"))}</div>
+        </div>
+      ) : null}
+      {execOn.length > 1 ? (
+        <Field label="Lead engineer (owner)">
+          <Select value={lead} onChange={(e) => onChange(e.target.value, [e.target.value, ...ids.filter((x) => x !== e.target.value)])}>
+            {execOn.map((x) => <option key={x} value={x}>{exec.find((e) => e.id === x)?.name}</option>)}
+          </Select>
+        </Field>
+      ) : null}
+      <div className="text-xs text-mute">{ids.length ? `${ids.length} selected` : "Nobody selected — job stays unassigned"}</div>
+    </div>
   );
 }
 
@@ -684,7 +745,7 @@ function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; b
         {job.priority === "high" ? <span className="text-xs font-semibold text-sev-high">High priority</span> : null}
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Info label="Assigned" value={[execEngineerName(job.assignedEngineerId), execEngineerName(job.secondaryEngineerId)].filter(Boolean).join(" + ")} />
+        <Info label="Team" value={teamLabel(job)} />
         <Info label="Expected" value={fmtDate(iso(job.expectedDate))} />
       </div>
       {canEdit ? (
@@ -724,6 +785,29 @@ function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; b
         </div>
       ) : null}
 
+      <Section title="Team on this job">
+        <div className="flex flex-wrap gap-2">
+          {jobEngineerIds(job).length ? jobEngineerIds(job).map((id, i) => {
+            const pr = portalPeople().find((p) => p.id === id);
+            const tag = i === 0 && id === job.assignedEngineerId ? "Lead" : pr ? (pr.role === "manager" ? "Manager" : pr.role === "analyst" ? "CS" : "Execution") : "Execution";
+            return <span key={id} className="rounded-full bg-muted px-3 py-1 text-xs">{personName(id) || "Unknown"} <span className="text-mute">· {tag}</span></span>;
+          }) : <span className="text-xs text-mute">Nobody assigned yet</span>}
+        </div>
+      </Section>
+      <Section title="Progress at a glance">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Info label="Sensors" value={<span className="num">{job.sensorsInstalled}{job.plannedSensors ? ` / ${job.plannedSensors}` : ""}</span>} />
+          <Info label="Machines" value={<span className="num">{job.machinesCovered}{job.plannedMachines ? ` / ${job.plannedMachines}` : ""}</span>} />
+          <Info label="Days with updates" value={<span className="num">{new Set(updates.map((u) => u.workDate)).size}</span>} />
+          <Info label="Last update" value={updates.length ? fmtDate(updates.map((u) => u.workDate).sort().pop()) : "None yet"} />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+          {([["Kickoff", job.kickoff], ["Configuration", job.configuration], ...(job.installationType !== "troubleshooting" ? [["AIP sheet", job.aip]] : [])] as [string, YesNoNa][]).map(([k, v]) => (
+            <span key={k} className={cn("rounded-full px-2 py-0.5 ring-1", v === "yes" ? "text-ok ring-ok/40" : v === "na" ? "text-mute ring-line" : "text-sev-medium ring-sev-medium/40")}>{v === "yes" ? "✓" : v === "na" ? "–" : "•"} {k}</span>
+          ))}
+          <span className={cn("rounded-full px-2 py-0.5 ring-1", job.reportLink ? "text-ok ring-ok/40" : "text-sev-medium ring-sev-medium/40")}>{job.reportLink ? "✓" : "•"} Report link</span>
+        </div>
+      </Section>
       <Section title="Customer details">
         <div className="grid grid-cols-2 gap-3">
           <Info label="Customer" value={job.customerName} />
@@ -932,7 +1016,7 @@ function TeamPanel() {
   const [edit, setEdit] = useState<ExecEngineer | null>(null);
   const [reassign, setReassign] = useState<{ from: ExecEngineer; to: string } | null>(null);
   const blank = (): ExecEngineer => ({ id: crypto.randomUUID(), name: "", employeeId: "", email: "", mobile: "", branch: "", role: "engineer", status: "active", linkedUserId: "" });
-  const openCount = (id: string) => ex.jobs.filter((j) => !closed(j.status) && (j.assignedEngineerId === id || j.secondaryEngineerId === id)).length;
+  const openCount = (id: string) => ex.jobs.filter((j) => !closed(j.status) && onJob(j, id)).length;
   const save = async (e: ExecEngineer) => {
     if (!e.name.trim()) { toast.error("Name is required"); return; }
     try {
