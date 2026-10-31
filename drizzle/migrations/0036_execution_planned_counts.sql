@@ -1,0 +1,1 @@
+ALTER TABLE public.execution_jobs ADD COLUMN IF NOT EXISTS planned_sensors integer NOT NULL DEFAULT 0, ADD COLUMN IF NOT EXISTS planned_machines integer NOT NULL DEFAULT 0;
