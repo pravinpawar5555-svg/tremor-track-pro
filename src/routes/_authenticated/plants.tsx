@@ -335,7 +335,7 @@ function PlantsPage() {
           </div>
         ))}
       </div>
-      <div className="mb-3 grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
         <TextInput placeholder="Search plant, branch, RM, KAM, sales…" value={q} onChange={(e) => setQ(e.target.value)} />
         <Select value={kamF} onChange={(e) => { setKamF(e.target.value); setBranchF(""); setSalesF(""); }}>
           <option value="">All HO Division KAMs</option>{bs.kams.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
@@ -392,33 +392,47 @@ function PlantsPage() {
               const s = plantSummary(data, p.id);
               const cycles = plantFrequencies(p);
               return (
-                <li key={p.id} className="px-4 py-3">
-                  <div className="text-[15px] font-semibold">{p.name}</div>
-                  <div className="text-sm text-mute">{p.customer || "—"} · {p.machines} machines</div>
+                <li key={p.id} className="px-3 py-3">
+                  <div className="flex min-w-0 items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-[15px] font-semibold">{p.name}</div>
+                      <div className="truncate text-sm text-mute">{p.customer || "—"}{p.location ? ` · ${p.location}` : ""}</div>
+                    </div>
+                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ring-1 ${p.category === "demo" ? "text-sev-medium ring-sev-medium/40" : "text-signal ring-signal/40"}`}>{p.category ?? "order"}</span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-4 gap-1.5 text-center">
+                    {[["Machines", p.machines || 0], ["N6", p.node6 ?? 0], ["NX", p.nodeX ?? 0], ["VA", p.vibassist ?? 0]].map(([l, v]) => (
+                      <div key={l as string} className="rounded-md py-1 ring-1 ring-line/70"><div className="num text-sm font-semibold">{v}</div><div className="text-[10px] text-mute">{l}</div></div>
+                    ))}
+                  </div>
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : <span className="text-sm text-mute">No report cycle</span>}
+                    {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : <span className="text-xs text-mute">No report cycle</span>}
                   </div>
                   {canBilling ? <BillingLine view={bv(p)} onOpen={() => setBillPlant(p)} /> : null}
-                  <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-                    <span className="text-mute">CS Engineer</span><span>{engineerName(data, p.engineerId)}</span>
-                    <span className="text-mute">Branch</span><span>{ownershipOf(bs, p).branch?.name ?? "—"}</span>
-                    <span className="text-mute">HO Division KAM</span><span>{ownershipOf(bs, p).kam?.name ?? "—"}</span>
-                    <span className="text-mute">Branch RM</span><span>{ownershipOf(bs, p).branch?.rmName || "—"}</span>
-                    <span className="text-mute">Sales Engineer</span><span>{ownershipOf(bs, p).sales?.name ?? "—"}</span>
-                    <span className="text-mute">Contact</span><span className="truncate">{p.contact || "—"} {p.contactPhone ? <a className="num text-signal" href={`tel:${p.contactPhone}`}>{p.contactPhone}</a> : null}</span>
+                  <div className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
+                    <span className="text-mute">CS Engineer</span><span className="truncate">{engineerName(data, p.engineerId)}</span>
                     <span className="text-mute">Last report</span><span className="num">{fmtDate(s.lastReportSent)}</span>
-                    <span className="text-mute">Sensors</span><span className="num">N6 {p.node6 ?? 0} · NX {p.nodeX ?? 0} · VA {p.vibassist ?? 0}</span>
+                    <span className="text-mute">Contact</span><span className="truncate">{p.contact || "—"} {p.contactPhone ? <a className="num text-signal" href={`tel:${p.contactPhone}`}>{p.contactPhone}</a> : null}</span>
                   </div>
-                  <Ownership o={ownershipOf(bs, p)} />
-                  <div className="mt-3"><Link to="/contacts" search={{ plant: p.id }} className="text-sm text-signal">Customer contacts</Link></div>
-                  <div className="mt-3 flex gap-2">
-                    <button type="button" onClick={() => setTechPlant(p)} className="rounded-md px-2 py-1 text-xs text-signal ring-1 ring-signal/40 hover:bg-signal/10">Technical</button>
-<Link to="/visits" search={{ plant: p.id }} className="grid h-11 flex-1 place-items-center rounded-md bg-signal text-sm font-medium text-signal-foreground">Visit history</Link>
+                  <details className="mt-2 rounded-md ring-1 ring-line/70">
+                    <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-signal">Ownership & more details</summary>
+                    <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 px-3 pb-2 text-sm">
+                      <span className="text-mute">Branch</span><span className="truncate">{ownershipOf(bs, p).branch?.name ?? "—"}</span>
+                      <span className="text-mute">HO KAM</span><span className="truncate">{ownershipOf(bs, p).kam?.name ?? "—"}</span>
+                      <span className="text-mute">Branch RM</span><span className="truncate">{ownershipOf(bs, p).branch?.rmName || "—"}</span>
+                      <span className="text-mute">Sales Eng.</span><span className="truncate">{ownershipOf(bs, p).sales?.name ?? "—"}</span>
+                    </div>
+                    <div className="px-3 pb-2"><Ownership o={ownershipOf(bs, p)} /></div>
+                  </details>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => setTechPlant(p)} className="h-11 rounded-md bg-signal text-sm font-medium text-signal-foreground">Technical</button>
+                    <Link to="/visits" search={{ plant: p.id }} className="grid h-11 place-items-center rounded-md text-sm font-medium text-signal ring-1 ring-signal/40">Visit history</Link>
+                    <Link to="/contacts" search={{ plant: p.id }} className="grid h-11 place-items-center rounded-md text-sm ring-1 ring-line">Contacts</Link>
                     {manager ? (
                       <>
-                        <button onClick={() => edit(p)} className="h-11 rounded-md px-4 text-sm ring-1 ring-line">Edit</button>
-                        <Link to="/opportunities" search={{ plant: p.id }} className="grid h-11 place-items-center rounded-md px-3 text-sm text-signal ring-1 ring-line">+ Opportunity</Link>
-                        <button onClick={() => { if (window.confirm(`Delete ${p.name}?`)) removePlant(p.id); }} className="h-11 rounded-md px-4 text-sm text-red-600 ring-1 ring-line">Delete</button>
+                        <Link to="/opportunities" search={{ plant: p.id }} className="grid h-11 place-items-center rounded-md text-sm text-signal ring-1 ring-line">+ Opportunity</Link>
+                        <button onClick={() => edit(p)} className="h-11 rounded-md text-sm ring-1 ring-line">Edit</button>
+                        <button onClick={() => { if (window.confirm(`Delete ${p.name}?`)) removePlant(p.id); }} className="h-11 rounded-md text-sm text-sev-high ring-1 ring-line">Delete</button>
                       </>
                     ) : null}
                   </div>
