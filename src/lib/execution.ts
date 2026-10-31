@@ -218,7 +218,7 @@ export async function loadExecution() {
   ]);
   const sv = await db.from("execution_site_visits").select("*").order("visit_date", { ascending: false });
   if (sv.error) console.error("execution site visits load failed", sv.error);
-  const allSv = (sv.data ?? []).map(svFrom);
+  const allSv: ExecSiteVisit[] = (sv.data ?? []).map(svFrom);
   siteVisits = allSv.filter((v) => !v.archived);
   archivedSiteVisits = allSv.filter((v) => v.archived);
   for (const [res, label] of [[e, "engineers"], [j, "jobs"], [u, "updates"], [a, "activity"]] as const) {
