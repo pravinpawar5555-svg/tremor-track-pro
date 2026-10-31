@@ -170,8 +170,8 @@ function ExecutionPage() {
       {tab === "team" && manager ? <TeamPanel /> : null}
       </>
       )}
-      <div className="h-20 md:hidden" aria-hidden />
-      <nav aria-label="Execution sections" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-panel/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+      <div className="h-24 md:hidden" aria-hidden />
+      <nav aria-label="Execution sections" className="fixed inset-x-0 bottom-[calc(3.6rem+env(safe-area-inset-bottom))] z-30 border-t border-line bg-panel/95 backdrop-blur md:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-5">
           {([
             { v: "overview" as Tab, label: mineOnly ? "My Work" : "Overview", Icon: LayoutGrid },
