@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
-import { Briefcase, CalendarDays, ExternalLink, LayoutGrid, MapPin, Phone, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, MapPin, Phone, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { peekDomain } from "@/lib/domain";
 import { AppShell } from "@/components/console/AppShell";
@@ -110,7 +110,6 @@ function ExecutionPage() {
   const today = todayIso();
   const [quickVisit, setQuickVisit] = useState<ExecSiteVisit | null>(search.add === "visit" ? blankSiteVisit(today, meExec?.id ?? "", myName) : null);
   const [todayF, setTodayF] = useState<TodayFilter | null>(null);
-  const [addMenu, setAddMenu] = useState(false);
   const [preset, setPreset] = useState<{ title: string; jobs: ExecJob[] } | null>(null);
   const showList = (title: string, jobs: ExecJob[]) => { setTodayF(null); setPreset({ title, jobs }); };
 
@@ -170,35 +169,6 @@ function ExecutionPage() {
       {tab === "team" && manager ? <TeamPanel /> : null}
       </>
       )}
-      <div className="h-24 md:hidden" aria-hidden />
-      <nav aria-label="Execution sections" className="fixed inset-x-0 bottom-[calc(3.6rem+env(safe-area-inset-bottom))] z-30 border-t border-line bg-panel/95 backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-5">
-          {([
-            { v: "overview" as Tab, label: mineOnly ? "My Work" : "Overview", Icon: LayoutGrid },
-            { v: "jobs" as Tab, label: "Jobs", Icon: Briefcase },
-            { v: "add" as const, label: "Add", Icon: Plus },
-            { v: "schedule" as Tab, label: "Schedule", Icon: CalendarDays },
-            { v: "visits" as Tab, label: "Visits", Icon: MapPin },
-          ]).map(({ v, label, Icon }) => v === "add" ? (
-            <button key={v} type="button" onClick={() => setAddMenu((x) => !x)} className="flex flex-col items-center justify-center py-1.5" aria-label="Add">
-              <span className="-mt-5 grid h-12 w-12 place-items-center rounded-full bg-signal text-primary-foreground shadow-lg"><Icon className="h-6 w-6" /></span>
-              <span className="text-[10px] text-mute">{label}</span>
-            </button>
-          ) : (
-            <button key={v} type="button" aria-current={tab === v && !preset && !todayF ? "page" : undefined}
-              onClick={() => { setTab(v); setTodayF(null); setPreset(null); setAddMenu(false); window.scrollTo({ top: 0 }); }}
-              className={cn("flex min-h-14 flex-col items-center justify-center gap-0.5 text-[10px]", tab === v && !preset && !todayF ? "text-signal" : "text-mute")}>
-              <Icon className="h-5 w-5" />{label}
-            </button>
-          ))}
-        </div>
-        {addMenu ? (
-          <div className="absolute inset-x-3 bottom-full mb-2 grid gap-1 rounded-lg bg-panel p-2 shadow-lg ring-1 ring-line">
-            <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-muted" onClick={() => { setAddMenu(false); newVisit(); }}>+ Record site visit</button>
-            {!mineOnly ? <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-muted" onClick={() => { setAddMenu(false); newLead(); }}>+ New execution lead</button> : null}
-          </div>
-        ) : null}
-      </nav>
       {quickVisit ? <VisitForm v={quickVisit} data={data} engineers={ex.engineers} jobs={visible} onClose={() => setQuickVisit(null)} /> : null}
 
       {editing ? (
