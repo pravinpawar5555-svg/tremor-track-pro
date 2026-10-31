@@ -324,7 +324,7 @@ function EngineerOverview({ jobs, onOpen, onList }: { jobs: ExecJob[]; onOpen: (
           {recent.length ? recent.map(({ u, j }) => (
             <button key={u.id} type="button" onClick={() => onOpen(j.id)} className="block w-full border-t border-line/60 px-4 py-2 text-left text-sm first:border-t-0">
               <div className="font-medium">{j.plantName || j.customerName} <span className="num text-xs text-mute">· {fmtDate(u.workDate)}</span></div>
-              <div className="truncate text-xs text-mute">{u.workDone || "—"}</div>
+              <div className="truncate text-xs text-mute">{u.remark || u.workCompleted || "—"}</div>
             </button>
           )) : <Empty>No updates yet.</Empty>}
         </Panel>
