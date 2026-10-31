@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { ChevronRight, Download, Plus, Search } from "lucide-react";
+import { ChevronRight, Download, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button, Empty, Field, Select, TextArea, TextInput } from "@/components/console/ui";
 import { TODAY, engineerName, fmtDate, useData, type Plant } from "@/lib/store";
@@ -9,7 +9,7 @@ import { TechnicalImport } from "@/components/console/TechnicalImport";
 import {
   GATEWAY_ISSUES, GATEWAY_STATUS, MACHINE_STATUS, MACHINE_TYPES, SENSOR_ISSUES, SENSOR_STATUS, SENSOR_TYPES, STANDARD_POINTS,
   buildTechCsv, faultHistory, gatewaySensorCount, hasIssue, isActiveSensor, moveSensor, pointSensors, replaceSensor, reportIssue,
-  resolveIssue, saveRecord, searchTech, sensorPath, techTotals, useTechnical,
+  resolveIssue, saveRecord, removeRecord, removeBlocker, pointSerialHistory, REPLACE_REASONS, searchTech, sensorPath, techTotals, useTechnical,
   type Area, type Gateway, type Machine, type Point, type Sensor, type TechData,
 } from "@/lib/technical";
 
@@ -36,8 +36,10 @@ function Stat({ n, l, warn }: { n: number; l: string; warn?: boolean }) {
 export function PlantTechnical({ plant, onClose }: { plant: Plant | null; onClose: () => void }) {
   return (
     <Sheet open={!!plant} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-3xl">
+      <SheetContent side="right" className="w-screen max-w-none overflow-y-auto sm:max-w-none">
+        <div className="mx-auto w-full max-w-6xl">
         {plant ? <Body plant={plant} /> : null}
+        </div>
       </SheetContent>
     </Sheet>
   );
@@ -167,24 +169,51 @@ function RecentEvents({ data, entityId }: { data: TechData; entityId?: string })
   );
 }
 
-function MachinesTab({ plant, data, setForm, openMachine, onExport }: Ctx & { onExport: (areaId?: string) => void }) {
+function MachinesTab({ plant, data, by, refresh, setForm, openMachine, onExport }: Ctx & { onExport: (areaId?: string) => void }) {
   const [area, setArea] = useState("");
-  const areas = data.areas.filter((a) => !area || a.id === area);
+  const [showRemoved, setShowRemoved] = useState(false);
+  const [del, setDel] = useState<{ kind: "area" | "machine"; id: string; name: string } | null>(null);
+  const [reason, setReason] = useState("Added by mistake");
+  const areas = data.areas.filter((a) => (!area || a.id === area) && (showRemoved || a.status !== "inactive"));
+  const removedCount = data.areas.filter((a) => a.status === "inactive").length + data.machines.filter((m) => m.status === "inactive").length;
+  const askDelete = (kind: "area" | "machine", id: string, name: string) => {
+    const b = removeBlocker(data, kind, id);
+    if (b) { toast.error(b); return; }
+    setReason("Added by mistake"); setDel({ kind, id, name });
+  };
+  const doRemove = async (kind: "area" | "machine", id: string, name: string, restore: boolean) => {
+    try { await removeRecord(kind, { id, plant_id: plant.id, name }, restore ? "" : reason, by, restore); await refresh(); toast.success(restore ? `${name} restored` : `${name} deleted — kept in history`); setDel(null); }
+    catch (e) { toast.error((e as Error).message); }
+  };
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Select value={area} onChange={(e) => setArea(e.target.value)} className="max-w-56"><option value="">All areas</option>{data.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select>
         <Button onClick={() => setForm({ kind: "area", row: { plant_id: plant.id } })}><Plus className="size-3.5" />Add Area</Button>
         <Button variant="ghost" onClick={() => onExport(area || undefined)}><Download className="size-3.5" />{area ? "Export filtered" : "Export CSV"}</Button>
+        {removedCount ? <label className="ml-auto flex items-center gap-1.5 text-xs text-mute"><input type="checkbox" checked={showRemoved} onChange={(e) => setShowRemoved(e.target.checked)} />Show deleted ({removedCount})</label> : null}
       </div>
+      {del ? (
+        <div className="rounded-md bg-sev-high/5 p-3 ring-1 ring-sev-high/30">
+          <div className="text-sm font-semibold">Delete {del.kind} "{del.name}"?</div>
+          <p className="mt-0.5 text-xs text-mute">It disappears from lists, counts and ticket pickers. Past tickets and history stay, and you can restore it with "Show deleted".</p>
+          <div className="mt-2 flex flex-wrap items-end gap-2">
+            <Field label="Reason"><TextInput value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
+            <Button variant="solid" onClick={() => doRemove(del.kind, del.id, del.name, false)}><Trash2 className="size-3.5" />Delete</Button>
+            <Button variant="ghost" onClick={() => setDel(null)}>Cancel</Button>
+          </div>
+        </div>
+      ) : null}
       {!data.areas.length ? <Empty>No areas yet. Add the first area, e.g. Boiler House.</Empty> : areas.map((a) => {
-        const ms = data.machines.filter((m) => m.area_id === a.id);
+        const ms = data.machines.filter((m) => m.area_id === a.id && (showRemoved || m.status !== "inactive"));
         return (
           <div key={a.id} className="rounded-md ring-1 ring-line">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/70 px-3 py-2">
               <div><span className="font-semibold">{a.name}</span>{a.code ? <span className="text-xs text-mute"> · {a.code}</span> : null} <Pill s={a.status} map={{ active: "Active", inactive: "Inactive" }} /></div>
               <div className="flex gap-1">
+                {a.status === "inactive" ? <Button variant="ghost" onClick={() => doRemove("area", a.id, a.name, true)}><RotateCcw className="size-3.5" />Restore</Button> : <>
                 <Button variant="ghost" onClick={() => setForm({ kind: "area", row: a })}>Edit</Button>
+                <Button variant="ghost" onClick={() => askDelete("area", a.id, a.name)}><Trash2 className="size-3.5 text-sev-high" /></Button></>}
                 <Button onClick={() => setForm({ kind: "machine", row: { plant_id: plant.id, area_id: a.id } })}><Plus className="size-3.5" />Machine</Button>
               </div>
             </div>
@@ -192,10 +221,15 @@ function MachinesTab({ plant, data, setForm, openMachine, onExport }: Ctx & { on
               const pts = data.points.filter((p) => p.machine_id === m.id);
               const sens = pts.filter((p) => pointSensors(data, p.id).current).length;
               return (
-                <button key={m.id} type="button" onClick={() => openMachine(m.id)} className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-black/5">
+                <div key={m.id} className="flex items-center hover:bg-black/5">
+                <button type="button" onClick={() => openMachine(m.id)} className="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-2 text-left">
                   <span className="min-w-0"><span className="font-medium">{m.name}</span> <span className="text-xs text-mute">{[m.tag, m.machine_type].filter(Boolean).join(" · ")}</span></span>
                   <span className="flex shrink-0 items-center gap-2 text-xs text-mute"><span className="num">{pts.length} pts · {sens} sensors</span><Pill s={m.status} map={MACHINE_STATUS} /><ChevronRight className="size-4" /></span>
                 </button>
+                {m.status === "inactive"
+                  ? <button type="button" className="px-3 py-2 text-xs text-signal hover:underline" onClick={() => doRemove("machine", m.id, m.name, true)}>Restore</button>
+                  : <button type="button" aria-label={`Delete machine ${m.name}`} title="Delete machine" className="px-3 py-2 text-mute hover:text-sev-high" onClick={() => askDelete("machine", m.id, m.name)}><Trash2 className="size-4" /></button>}
+                </div>
               );
             }) : <p className="px-3 py-2 text-xs text-mute">No machines in this area.</p>}
           </div>
@@ -360,7 +394,7 @@ function SensorDetail({ id, ctx, onClose }: { id: string; ctx: Ctx; onClose: () 
         <div className="mt-3 grid gap-2 rounded-md p-3 ring-1 ring-line sm:grid-cols-2">
           <Field label="Old sensor"><TextInput value={s.serial_no} disabled /></Field>
           <Field label="Removal date"><TextInput type="date" value={r.removalDate} onChange={(e) => setR({ ...r, removalDate: e.target.value })} /></Field>
-          <Field label="Replacement reason"><TextInput value={r.reason} onChange={(e) => setR({ ...r, reason: e.target.value })} /></Field>
+          <Field label="Replacement reason"><Select value={r.reason} onChange={(e) => setR({ ...r, reason: e.target.value })}>{REPLACE_REASONS.map((x) => <option key={x}>{x}</option>)}</Select></Field>
           <Field label="New sensor serial *"><TextInput value={r.newSerial} onChange={(e) => setR({ ...r, newSerial: e.target.value })} /></Field>
           <Field label="New sensor type"><Select value={r.newType || s.sensor_type} onChange={(e) => setR({ ...r, newType: e.target.value })}>{SENSOR_TYPES.map((x) => <option key={x}>{x}</option>)}</Select></Field>
           <Field label="New installation date"><TextInput type="date" value={r.installDate} onChange={(e) => setR({ ...r, installDate: e.target.value })} /></Field>
@@ -376,6 +410,7 @@ function SensorDetail({ id, ctx, onClose }: { id: string; ctx: Ctx; onClose: () 
           <Button variant="solid" onClick={() => r.toPoint ? run(() => moveSensor(s, r.toPoint, r.removalDate, r.remark, by, data), "Sensor moved — old location kept in history") : toast.error("Pick the new point")}>Save move</Button>
         </div>
       ) : null}
+      <SerialHistory data={data} pointId={s.point_id} currentId={s.id} openSensor={ctx.openSensor} />
       <div className="mt-4"><RecentEvents data={data} entityId={s.id} /></div>
     </Modal>
   );
@@ -495,5 +530,33 @@ function RecordForm({ form, ctx, onClose }: { form: Form; ctx: Ctx; onClose: () 
       <div className="mt-4 flex gap-2"><Button variant="solid" onClick={save}>Save</Button><Button variant="ghost" onClick={onClose}>Cancel</Button></div>
       <p className="mt-2 text-xs text-mute">Records are never deleted — set the status to Inactive instead, so ticket and report history stays intact.</p>
     </Modal>
+  );
+}
+
+function SerialHistory({ data, pointId, currentId, openSensor }: { data: TechData; pointId: string | null; currentId: string; openSensor: (id: string) => void }) {
+  const rows = pointSerialHistory(data, pointId);
+  if (rows.length < 2) return null;
+  return (
+    <div className="mt-4">
+      <div className="label-caps mb-1">Sensor serial history at this point</div>
+      <div className="overflow-x-auto rounded-md ring-1 ring-line">
+        <table className="w-full text-xs">
+          <thead className="bg-black/5 text-left text-mute"><tr><th className="px-2 py-1.5">#</th><th className="px-2 py-1.5">Serial</th><th className="px-2 py-1.5">Installed</th><th className="px-2 py-1.5">Removed</th><th className="px-2 py-1.5">Status</th><th className="px-2 py-1.5">Reason</th><th className="px-2 py-1.5">Replaced by</th></tr></thead>
+          <tbody>
+            {rows.map((h, i) => (
+              <tr key={h.sensor.id} className={`border-t border-line/70 ${h.sensor.id === currentId ? "bg-signal/5" : ""}`}>
+                <td className="px-2 py-1.5 num">{i + 1}</td>
+                <td className="px-2 py-1.5"><button type="button" className="num text-signal hover:underline" onClick={() => openSensor(h.sensor.id)}>{h.sensor.serial_no}</button></td>
+                <td className="px-2 py-1.5 num">{fmtDate(h.sensor.install_date ?? undefined)}</td>
+                <td className="px-2 py-1.5 num">{h.sensor.removed_date ? fmtDate(h.sensor.removed_date) : "—"}</td>
+                <td className="px-2 py-1.5"><Pill s={h.sensor.status} map={SENSOR_STATUS} /></td>
+                <td className="px-2 py-1.5">{h.reason || "—"}{h.comment ? <span className="text-mute"> · {h.comment}</span> : null}</td>
+                <td className="px-2 py-1.5 num">{h.replacedBy || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

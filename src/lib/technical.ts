@@ -200,3 +200,35 @@ export async function moveSensor(s: Sensor, toPointId: string, date: string, rea
   const name = (p: ReturnType<typeof sensorPath>) => [p.area?.name, p.machine?.name, p.point?.name].filter(Boolean).join(" / ") || "Not mapped";
   await logEvent({ plant_id: s.plant_id, entity: "sensor", entity_id: s.id, kind: "moved", remark: reason, detail: { from: name(from), to: name(to) }, event_date: date || TODAY_ISO(), by_user: by });
 }
+
+export const REPLACE_REASONS = ["Sensor Faulty", "No Data", "Battery Dead", "Physical Damage", "Communication Failure", "Upgrade", "Customer Request", "Other"];
+
+/** Wrongly added area/machine: marked removed (status inactive), never hard-deleted, so history stays. */
+export function removeBlocker(d: TechData, kind: "area" | "machine", id: string): string | null {
+  if (kind === "area") {
+    const n = d.machines.filter((m) => m.area_id === id && m.status !== "inactive").length;
+    return n ? `Remove the ${n} machine(s) in this area first` : null;
+  }
+  const pts = d.points.filter((p) => p.machine_id === id).map((p) => p.id);
+  const n = d.sensors.filter((s) => s.point_id && pts.includes(s.point_id) && isActiveSensor(s)).length;
+  return n ? `Remove or move the ${n} active sensor(s) on this machine first` : null;
+}
+
+export async function removeRecord(kind: "area" | "machine", rec: { id: string; plant_id: string; name: string }, reason: string, by: string, restore = false) {
+  const table = kind === "area" ? "plant_areas" : "plant_machines";
+  const status = restore ? (kind === "area" ? "active" : "running") : "inactive";
+  const { error } = await supabase.from(table).update({ status, updated_at: new Date().toISOString() }).eq("id", rec.id);
+  if (error) throw new Error(error.message);
+  await logEvent({ plant_id: rec.plant_id, entity: kind, entity_id: rec.id, kind: restore ? "restored" : "deleted", remark: `${restore ? "Restored" : "Deleted"} ${kind} ${rec.name}${reason ? ` — ${reason}` : ""}`, by_user: by });
+}
+
+/** Every sensor that has sat on a measurement point, oldest first, with the replacement reason. */
+export function pointSerialHistory(d: TechData, pointId: string | null) {
+  if (!pointId) return [];
+  return d.sensors.filter((s) => s.point_id === pointId)
+    .sort((a, b) => (a.install_date ?? a.created_at).localeCompare(b.install_date ?? b.created_at))
+    .map((s) => {
+      const ev = d.events.find((e) => e.entity_id === s.id && e.kind === "replaced");
+      return { sensor: s, reason: ev?.issue_type ?? "", comment: ev?.remark ?? "", replacedBy: d.sensors.find((x) => x.id === s.replaced_by)?.serial_no ?? "" };
+    });
+}
