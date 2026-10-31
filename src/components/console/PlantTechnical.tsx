@@ -213,7 +213,7 @@ function MachinesTab({ plant, data, by, refresh, setForm, openMachine, onExport 
               <div className="flex gap-1">
                 {a.status === "inactive" ? <Button variant="ghost" onClick={() => doRemove("area", a.id, a.name, true)}><RotateCcw className="size-3.5" />Restore</Button> : <>
                 <Button variant="ghost" onClick={() => setForm({ kind: "area", row: a })}>Edit</Button>
-                <Button variant="ghost" aria-label={`Delete area ${a.name}`} title="Delete area" onClick={() => askDelete("area", a.id, a.name)}><Trash2 className="size-3.5 text-sev-high" /></Button></>}
+                <Button variant="ghost" onClick={() => askDelete("area", a.id, a.name)}><Trash2 className="size-3.5 text-sev-high" /></Button></>}
                 <Button onClick={() => setForm({ kind: "machine", row: { plant_id: plant.id, area_id: a.id } })}><Plus className="size-3.5" />Machine</Button>
               </div>
             </div>
