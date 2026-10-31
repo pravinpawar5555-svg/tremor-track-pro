@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
-import { ExternalLink, MapPin, Phone, Trash2 } from "lucide-react";
+import { Briefcase, CalendarDays, ExternalLink, LayoutGrid, MapPin, Phone, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { peekDomain } from "@/lib/domain";
 import { AppShell } from "@/components/console/AppShell";
@@ -110,6 +110,7 @@ function ExecutionPage() {
   const today = todayIso();
   const [quickVisit, setQuickVisit] = useState<ExecSiteVisit | null>(search.add === "visit" ? blankSiteVisit(today, meExec?.id ?? "", myName) : null);
   const [todayF, setTodayF] = useState<TodayFilter | null>(null);
+  const [addMenu, setAddMenu] = useState(false);
   const [preset, setPreset] = useState<{ title: string; jobs: ExecJob[] } | null>(null);
   const showList = (title: string, jobs: ExecJob[]) => { setTodayF(null); setPreset({ title, jobs }); };
 
@@ -169,6 +170,35 @@ function ExecutionPage() {
       {tab === "team" && manager ? <TeamPanel /> : null}
       </>
       )}
+      <div className="h-20 md:hidden" aria-hidden />
+      <nav aria-label="Execution sections" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-panel/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+        <div className="mx-auto grid max-w-lg grid-cols-5">
+          {([
+            { v: "overview" as Tab, label: mineOnly ? "My Work" : "Overview", Icon: LayoutGrid },
+            { v: "jobs" as Tab, label: "Jobs", Icon: Briefcase },
+            { v: "add" as const, label: "Add", Icon: Plus },
+            { v: "schedule" as Tab, label: "Schedule", Icon: CalendarDays },
+            { v: "visits" as Tab, label: "Visits", Icon: MapPin },
+          ]).map(({ v, label, Icon }) => v === "add" ? (
+            <button key={v} type="button" onClick={() => setAddMenu((x) => !x)} className="flex flex-col items-center justify-center py-1.5" aria-label="Add">
+              <span className="-mt-5 grid h-12 w-12 place-items-center rounded-full bg-signal text-primary-foreground shadow-lg"><Icon className="h-6 w-6" /></span>
+              <span className="text-[10px] text-mute">{label}</span>
+            </button>
+          ) : (
+            <button key={v} type="button" aria-current={tab === v && !preset && !todayF ? "page" : undefined}
+              onClick={() => { setTab(v); setTodayF(null); setPreset(null); setAddMenu(false); window.scrollTo({ top: 0 }); }}
+              className={cn("flex min-h-14 flex-col items-center justify-center gap-0.5 text-[10px]", tab === v && !preset && !todayF ? "text-signal" : "text-mute")}>
+              <Icon className="h-5 w-5" />{label}
+            </button>
+          ))}
+        </div>
+        {addMenu ? (
+          <div className="absolute inset-x-3 bottom-full mb-2 grid gap-1 rounded-lg bg-panel p-2 shadow-lg ring-1 ring-line">
+            <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-muted" onClick={() => { setAddMenu(false); newVisit(); }}>+ Record site visit</button>
+            {!mineOnly ? <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-muted" onClick={() => { setAddMenu(false); newLead(); }}>+ New execution lead</button> : null}
+          </div>
+        ) : null}
+      </nav>
       {quickVisit ? <VisitForm v={quickVisit} data={data} engineers={ex.engineers} jobs={visible} onClose={() => setQuickVisit(null)} /> : null}
 
       {editing ? (
@@ -803,9 +833,9 @@ function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; b
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
           {([["Kickoff", job.kickoff], ["Configuration", job.configuration], ...(job.installationType !== "troubleshooting" ? [["AIP sheet", job.aip]] : [])] as [string, YesNoNa][]).map(([k, v]) => (
-            <span key={k} className={cn("rounded-full px-2 py-0.5 ring-1", v === "yes" ? "text-ok ring-ok/40" : v === "na" ? "text-mute ring-line" : "text-sev-medium ring-sev-medium/40")}>{v === "yes" ? "✓" : v === "na" ? "–" : "•"} {k}</span>
+            <span key={k} className={cn("rounded-full px-2 py-0.5 ring-1", v === "yes" ? "text-sev-low ring-sev-low/40" : v === "na" ? "text-mute ring-line" : "text-sev-medium ring-sev-medium/40")}>{v === "yes" ? "✓" : v === "na" ? "–" : "•"} {k}</span>
           ))}
-          <span className={cn("rounded-full px-2 py-0.5 ring-1", job.reportLink ? "text-ok ring-ok/40" : "text-sev-medium ring-sev-medium/40")}>{job.reportLink ? "✓" : "•"} Report link</span>
+          <span className={cn("rounded-full px-2 py-0.5 ring-1", job.reportLink ? "text-sev-low ring-sev-low/40" : "text-sev-medium ring-sev-medium/40")}>{job.reportLink ? "✓" : "•"} Report link</span>
         </div>
       </Section>
       <Section title="Customer details">
@@ -1014,9 +1044,10 @@ function TeamPanel() {
   const data = useData();
   const ex = useExecution();
   const [edit, setEdit] = useState<ExecEngineer | null>(null);
-  const [reassign, setReassign] = useState<{ from: ExecEngineer; to: string } | null>(null);
+  const [reassign, setReassign] = useState<{ from: ExecEngineer; to: string; picked: string[] } | null>(null);
   const blank = (): ExecEngineer => ({ id: crypto.randomUUID(), name: "", employeeId: "", email: "", mobile: "", branch: "", role: "engineer", status: "active", linkedUserId: "" });
-  const openCount = (id: string) => ex.jobs.filter((j) => !closed(j.status) && onJob(j, id)).length;
+  const openOf = (id: string) => ex.jobs.filter((j) => !closed(j.status) && onJob(j, id));
+  const openCount = (id: string) => openOf(id).length;
   const save = async (e: ExecEngineer) => {
     if (!e.name.trim()) { toast.error("Name is required"); return; }
     try {
@@ -1045,14 +1076,14 @@ function TeamPanel() {
                   <Td>
                     <div className="flex flex-wrap gap-1.5">
                       <Button onClick={() => setEdit(e)}>Edit</Button>
-                      {openCount(e.id) ? <Button onClick={() => setReassign({ from: e, to: "" })}>Reassign</Button> : null}
+                      {openCount(e.id) ? <Button onClick={() => setReassign({ from: e, to: "", picked: openOf(e.id).map((j) => j.id) })}>Reassign</Button> : null}
                       {e.status === "active" ? (
                         <Button variant="ghost" onClick={() => { if (window.confirm("Deactivate this engineer?\nHistorical execution records will remain available.")) void saveEngineer({ ...e, status: "inactive" }); }}>Deactivate</Button>
                       ) : (
                         <Button variant="ghost" onClick={() => void saveEngineer({ ...e, status: "active" })}>Activate</Button>
                       )}
                       <Button variant="ghost" className="text-sev-high" onClick={() => {
-                        if (openCount(e.id)) { toast.error("Reassign their open jobs before deleting"); setReassign({ from: e, to: "" }); return; }
+                        if (openCount(e.id)) { toast.error("Reassign their open jobs before deleting"); setReassign({ from: e, to: "", picked: openOf(e.id).map((j) => j.id) }); return; }
                         if (window.confirm(`Delete ${e.name} from the Execution Team?\nTheir historical job records will remain available.`)) {
                           void deleteEngineer(e.id).then(() => toast.success("Engineer deleted")).catch(() => toast.error("Could not delete engineer"));
                         }
@@ -1098,13 +1129,33 @@ function TeamPanel() {
 
       {reassign ? (
         <div className="m-4 grid gap-2 rounded-md p-3 ring-1 ring-signal">
-          <div>Move {openCount(reassign.from.id)} open job(s) from <b>{reassign.from.name}</b> to:</div>
+          <div>Choose which of <b>{reassign.from.name}</b>'s {openCount(reassign.from.id)} open job(s) to hand over:</div>
+          <div className="flex gap-2 text-xs">
+            <button type="button" className="text-signal underline" onClick={() => setReassign({ ...reassign, picked: openOf(reassign.from.id).map((j) => j.id) })}>Select all</button>
+            <button type="button" className="text-signal underline" onClick={() => setReassign({ ...reassign, picked: [] })}>Clear</button>
+          </div>
+          <div className="grid max-h-72 gap-1 overflow-y-auto">
+            {openOf(reassign.from.id).map((j) => {
+              const on = reassign.picked.includes(j.id);
+              return (
+                <label key={j.id} className={cn("flex min-h-11 cursor-pointer items-start gap-2 rounded-md p-2 ring-1", on ? "ring-signal" : "ring-line")}>
+                  <input type="checkbox" className="mt-1 h-4 w-4" checked={on}
+                    onChange={() => setReassign({ ...reassign, picked: on ? reassign.picked.filter((x) => x !== j.id) : [...reassign.picked, j.id] })} />
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{j.customerName}{j.plantName ? ` · ${j.plantName}` : ""}</span>
+                    <span className="block text-xs text-mute">{installTypeLabel[j.installationType]} · {execStatusLabel[j.status]} · <span className="num">{dateRange(j)}</span></span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          <div className="text-xs text-mute">Hand the selected jobs to:</div>
           <Select value={reassign.to} onChange={(e) => setReassign({ ...reassign, to: e.target.value })}>
             <option value="">— Select engineer —</option>
             {ex.engineers.filter((e) => e.status === "active" && e.id !== reassign.from.id).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
           </Select>
           <div className="flex gap-2">
-            <Button variant="solid" disabled={!reassign.to} onClick={async () => { await reassignJobs(reassign.from.id, reassign.to); toast.success("Jobs reassigned"); setReassign(null); }}>Reassign</Button>
+            <Button variant="solid" disabled={!reassign.to || !reassign.picked.length} onClick={async () => { await reassignJobs(reassign.from.id, reassign.to, reassign.picked); toast.success(`${reassign.picked.length} job(s) handed over`); setReassign(null); }}>Hand over {reassign.picked.length || ""}</Button>
             <Button variant="ghost" onClick={() => setReassign(null)}>Cancel</Button>
           </div>
         </div>
