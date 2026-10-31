@@ -284,7 +284,7 @@ function JobCards({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => v
                 </div>
                 <StatusBadge s={j.status} />
               </div>
-              <div className="truncate text-xs text-mute">{j.customerName}{j.plantName ? "" : ""} · {installTypeLabel[j.installationType]}</div>
+              <div className="truncate text-xs text-mute">{j.customerName} · {installTypeLabel[j.installationType]}</div>
               <div className="mt-1 flex items-center justify-between gap-2 text-xs">
                 <span className={cn("num", tone === "overdue" && "font-semibold text-sev-high", tone === "today" && "font-semibold text-sev-medium")}>
                   {dateRange(j)}{tone === "overdue" ? " · Overdue" : tone === "today" ? " · Today" : ""}
