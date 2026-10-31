@@ -81,7 +81,7 @@ function Body({ plant }: { plant: Plant }) {
         <SheetTitle className="pr-8 text-left text-base sm:text-lg"><span className="block truncate">{plant.name}</span><span className="block text-xs font-normal text-mute">Technical register</span></SheetTitle>
         <p className="text-xs text-mute">{plant.customer}{plant.location ? ` · ${plant.location}` : ""}</p>
       </SheetHeader>
-      <div className="sticky -top-3 z-30 -mx-3 bg-panel px-3 pb-1 pt-2 sm:-top-6 sm:mx-0 sm:px-0">
+      <div className="sticky -top-3 z-30 -mx-3 bg-background px-3 pb-1 pt-2 sm:-top-6 sm:mx-0 sm:px-0">
       <div className="relative">
         <Search className="pointer-events-none absolute left-2.5 top-2 size-4 text-mute" />
         <TextInput className="pl-8" placeholder="Search machine, tag, sensor serial…" value={q} onChange={(e) => setQ(e.target.value)} />
