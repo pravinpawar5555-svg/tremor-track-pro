@@ -65,7 +65,7 @@ const iso = (v: string | null | undefined) => v ?? undefined;
 const closed = (s: ExecStatus) => s === "completed" || s === "cancelled";
 
 function StatusBadge({ s, j }: { s: ExecStatus; j?: ExecJob }) {
-  if (j && isReadyToClose(j)) return <span className="whitespace-nowrap rounded-full bg-chart-1/10 px-2 py-0.5 text-[11px] font-medium text-chart-1 ring-1 ring-chart-1/40">Ready to Close</span>;
+  if (j && isReadyToClose(j)) return <span className="whitespace-nowrap rounded-full bg-signal/10 px-2 py-0.5 text-[11px] font-medium text-signal ring-1 ring-signal/40">Ready to Close</span>;
   if (j && isOverdue(j, todayIso()) && s !== "pending") return <span className="whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium text-sev-high ring-1 ring-sev-high/40">Overdue</span>;
   return <span className={cn("whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ring-1", execStatusTone[s])}>{execStatusLabel[s]}</span>;
 }
@@ -255,10 +255,10 @@ function ManagerOverview({ jobs, onOpen, onList, onNew }: { jobs: ExecJob[]; onO
   return (
     <div className="grid gap-4">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-        {k("Scheduled", "scheduled", "text-chart-1")}
+        {k("Scheduled", "scheduled", "text-signal")}
         {k("In Progress", "in_progress", "text-signal")}
         {k("Pending / Blocked", "pending", "text-sev-medium")}
-        {k("Ready to Close", "ready", "text-chart-1")}
+        {k("Ready to Close", "ready", "text-signal")}
         <KpiBtn label="Overdue" n={overdue.length} tone="text-sev-high" onClick={() => onList("Overdue", overdue)} />
       </div>
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
@@ -303,7 +303,7 @@ function EngineerOverview({ jobs, onOpen, onList }: { jobs: ExecJob[]; onOpen: (
     <div className="grid gap-4">
       <div className="grid grid-cols-4 gap-2">
         <KpiBtn label="Today" n={todays.length} tone="text-signal" onClick={() => onList("Today", todays)} />
-        <KpiBtn label="Upcoming" n={upcoming.length} tone="text-chart-1" onClick={() => onList("Upcoming", upcoming)} />
+        <KpiBtn label="Upcoming" n={upcoming.length} tone="text-signal" onClick={() => onList("Upcoming", upcoming)} />
         <KpiBtn label="In Progress" n={active.length} tone="text-signal" onClick={() => onList("In Progress", active)} />
         <KpiBtn label="Pending" n={pending.length} tone="text-sev-medium" onClick={() => onList("Pending", pending)} />
       </div>
