@@ -212,7 +212,8 @@ function JobLine({ j, onOpen, extra, cta = "Open" }: { j: ExecJob; onOpen: (id: 
   );
 }
 
-const progress = (j: ExecJob) => <span className="num">{j.sensorsInstalled} sensors · {j.machinesCovered} machines</span>;
+const frac = (a: number, b: number) => (b > 0 ? `${a} / ${b}` : `${a}`);
+const progress = (j: ExecJob) => <span className="num">{frac(j.sensorsInstalled, j.plannedSensors)} sensors · {frac(j.machinesCovered, j.plannedMachines)} machines</span>;
 
 function KpiBtn({ label, n, tone, onClick }: { label: string; n: number; tone?: string; onClick: () => void }) {
   return (
@@ -414,7 +415,7 @@ function JobsTable({ jobs, onOpen }: { jobs: ExecJob[]; onOpen: (id: string) => 
               <Td>{j.location || "—"}</Td>
               <Td>{execEngineerName(j.assignedEngineerId) || "—"}{j.secondaryEngineerId ? <div className="text-xs text-mute">+ {execEngineerName(j.secondaryEngineerId)}</div> : null}</Td>
               <Td mono>{dateRange(j)}</Td>
-              <Td><div className="num text-xs">{j.sensorsInstalled} sensors</div><div className="num text-xs text-mute">{j.machinesCovered} machines</div></Td>
+              <Td><div className="num text-xs">{frac(j.sensorsInstalled, j.plannedSensors)} sensors</div><div className="num text-xs text-mute">{frac(j.machinesCovered, j.plannedMachines)} machines</div>{j.plannedSensors > 0 && <div className="mt-1 h-1 w-20 rounded bg-muted"><div className="h-1 rounded bg-signal" style={{ width: `${Math.min(100, (j.sensorsInstalled / j.plannedSensors) * 100)}%` }} /></div>}</Td>
               <Td><StatusBadge s={j.status} j={j} /></Td>
               <Td><Button onClick={() => onOpen(j.id)}>Open</Button></Td>
             </Tr>
@@ -794,6 +795,8 @@ function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; b
 
       <Section title="Installation summary">
         <div className="grid grid-cols-2 gap-2">
+          <Field label="Planned sensors"><TextInput disabled={!canEdit} type="number" min={0} value={j.plannedSensors} onChange={(e) => set({ plannedSensors: Math.max(0, Number(e.target.value) || 0) })} /></Field>
+          <Field label="Planned machines"><TextInput disabled={!canEdit} type="number" min={0} value={j.plannedMachines} onChange={(e) => set({ plannedMachines: Math.max(0, Number(e.target.value) || 0) })} /></Field>
           <Field label="Sensors installed"><TextInput disabled={!canEdit} type="number" min={0} value={j.sensorsInstalled} onChange={(e) => set({ sensorsInstalled: Math.max(0, Number(e.target.value) || 0) })} /></Field>
           <Field label="Machines covered"><TextInput disabled={!canEdit} type="number" min={0} value={j.machinesCovered} onChange={(e) => set({ machinesCovered: Math.max(0, Number(e.target.value) || 0) })} /></Field>
           <Field label="Actual start"><TextInput disabled={!canEdit} type="date" value={j.actualStart ?? ""} onChange={(e) => set({ actualStart: e.target.value || null })} /></Field>
@@ -860,7 +863,7 @@ function JobDetail({ job, byUser, canEdit, onEdit, onDelete }: { job: ExecJob; b
             <Info label="Customer" value={j.customerName} />
             <Info label="Installation type" value={installTypeLabel[j.installationType]} />
             <Info label="Visit dates" value={j.actualStart ? dateRange({ plannedStart: j.actualStart, plannedEnd: j.actualEnd ?? todayIso() }) : dateRange(j)} />
-            <Info label="Sensors / machines" value={`${j.sensorsInstalled} / ${j.machinesCovered}`} />
+            <Info label="Sensors / machines" value={`${frac(j.sensorsInstalled, j.plannedSensors)} sensors · ${frac(j.machinesCovered, j.plannedMachines)} machines`} />
             <Info label="Kickoff" value={yesNoNaLabel[j.kickoff]} />
             <Info label="Configuration" value={yesNoNaLabel[j.configuration]} />
             <Info label="AIP sheet" value={yesNoNaLabel[j.aip]} />

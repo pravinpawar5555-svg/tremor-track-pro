@@ -596,6 +596,8 @@ export type Database = {
           pending_reason: string
           pending_remark: string
           planned_end_date: string | null
+          planned_machines: number
+          planned_sensors: number
           planned_start_date: string | null
           plant_id: string
           plant_name: string
@@ -639,6 +641,8 @@ export type Database = {
           pending_reason?: string
           pending_remark?: string
           planned_end_date?: string | null
+          planned_machines?: number
+          planned_sensors?: number
           planned_start_date?: string | null
           plant_id?: string
           plant_name?: string
@@ -682,6 +686,8 @@ export type Database = {
           pending_reason?: string
           pending_remark?: string
           planned_end_date?: string | null
+          planned_machines?: number
+          planned_sensors?: number
           planned_start_date?: string | null
           plant_id?: string
           plant_name?: string
