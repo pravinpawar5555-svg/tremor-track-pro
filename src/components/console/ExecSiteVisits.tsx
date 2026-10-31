@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Archive, MoreHorizontal, Trash2, Undo2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useExecution } from "@/lib/execution";
 import { toast } from "sonner";
 import { Button, Empty, Field, Kpi, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -9,6 +11,7 @@ import {
   blankSiteVisit,
   deleteSiteVisit,
   saveSiteVisit,
+  setSiteVisitArchived,
   siteVisitOutcomeLabel,
   siteVisitTypeLabel,
   type ExecEngineer,
@@ -34,14 +37,17 @@ export function ExecSiteVisits({ data, visits, engineers, jobs, meId, myName, ma
   const [from, setFrom] = useState(today.slice(0, 8) + "01");
   const [to, setTo] = useState("");
   const [editing, setEditing] = useState<ExecSiteVisit | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const archived = useExecution().archivedSiteVisits ?? [];
+  const source = showArchived ? archived : visits;
   const nameOf = (id: string) => engineers.find((e) => e.id === id)?.name ?? "—";
   const where = (v: ExecSiteVisit) => [v.plantId ? plantName(data, v.plantId) : "", v.location].filter(Boolean).join(" · ") || "—";
 
-  const list = useMemo(() => visits.filter((v) =>
+  const list = useMemo(() => source.filter((v) =>
     (eng === "all" || v.engineerIds.includes(eng)) && (type === "all" || v.visitType === type) &&
     (!from || v.visitDate >= from) && (!to || v.visitDate <= to) &&
     (!q || `${where(v)} ${v.purpose} ${v.notes}`.toLowerCase().includes(q.toLowerCase())),
-  ), [visits, eng, type, from, to, q]); // eslint-disable-line react-hooks/exhaustive-deps
+  ), [source, eng, type, from, to, q]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const siteDays = new Set(list.flatMap((v) => v.engineerIds.map((e) => `${e}|${v.visitDate}`))).size;
   const count = (t: SiteVisitType) => list.filter((v) => v.visitType === t).length;
@@ -62,6 +68,7 @@ export function ExecSiteVisits({ data, visits, engineers, jobs, meId, myName, ma
         <TextInput type="date" className="w-40" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From" />
         <TextInput type="date" className="w-40" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To" />
         <TextInput className="w-48" placeholder="Search plant / purpose" value={q} onChange={(e) => setQ(e.target.value)} />
+        <label className="flex items-center gap-1.5 text-xs text-mute"><input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived ({archived.length})</label>
         <div className="ml-auto"><Button variant="solid" onClick={() => setEditing(blankSiteVisit(today, meId, myName))}>+ Add Site Visit</Button></div>
       </div>
 
@@ -98,11 +105,18 @@ export function ExecSiteVisits({ data, visits, engineers, jobs, meId, myName, ma
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button onClick={() => setEditing(v)}>Edit</Button>
-                  <button type="button" aria-label="Delete visit" className="rounded p-1.5 text-red-600 hover:bg-red-50"
-                    onClick={async () => { if (confirm("Delete this site visit?")) { await deleteSiteVisit(v.id); toast.success("Visit deleted"); } }}>
-                    <Trash2 className="size-4" />
-                  </button>
+                  {!v.archived ? <Button onClick={() => setEditing(v)}>Edit</Button> : null}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild><button type="button" aria-label="More actions" className="rounded p-1.5 text-mute hover:bg-base"><MoreHorizontal className="size-4" /></button></DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {v.archived ? (
+                        <DropdownMenuItem onClick={async () => { try { await setSiteVisitArchived(v.id, false); toast.success("Visit restored"); } catch { toast.error("Could not restore"); } }}><Undo2 className="size-4" /> Restore</DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem onClick={async () => { try { await setSiteVisitArchived(v.id, true); toast.success("Visit archived — removed from counts"); } catch { toast.error("Could not archive"); } }}><Archive className="size-4" /> Archive</DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem className="text-destructive" onClick={async () => { if (confirm("Delete this site visit permanently?")) { await deleteSiteVisit(v.id); toast.success("Visit deleted"); } }}><Trash2 className="size-4" /> Delete</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             ))}
@@ -167,7 +181,10 @@ export function VisitForm({ v, data, engineers, jobs, onClose }: { v: ExecSiteVi
             </Select>
           </Field>
           <Field label="Link to execution job (optional)">
-            <Select value={f.relatedJobId} onChange={(e) => set("relatedJobId", e.target.value)}>
+            <Select value={f.relatedJobId} onChange={(e) => {
+              const id = e.target.value; const j = jobs.find((x) => x.id === id);
+              setF((p) => ({ ...p, relatedJobId: id, ...(j ? { plantId: p.plantId || j.plantId, location: p.location || j.location, engineerIds: p.engineerIds.length ? p.engineerIds : [j.assignedEngineerId, j.secondaryEngineerId].filter(Boolean) } : {}) }));
+            }}>
               <option value="">— Not linked —</option>
               {jobs.map((j) => <option key={j.id} value={j.id}>{j.plantName || j.customerName || "Job"} · {j.status}</option>)}
             </Select>

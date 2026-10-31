@@ -707,6 +707,7 @@ export type Database = {
       }
       execution_site_visits: {
         Row: {
+          archived: boolean
           attachment_link: string
           created_at: string
           created_by: string
@@ -727,6 +728,7 @@ export type Database = {
           visit_type: string
         }
         Insert: {
+          archived?: boolean
           attachment_link?: string
           created_at?: string
           created_by?: string
@@ -747,6 +749,7 @@ export type Database = {
           visit_type?: string
         }
         Update: {
+          archived?: boolean
           attachment_link?: string
           created_at?: string
           created_by?: string
