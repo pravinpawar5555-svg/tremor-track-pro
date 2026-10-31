@@ -153,21 +153,8 @@ const eFrom = (r: any): ExecEngineer => ({
   linkedUserId: r.linked_user_id ?? "",
 });
 
-export function uniqIds(ids: (string | null | undefined)[]) {
-  return [...new Set(ids.filter((x): x is string => !!x))];
-}
-/** All people on a job (lead first). */
-export function jobEngineerIds(j: Pick<ExecJob, "assignedEngineerId" | "secondaryEngineerId"> & { engineerIds?: string[] }) {
-  return uniqIds([j.assignedEngineerId, j.secondaryEngineerId, ...(j.engineerIds ?? [])]);
-}
-export function onJob(j: Pick<ExecJob, "assignedEngineerId" | "secondaryEngineerId"> & { engineerIds?: string[] }, id: string) {
-  return !!id && jobEngineerIds(j).includes(id);
-}
-/** Swap one person for another on a job, keeping lead / second slots in step. */
-export function swapEngineer(j: ExecJob, fromId: string, toId: string): ExecJob {
-  const sw = (x: string) => (x === fromId ? toId : x);
-  return { ...j, assignedEngineerId: sw(j.assignedEngineerId), secondaryEngineerId: sw(j.secondaryEngineerId), engineerIds: uniqIds(jobEngineerIds(j).map(sw)) };
-}
+import { jobEngineerIds, onJob, swapEngineer, uniqIds } from "@/lib/exec-team";
+export { jobEngineerIds, onJob, swapEngineer, uniqIds };
 
 const jFrom = (r: any): ExecJob => ({
   id: r.id,

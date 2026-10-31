@@ -2,7 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Empty, Kpi, Panel, PageHeader } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
 import { useData, todayIso } from "@/lib/store";
-import { dateRange, execEngineerName, execRecordFor, execStatusLabel, installTypeLabel, useExecution, type ExecJob } from "@/lib/execution";
+import { onJob, dateRange, execEngineerName, execRecordFor, execStatusLabel, installTypeLabel, useExecution, type ExecJob } from "@/lib/execution";
 
 export function ExecutionHome() {
   const ex = useExecution();

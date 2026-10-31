@@ -1,6 +1,7 @@
 // Pure role/count rules shared by the UI and covered by src/lib/__tests__/role-access.test.ts.
 import type { Domain } from "@/lib/domain";
 import type { ExecJob, ExecSiteVisit } from "@/lib/execution";
+import { onJob } from "@/lib/exec-team";
 import { levelOf, PATH_MODULE, type Perm } from "@/lib/permissions";
 
 export const NAV_PATHS = ["/", "/tasks", "/discussions", "/visits", "/execution", "/opportunities", "/reports", "/plants", "/contacts", "/engineers", "/settings"] as const;
