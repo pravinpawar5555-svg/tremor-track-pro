@@ -11,7 +11,7 @@ import {
 } from "@/lib/store";
 import { useVisits } from "@/lib/visits";
 import { useComms, openFollowUp } from "@/lib/comms";
-import { onJob, useExecution, saveJob, siteVisitTypeLabel, installTypeLabel, execStatusLabel, type ExecJob } from "@/lib/execution";
+import { onJob, swapEngineer, useExecution, saveJob, siteVisitTypeLabel, installTypeLabel, execStatusLabel, type ExecJob } from "@/lib/execution";
 import { addLeave, deleteLeave, leaveOn, levelFor, useLeaves, useWorkloadSettings, type Level } from "@/lib/workload";
 import { dayKind, execOnSite, type DayKind } from "@/lib/access";
 const kindMeta: Record<DayKind, { label: string; cls: string; Icon: typeof MapPin }> = {
@@ -453,7 +453,7 @@ function JobDrill({ job, myName, onDone }: { job: ExecJob; myName: string; onDon
   const reassign = async () => {
     const n = ex.engineers.find((e) => e.id === to);
     if (!n || !window.confirm(`Reassign ${job.plantName || job.customerName}\nCurrent owner: ${owner?.name ?? "Unassigned"}\nNew owner: ${n.name}\nDates: ${fmtDate(jStart(job))} – ${fmtDate(jEnd(job))}`)) return;
-    try { await saveJob({ ...job, assignedEngineerId: to }, job, myName); toast.success(`Job reassigned to ${n.name}`); onDone(); }
+    try { await saveJob(job.assignedEngineerId ? swapEngineer(job, job.assignedEngineerId, to) : { ...job, assignedEngineerId: to, engineerIds: [to, ...(job.engineerIds ?? [])] }, job, myName); toast.success(`Job reassigned to ${n.name}`); onDone(); }
     catch { toast.error("Could not reassign"); }
   };
   return (
