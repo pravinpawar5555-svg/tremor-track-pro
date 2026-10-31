@@ -35,6 +35,8 @@ export interface ExecJob {
   expectedDate: string | null;
   assignedEngineerId: string;
   secondaryEngineerId: string;
+  /** Everyone on the job: execution engineers, plus customer success engineers / managers who join. */
+  engineerIds: string[];
   priority: "normal" | "high";
   status: ExecStatus;
   notes: string;
@@ -151,6 +153,9 @@ const eFrom = (r: any): ExecEngineer => ({
   linkedUserId: r.linked_user_id ?? "",
 });
 
+import { jobEngineerIds, onJob, swapEngineer, uniqIds } from "@/lib/exec-team";
+export { jobEngineerIds, onJob, swapEngineer, uniqIds };
+
 const jFrom = (r: any): ExecJob => ({
   id: r.id,
   installationType: (["demo", "order", "troubleshooting"].includes(r.installation_type) ? r.installation_type : "demo") as ExecInstallType,
@@ -164,6 +169,7 @@ const jFrom = (r: any): ExecJob => ({
   expectedDate: r.expected_execution_date,
   assignedEngineerId: r.assigned_engineer_id ?? "",
   secondaryEngineerId: r.secondary_engineer_id ?? "",
+  engineerIds: uniqIds([r.assigned_engineer_id, r.secondary_engineer_id, ...(Array.isArray(r.engineer_ids) ? r.engineer_ids : [])]),
   priority: r.priority === "high" ? "high" : "normal",
   status: (["lead", "planning", "scheduled", "in_progress", "pending", "completed", "cancelled", "on_hold"].includes(r.status) ? r.status : "lead") as ExecStatus,
   notes: r.notes ?? "",
@@ -290,6 +296,7 @@ const toRow = (j: ExecJob) => ({
   expected_execution_date: j.expectedDate,
   assigned_engineer_id: j.assignedEngineerId,
   secondary_engineer_id: j.secondaryEngineerId,
+  engineer_ids: jobEngineerIds(j),
   priority: j.priority,
   status: j.status,
   notes: j.notes,
@@ -335,6 +342,7 @@ export function blankJob(createdBy: string): ExecJob {
     expectedDate: null,
     assignedEngineerId: "",
     secondaryEngineerId: "",
+    engineerIds: [],
     priority: "normal",
     status: "lead",
     notes: "",
@@ -473,10 +481,10 @@ export async function deleteEngineer(id: string) {
   }
 }
 
-export async function reassignJobs(fromId: string, toId: string) {
-  const moved = jobs.filter((j) => (j.assignedEngineerId === fromId || j.secondaryEngineerId === fromId) && !["completed", "cancelled"].includes(j.status));
+export async function reassignJobs(fromId: string, toId: string, jobIds?: string[]) {
+  const moved = jobs.filter((j) => onJob(j, fromId) && !["completed", "cancelled"].includes(j.status) && (!jobIds || jobIds.includes(j.id)));
   if (moved.length) {
-    const next = moved.map((j) => ({ ...j, assignedEngineerId: j.assignedEngineerId === fromId ? toId : j.assignedEngineerId, secondaryEngineerId: j.secondaryEngineerId === fromId ? toId : j.secondaryEngineerId }));
+    const next = moved.map((j) => swapEngineer(j, fromId, toId));
     jobs = jobs.map((j) => next.find((n) => n.id === j.id) ?? j);
     emit();
     const { error } = await db.from("execution_jobs").upsert(next.map(toRow));
