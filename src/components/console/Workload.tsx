@@ -118,7 +118,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
     return { k: kindFor(id, d, site, false), where: j ? j.plantName || j.customerName : svWhere };
   };
 
-  const jobsOf = (id: string) => ex.jobs.filter((j) => (j.assignedEngineerId === id || j.secondaryEngineerId === id) && j.status !== "cancelled");
+  const jobsOf = (id: string) => ex.jobs.filter((j) => onJob(j, id) && j.status !== "cancelled");
   const inRange = (j: ExecJob) => !!jStart(j) && jStart(j) <= days[days.length - 1]! && jEnd(j) >= days[0]!;
 
   /* attention + conflicts */

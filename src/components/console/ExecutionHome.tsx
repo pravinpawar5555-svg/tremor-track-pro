@@ -9,7 +9,7 @@ export function ExecutionHome() {
   const data = useData();
   const navigate = useNavigate();
   const me = execRecordFor(data.currentUserId);
-  const mine = ex.jobs.filter((j) => j.assignedEngineerId === me?.id || j.secondaryEngineerId === me?.id);
+  const mine = ex.jobs.filter((j) => onJob(j, me?.id ?? ""));
   const month = todayIso().slice(0, 7);
   const today = todayIso();
   const byDate = (a: ExecJob, b: ExecJob) => ((a.plannedStart ?? "9") < (b.plannedStart ?? "9") ? -1 : 1);
