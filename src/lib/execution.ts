@@ -47,6 +47,8 @@ export interface ExecJob {
   actualEnd: string | null;
   sensorsInstalled: number;
   machinesCovered: number;
+  plannedSensors: number;
+  plannedMachines: number;
   kickoff: YesNoNa;
   configuration: YesNoNa;
   aip: YesNoNa;
@@ -173,6 +175,8 @@ const jFrom = (r: any): ExecJob => ({
   actualEnd: r.actual_end_date,
   sensorsInstalled: r.sensors_installed ?? 0,
   machinesCovered: r.machines_covered ?? 0,
+  plannedSensors: r.planned_sensors ?? 0,
+  plannedMachines: r.planned_machines ?? 0,
   kickoff: (["yes", "no", "na"].includes(r.kickoff_completed) ? r.kickoff_completed : "no") as YesNoNa,
   configuration: (["yes", "no", "na"].includes(r.configuration_completed) ? r.configuration_completed : "no") as YesNoNa,
   aip: (["yes", "no", "na"].includes(r.aip_generated) ? r.aip_generated : "no") as YesNoNa,
@@ -294,6 +298,8 @@ const toRow = (j: ExecJob) => ({
   actual_end_date: j.actualEnd,
   sensors_installed: j.sensorsInstalled,
   machines_covered: j.machinesCovered,
+  planned_sensors: j.plannedSensors,
+  planned_machines: j.plannedMachines,
   kickoff_completed: j.kickoff,
   configuration_completed: j.configuration,
   aip_generated: j.aip,
@@ -338,6 +344,8 @@ export function blankJob(createdBy: string): ExecJob {
     actualEnd: null,
     sensorsInstalled: 0,
     machinesCovered: 0,
+    plannedSensors: 0,
+    plannedMachines: 0,
     kickoff: "no",
     configuration: "no",
     aip: "no",
