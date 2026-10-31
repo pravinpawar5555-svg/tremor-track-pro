@@ -274,6 +274,13 @@
       "when": 1793453035605,
       "tag": "0038_shared_plant_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793453057568,
+      "tag": "0039_shared_plant_chat_split",
+      "breakpoints": true
     }
   ]
 }
