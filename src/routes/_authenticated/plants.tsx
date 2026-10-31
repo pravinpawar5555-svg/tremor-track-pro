@@ -398,7 +398,7 @@ function PlantsPage() {
                       <div className="truncate text-[15px] font-semibold">{p.name}</div>
                       <div className="truncate text-sm text-mute">{p.customer || "—"}{p.location ? ` · ${p.location}` : ""}</div>
                     </div>
-                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ring-1 ${p.category === "demo" ? "text-sev-med ring-sev-med/40" : "text-signal ring-signal/40"}`}>{p.category ?? "order"}</span>
+                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ring-1 ${p.category === "demo" ? "text-sev-medium ring-sev-medium/40" : "text-signal ring-signal/40"}`}>{p.category ?? "order"}</span>
                   </div>
                   <div className="mt-2 grid grid-cols-4 gap-1.5 text-center">
                     {[["Machines", p.machines || 0], ["N6", p.node6 ?? 0], ["NX", p.nodeX ?? 0], ["VA", p.vibassist ?? 0]].map(([l, v]) => (
