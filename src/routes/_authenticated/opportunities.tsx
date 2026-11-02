@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, PageHeader, Panel, Select, TextArea, TextInput } from "@/components/console/ui";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { CardScanButton } from "@/components/console/CardScanButton";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useDomain } from "@/lib/domain";
@@ -372,6 +373,7 @@ function OppForm({ ctx, initial, opps, onDone, onOpenExisting }: { ctx: Ctx; ini
 
   return (
     <div className="grid gap-3 p-4">
+      <div className="flex items-center justify-between gap-2 rounded-md bg-muted/40 p-2 text-xs text-mute"><span>Fill from a visiting card (free, read on this device)</span><CardScanButton onScan={(f) => set({ contactName: f.name || o.contactName, contactMobile: f.phone || o.contactMobile, contactEmail: f.email || o.contactEmail, customerName: o.customerName || f.company, location: o.location || f.address })} /></div>
       {!ctx.exec ? (
         <div className="grid grid-cols-2 gap-3">
           <Field label="Lead source *"><Select value={o.leadSource} onChange={(e) => set({ leadSource: e.target.value })}>{leadSources.map((s) => <option key={s}>{s}</option>)}</Select></Field>
