@@ -1,0 +1,3 @@
+ALTER TABLE public.opportunities ADD COLUMN exhibition_name text NOT NULL DEFAULT '', ADD COLUMN exhibition_location text NOT NULL DEFAULT '';
+COMMENT ON COLUMN public.opportunities.exhibition_name IS 'Exhibition name for Exhibition opportunities, distinct from the customer plant.';
+COMMENT ON COLUMN public.opportunities.exhibition_location IS 'Exhibition venue or location, distinct from the customer plant location.';

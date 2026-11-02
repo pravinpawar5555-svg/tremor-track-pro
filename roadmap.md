@@ -1,4 +1,9 @@
 # Customer contacts
+# Exhibition opportunities
+- [ ] Add Exhibition type and save exhibition name/location with each opportunity.
+- [ ] Verify the conditional fields and saved details.
+
+# Customer contacts
 - [x] Add plant-linked contact storage with protected access.
 - [x] Add searchable phonebook and plant contact management.
 - [x] Connect saved contacts to MOM attendees and communications.
