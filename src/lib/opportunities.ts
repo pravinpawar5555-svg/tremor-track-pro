@@ -8,7 +8,7 @@ export const leadSources = [
   "Branch Sales", "Marketing", "Customer Success", "Execution Team", "Service / Other Division",
   "Existing Customer Expansion", "Referral", "Inbound Enquiry", "HO / KAM", "Other",
 ];
-export const oppTypes = ["Demo", "Order", "Troubleshooting", "Expansion", "Replacement / Upgrade", "Technical Evaluation", "Other"];
+export const oppTypes = ["Demo", "Order", "Troubleshooting", "Expansion", "Replacement / Upgrade", "Technical Evaluation", "Exhibition", "Other"];
 export const lostReasons = ["Price", "Competitor", "Customer Budget", "Requirement Changed", "Project Postponed", "Technical Fit", "No Response", "Other"];
 
 export const stages = {
@@ -66,6 +66,7 @@ export interface Opp {
   id: string; number: string; leadSource: string; leadSourceOther: string;
   plantId: string; customerName: string; plantName: string; location: string;
   branchId: string; salesEngineerId: string; type: string; requirement: string;
+  exhibitionName: string; exhibitionLocation: string;
   contactName: string; contactMobile: string; contactEmail: string;
   sensors: number; machines: number; expectedDate: string;
   priority: "normal" | "high"; stage: Stage;
@@ -77,10 +78,11 @@ export interface Opp {
 }
 export interface OppActivity { id: string; oppId: string; kind: string; text: string; byUser: string; createdAt: string }
 
-const toOpp = (r: any): Opp => ({
+export const toOpp = (r: any): Opp => ({
   id: r.id, number: r.opportunity_number, leadSource: r.lead_source, leadSourceOther: r.lead_source_other,
   plantId: r.plant_id, customerName: r.customer_name, plantName: r.plant_name, location: r.location,
   branchId: r.branch_id, salesEngineerId: r.sales_engineer_id, type: r.opportunity_type, requirement: r.requirement_summary,
+  exhibitionName: r.exhibition_name ?? "", exhibitionLocation: r.exhibition_location ?? "",
   contactName: r.contact_name, contactMobile: r.contact_mobile, contactEmail: r.contact_email,
   sensors: r.expected_sensor_qty ?? 0, machines: r.expected_machine_qty ?? 0, expectedDate: r.expected_date ?? "",
   priority: r.priority === "high" ? "high" : "normal", stage: r.stage as Stage,
@@ -90,10 +92,11 @@ const toOpp = (r: any): Opp => ({
   lostReason: r.lost_reason, lostRemark: r.lost_remark, holdReason: r.hold_reason, holdReviewDate: r.hold_review_date ?? "",
   archived: !!r.archived, createdBy: r.created_by, createdByDomain: r.created_by_domain, createdAt: r.created_at, updatedAt: r.updated_at, closedAt: r.closed_at,
 });
-const fromOpp = (o: Opp, by: string) => ({
+export const fromOpp = (o: Opp, by: string) => ({
   id: o.id, lead_source: o.leadSource, lead_source_other: o.leadSourceOther,
   plant_id: o.plantId, customer_name: o.customerName, plant_name: o.plantName, location: o.location,
   branch_id: o.branchId, sales_engineer_id: o.salesEngineerId, opportunity_type: o.type, requirement_summary: o.requirement,
+  exhibition_name: o.exhibitionName.trim(), exhibition_location: o.exhibitionLocation.trim(),
   contact_name: o.contactName, contact_mobile: o.contactMobile, contact_email: o.contactEmail,
   expected_sensor_qty: o.sensors || 0, expected_machine_qty: o.machines || 0, expected_date: o.expectedDate || null,
   priority: o.priority, stage: o.stage, next_action: o.nextAction, next_action_owner: o.nextActionOwner, next_action_date: o.nextActionDate || null,
@@ -131,6 +134,7 @@ export function blankOpp(createdBy: string): Opp {
   return {
     id: crypto.randomUUID(), number: "", leadSource: "Branch Sales", leadSourceOther: "", plantId: "", customerName: "", plantName: "", location: "",
     branchId: "", salesEngineerId: "", type: "Order", requirement: "", contactName: "", contactMobile: "", contactEmail: "",
+    exhibitionName: "", exhibitionLocation: "",
     sensors: 0, machines: 0, expectedDate: "", priority: "normal", stage: "new", nextAction: "", nextActionOwner: "", nextActionDate: "",
     notes: "", attachments: "", value: null, jobId: "", salesVisitId: "", execHandover: {}, csHandover: {}, csEngineerId: "",
     lostReason: "", lostRemark: "", holdReason: "", holdReviewDate: "", archived: false, createdBy, createdByDomain: "",
@@ -152,6 +156,7 @@ function diff(a: Opp, b: Opp): string[] {
   if (a.jobId !== b.jobId && b.jobId) out.push("Execution job linked");
   if (a.requirement !== b.requirement) out.push("Requirement updated");
   if (a.type !== b.type) out.push(`Type changed to ${b.type}`);
+  if (a.exhibitionName !== b.exhibitionName || a.exhibitionLocation !== b.exhibitionLocation) out.push("Exhibition details updated");
   if (a.priority !== b.priority) out.push(`Priority: ${b.priority}`);
   if (a.csEngineerId !== b.csEngineerId && b.csEngineerId) out.push("Customer Success engineer assigned");
   if ((a.execHandover.status ?? "") !== (b.execHandover.status ?? "")) out.push(`Execution handover: ${b.execHandover.status}`);

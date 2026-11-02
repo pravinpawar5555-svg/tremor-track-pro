@@ -920,6 +920,8 @@ export type Database = {
           customer_success_engineer_id: string
           estimated_value: number | null
           exec_handover: Json
+          exhibition_location: string
+          exhibition_name: string
           expected_date: string | null
           expected_machine_qty: number
           expected_sensor_qty: number
@@ -964,6 +966,8 @@ export type Database = {
           customer_success_engineer_id?: string
           estimated_value?: number | null
           exec_handover?: Json
+          exhibition_location?: string
+          exhibition_name?: string
           expected_date?: string | null
           expected_machine_qty?: number
           expected_sensor_qty?: number
@@ -1008,6 +1012,8 @@ export type Database = {
           customer_success_engineer_id?: string
           estimated_value?: number | null
           exec_handover?: Json
+          exhibition_location?: string
+          exhibition_name?: string
           expected_date?: string | null
           expected_machine_qty?: number
           expected_sensor_qty?: number

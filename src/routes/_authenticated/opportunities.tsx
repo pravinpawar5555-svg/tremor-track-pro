@@ -215,7 +215,7 @@ function useFilters(ctx: Ctx, opps: Opp[]) {
     if (type && o.type !== type) return false;
     if (source && o.leadSource !== source) return false;
     if (!q) return true;
-    const hay = [o.number, o.customerName, o.plantName, o.contactName, o.contactMobile, own.branch?.name, own.branch?.rmName, own.kam?.name, own.sales?.name, o.requirement, o.jobId].join(" ").toLowerCase();
+    const hay = [o.number, o.customerName, o.plantName, o.contactName, o.contactMobile, own.branch?.name, own.branch?.rmName, own.kam?.name, own.sales?.name, o.requirement, o.jobId, ...(o.type === "Exhibition" ? [o.exhibitionName, o.exhibitionLocation] : [])].join(" ").toLowerCase();
     return hay.includes(q.toLowerCase());
   });
   const bar = (
@@ -380,6 +380,13 @@ function OppForm({ ctx, initial, opps, onDone, onOpenExisting }: { ctx: Ctx; ini
         </div>
       ) : null}
 
+      {o.type === "Exhibition" ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Exhibition name"><TextInput value={o.exhibitionName} onChange={(e) => set({ exhibitionName: e.target.value })} /></Field>
+          <Field label="Exhibition location"><TextInput value={o.exhibitionLocation} onChange={(e) => set({ exhibitionLocation: e.target.value })} /></Field>
+        </div>
+      ) : null}
+
       {!ctx.exec ? (
         <div className="flex gap-2 text-xs">
           {[true, false].map((v) => <button key={String(v)} type="button" onClick={() => setExistingPlant(v)} className={cn("rounded-md px-3 py-1.5 ring-1", existingPlant === v ? "bg-signal text-signal-foreground ring-signal" : "ring-line text-mute")}>{v ? "Existing plant" : "New customer / plant"}</button>)}
@@ -535,6 +542,13 @@ function Detail({ ctx, o, activity, onEdit }: { ctx: Ctx; o: Opp; activity: { id
             </Card>
           ) : null}
         </div>
+
+        {o.type === "Exhibition" ? (
+          <Card title="Exhibition">
+            <KV k="Exhibition name" v={o.exhibitionName} />
+            <KV k="Exhibition location" v={o.exhibitionLocation} />
+          </Card>
+        ) : null}
 
         <Card title="Requirement">
           <div className="whitespace-pre-wrap text-sm">{o.requirement}</div>
