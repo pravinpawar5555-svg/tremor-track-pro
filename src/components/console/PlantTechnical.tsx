@@ -13,7 +13,7 @@ import {
   type Area, type Gateway, type Machine, type Point, type Sensor, type TechData,
 } from "@/lib/technical";
 
-type Tab = "overview" | "machines" | "sensors" | "gateways" | "history";
+type Tab = "monitor" | "overview" | "machines" | "sensors" | "gateways" | "history";
 type Form =
   | { kind: "area"; row: Partial<Area> }
   | { kind: "machine"; row: Partial<Machine> }
@@ -49,15 +49,16 @@ function Body({ plant }: { plant: Plant }) {
   const app = useData();
   const by = engineerName(app, app.currentUserId);
   const { data, loading, error, refresh } = useTechnical(plant.id);
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>("monitor");
   const [q, setQ] = useState("");
   const [form, setForm] = useState<Form | null>(null);
   const [machineId, setMachineId] = useState<string | null>(null);
   const [sensorId, setSensorId] = useState<string | null>(null);
+  const [sensorMode, setSensorMode] = useState<"" | "replace">("");
   const [gatewayId, setGatewayId] = useState<string | null>(null);
   const t = techTotals(data);
   const hits = useMemo(() => searchTech(data, q), [data, q]);
-  const ctx = { plant, data, by, refresh, setForm, openMachine: setMachineId, openSensor: setSensorId, openGateway: setGatewayId };
+  const ctx = { plant, data, by, refresh, setForm, openMachine: setMachineId, openSensor: (id: string) => { setSensorMode(""); setSensorId(id); }, replaceSensorNow: (id: string) => { setSensorMode("replace"); setSensorId(id); }, openGateway: setGatewayId };
 
   const exportCsv = (areaId?: string) => {
     const blob = new Blob(["\uFEFF" + buildTechCsv(data, plant.name, areaId)], { type: "text/csv;charset=utf-8" });
@@ -97,14 +98,14 @@ function Body({ plant }: { plant: Plant }) {
         ) : null}
       </div>
       <div className="-mx-3 mt-2 flex gap-1 overflow-x-auto border-b border-line px-3 pb-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
-        {([["overview", "Overview"], ["machines", "Areas & Machines"], ["sensors", "Sensors"], ["gateways", "Gateways"], ["history", "Analysis History"]] as [Tab, string][]).map(([k, l]) => (
+        {([["monitor", "Monitoring"], ["overview", "Overview"], ["machines", "Areas & Machines"], ["sensors", "Sensors"], ["gateways", "Gateways"], ["history", "Analysis History"]] as [Tab, string][]).map(([k, l]) => (
           <button key={k} type="button" onClick={() => setTab(k)} className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm ${tab === k ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"}`}>{l}</button>
         ))}
       </div>
       </div>
       {error ? <p className="mt-3 text-sm text-sev-high">Could not load: {error.message}</p> : loading ? <p className="mt-3 text-sm text-mute">Loading…</p> : (
         <div className="mt-3 text-sm">
-          {tab === "overview" ? (
+          {tab === "monitor" ? <MonitorTab {...ctx} /> : tab === "overview" ? (
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                 <Stat n={t.areas} l="Areas" /><Stat n={t.machines} l="Machines" /><Stat n={t.points} l="Points" />
@@ -135,7 +136,7 @@ function Body({ plant }: { plant: Plant }) {
       )}
       {form ? <RecordForm form={form} ctx={ctx} onClose={() => setForm(null)} /> : null}
       {machineId ? <MachineDetail id={machineId} ctx={ctx} onClose={() => setMachineId(null)} /> : null}
-      {sensorId ? <SensorDetail id={sensorId} ctx={ctx} onClose={() => setSensorId(null)} /> : null}
+      {sensorId ? <SensorDetail key={sensorId + sensorMode} id={sensorId} initialMode={sensorMode} ctx={ctx} onClose={() => setSensorId(null)} /> : null}
       {gatewayId ? <GatewayDetail id={gatewayId} ctx={ctx} onClose={() => setGatewayId(null)} /> : null}
     </>
   );
@@ -143,7 +144,7 @@ function Body({ plant }: { plant: Plant }) {
 
 type Ctx = {
   plant: Plant; data: TechData; by: string; refresh: () => Promise<void>;
-  setForm: (f: Form) => void; openMachine: (id: string) => void; openSensor: (id: string) => void; openGateway: (id: string) => void;
+  setForm: (f: Form) => void; openMachine: (id: string) => void; openSensor: (id: string) => void; openGateway: (id: string) => void; replaceSensorNow: (id: string) => void;
 };
 
 function RecentEvents({ data, entityId }: { data: TechData; entityId?: string }) {
@@ -319,8 +320,7 @@ function MachineDetail({ id, ctx, onClose }: { id: string; ctx: Ctx; onClose: ()
     <Modal title={m.name} onClose={onClose}>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Info l="Area" v={area?.name} /><Info l="Tag" v={m.tag} /><Info l="Type" v={m.machine_type} />
-        <Info l="Status" v={<Pill s={m.status} map={MACHINE_STATUS} />} /><Info l="Operating RPM" v={m.operating_rpm || m.rated_rpm} /><Info l="Power kW" v={m.rated_kw} />
-        <Info l="Make / model" v={[m.manufacturer, m.model].filter(Boolean).join(" ")} /><Info l="Criticality" v={m.criticality} />
+        <Info l="Status" v={<Pill s={m.status} map={MACHINE_STATUS} />} />
       </div>
       <div className="mt-3 flex gap-2"><Button variant="ghost" onClick={() => setForm({ kind: "machine", row: m })}>Edit machine</Button><Button onClick={() => setForm({ kind: "point", row: { plant_id: plant.id, machine_id: m.id } })}><Plus className="size-3.5" />Measurement point</Button></div>
       <div className="label-caps mb-1 mt-4">Measurement points</div>
@@ -357,10 +357,10 @@ function IssueBox({ entity, issues, onDone }: { entity: "sensor" | "gateway"; is
   );
 }
 
-function SensorDetail({ id, ctx, onClose }: { id: string; ctx: Ctx; onClose: () => void }) {
+function SensorDetail({ id, ctx, onClose, initialMode = "" }: { id: string; ctx: Ctx; onClose: () => void; initialMode?: "" | "replace" }) {
   const { data, by, refresh, setForm } = ctx;
   const s = data.sensors.find((x) => x.id === id);
-  const [mode, setMode] = useState<"" | "issue" | "resolve" | "replace" | "move">("");
+  const [mode, setMode] = useState<"" | "issue" | "resolve" | "replace" | "move">(initialMode);
   const [r, setR] = useState({ removalDate: TODAY, reason: "Sensor Faulty", newSerial: "", newType: "", installDate: TODAY, comments: "", toPoint: "", remark: "" });
   if (!s) return null;
   const p = sensorPath(data, s);
@@ -497,8 +497,6 @@ function RecordForm({ form, ctx, onClose }: { form: Form; ctx: Ctx; onClose: () 
         {form.kind === "machine" ? <>
           {txt("name", "Machine name *")}{sel("area_id", "Area *", areaOpts)}{txt("tag", "Machine tag / equipment ID")}
           {sel("machine_type", "Machine type", MACHINE_TYPES.map((x) => [x, x]), "—")}{sel("status", "Status", Object.entries(MACHINE_STATUS))}
-          {sel("criticality", "Criticality", [["High", "High"], ["Medium", "Medium"], ["Low", "Low"]], "—")}
-          {txt("manufacturer", "Manufacturer")}{txt("model", "Model")}{txt("rated_kw", "Rated power (kW)")}{txt("rated_rpm", "Rated RPM")}{txt("operating_rpm", "Operating RPM")}
           <div className="sm:col-span-2"><Field label="Notes"><TextArea rows={2} value={v("notes")} onChange={(e) => set("notes", e.target.value)} /></Field></div>
         </> : null}
         {form.kind === "point" ? <>
@@ -506,7 +504,7 @@ function RecordForm({ form, ctx, onClose }: { form: Form; ctx: Ctx; onClose: () 
             {custom ? <TextInput value={v("name")} onChange={(e) => set("name", e.target.value)} placeholder="Custom name" />
               : <Select value={v("name")} onChange={(e) => { if (e.target.value === "__other") { setCustom(true); set("name", ""); } else set("name", e.target.value); }}><option value="">Choose…</option>{STANDARD_POINTS.map((x) => <option key={x}>{x}</option>)}<option value="__other">Other (type name)</option></Select>}
           </Field>
-          {txt("component", "Component")}{txt("position", "Position")}{txt("orientation", "Orientation")}{txt("bearing_no", "Bearing number")}
+          
           {sel("status", "Status", [["active", "Active"], ["inactive", "Inactive"]])}
           <div className="sm:col-span-2"><Field label="Notes"><TextArea rows={2} value={v("notes")} onChange={(e) => set("notes", e.target.value)} /></Field></div>
         </> : null}
@@ -559,6 +557,66 @@ function SerialHistory({ data, pointId, currentId, openSensor }: { data: TechDat
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function MonitorTab({ plant, data, setForm, openMachine, openSensor, openGateway, replaceSensorNow }: Ctx) {
+  const [area, setArea] = useState("");
+  const [only, setOnly] = useState<"" | "issue" | "empty">("");
+  const machines = data.machines.filter((m) => m.status !== "inactive" && (!area || m.area_id === area));
+  const rows = machines.flatMap((m) => {
+    const pts = data.points.filter((p) => p.machine_id === m.id && p.status !== "inactive");
+    return pts.length ? pts.map((p) => ({ m, p, s: pointSensors(data, p.id).current ?? null })) : [{ m, p: null as Point | null, s: null as Sensor | null }];
+  }).filter((r) => !only || (only === "issue" ? !!r.s && hasIssue(r.s) : !r.s));
+  const gwOf = (s: Sensor | null) => (s ? data.gateways.find((g) => g.id === s.gateway_id) : undefined);
+  const GwBtn = ({ s }: { s: Sensor | null }) => {
+    const g = gwOf(s);
+    return g ? <button type="button" onClick={() => openGateway(g.id)} className="text-left text-signal hover:underline"><span className="font-medium">{g.name}</span> <Pill s={g.status} map={GATEWAY_STATUS} /></button> : <span className="text-mute">—</span>;
+  };
+  const Act = ({ r }: { r: (typeof rows)[number] }) => r.s
+    ? <Button onClick={() => replaceSensorNow(r.s!.id)}><RotateCcw className="size-3.5" />Replace</Button>
+    : r.p ? <Button onClick={() => setForm({ kind: "sensor", row: { plant_id: plant.id, point_id: r.p!.id } })}><Plus className="size-3.5" />Sensor</Button>
+    : <Button onClick={() => setForm({ kind: "point", row: { plant_id: plant.id, machine_id: r.m.id } })}><Plus className="size-3.5" />Point</Button>;
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <Select value={area} onChange={(e) => setArea(e.target.value)} className="sm:max-w-56"><option value="">All areas</option>{data.areas.filter((a) => a.status !== "inactive").map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select>
+        <Select value={only} onChange={(e) => setOnly(e.target.value as typeof only)} className="sm:max-w-48"><option value="">All points</option><option value="issue">Sensors with issues</option><option value="empty">No sensor fitted</option></Select>
+      </div>
+      {!rows.length ? <Empty>No machines yet. Add areas and machines from Areas & Machines.</Empty> : <>
+        <div className="hidden overflow-x-auto rounded-md ring-1 ring-line md:block">
+          <table className="w-full text-sm">
+            <thead className="bg-black/5 text-left text-xs text-mute"><tr><th className="px-3 py-2">Machine (tag)</th><th className="px-3 py-2">Measurement point</th><th className="px-3 py-2">Active sensor</th><th className="px-3 py-2">Gateway</th><th className="px-3 py-2">Status</th><th className="px-3 py-2 text-right">Actions</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.m.id + (r.p?.id ?? "")} className="border-t border-line/70">
+                  <td className="px-3 py-2"><button type="button" onClick={() => openMachine(r.m.id)} className="text-left hover:underline"><span className="font-medium">{r.m.name}</span>{r.m.tag ? <span className="text-xs text-mute"> ({r.m.tag})</span> : null}</button></td>
+                  <td className="px-3 py-2">{r.p?.name ?? <span className="text-mute">No points</span>}</td>
+                  <td className="px-3 py-2">{r.s ? <button type="button" onClick={() => openSensor(r.s!.id)} className="num text-signal hover:underline">{r.s.serial_no}</button> : <span className="text-mute">—</span>}{r.s ? <span className="text-xs text-mute"> {r.s.sensor_type}</span> : null}</td>
+                  <td className="px-3 py-2"><GwBtn s={r.s} /></td>
+                  <td className="px-3 py-2">{r.s ? <Pill s={r.s.status} map={SENSOR_STATUS} /> : <span className="text-xs text-mute">Not fitted</span>}</td>
+                  <td className="px-3 py-2 text-right"><Act r={r} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="space-y-2 md:hidden">
+          {rows.map((r) => (
+            <div key={r.m.id + (r.p?.id ?? "")} className="rounded-md p-3 ring-1 ring-line">
+              <button type="button" onClick={() => openMachine(r.m.id)} className="block text-left font-medium">{r.m.name}{r.m.tag ? <span className="text-xs font-normal text-mute"> ({r.m.tag})</span> : null}</button>
+              <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+                <span className="text-mute">Point</span><span>{r.p?.name ?? "—"}</span>
+                <span className="text-mute">Sensor</span><span>{r.s ? <button type="button" onClick={() => openSensor(r.s!.id)} className="num text-signal">{r.s.serial_no}</button> : "—"} {r.s ? <Pill s={r.s.status} map={SENSOR_STATUS} /> : null}</span>
+                <span className="text-mute">Gateway</span><span><GwBtn s={r.s} /></span>
+              </div>
+              <div className="mt-2 [&>button]:w-full [&>button]:justify-center"><Act r={r} /></div>
+            </div>
+          ))}
+        </div>
+      </>}
+      <p className="text-xs text-mute">Tap a gateway to open its details on the side. Replace keeps the old sensor in the point's history.</p>
     </div>
   );
 }
