@@ -5,7 +5,7 @@ import { Button, Field, Select, TextArea, TextInput } from "@/components/console
 import { cn } from "@/lib/utils";
 import {
   FAULT_TYPES,
-  allAnalysisSeverities,
+
   allConditions,
   analysisProgress,
   analysisStatusLabel,
@@ -326,16 +326,16 @@ export function MachineAnalysisSection({
 
                   {readOnly ? (
                     hidden ? null : (
-                      <div className="grid gap-2 text-sm sm:grid-cols-3">
+                      <div className="grid gap-2 text-sm sm:grid-cols-2">
                         <div><div className="label-caps">Condition</div>{a.condition ? conditionLabel[a.condition] : "—"}</div>
                         <div><div className="label-caps">Fault type</div>{a.fault || "—"}</div>
-                        <div className="sm:col-span-3"><div className="label-caps">Manager observation</div><p className="whitespace-pre-wrap">{a.observation || "—"}</p></div>
-                        <div className="sm:col-span-3"><div className="label-caps">Recommendation / next action</div><p className="whitespace-pre-wrap">{a.recommendation || "—"}</p></div>
+                        <div className="sm:col-span-2"><div className="label-caps">Manager observation</div><p className="whitespace-pre-wrap">{a.observation || "—"}</p></div>
+                        <div className="sm:col-span-2"><div className="label-caps">Recommendation / next action</div><p className="whitespace-pre-wrap">{a.recommendation || "—"}</p></div>
                       </div>
                     )
                   ) : (
                     <>
-                      <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="grid gap-3 sm:grid-cols-2">
                         <Field label="Condition">
                           <Select value={a.condition} onChange={(e) => patch(i, { condition: e.target.value as MachineAnalysis["condition"] })}>
                             <option value="">Select…</option>
