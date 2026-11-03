@@ -177,6 +177,9 @@ export async function resolveIssue(entity: "sensor" | "gateway", rec: { id: stri
 
 /** Old sensor -> replaced (kept), new sensor installed at the same point/gateway. */
 export async function replaceSensor(old: Sensor, input: { removalDate: string; reason: string; newSerial: string; newType: string; installDate: string; comments: string }, by: string) {
+  const dup = await findSerialOwner("sensor", input.newSerial);
+  if (dup) throw new Error(dup);
+  input = { ...input, newSerial: normSerial(input.newSerial) };
   const now = new Date().toISOString();
   const r1 = await supabase.from("plant_sensors").update({ status: "replaced", removed_date: input.removalDate || null, updated_at: now }).eq("id", old.id);
   if (r1.error) throw new Error(r1.error.message);
@@ -220,6 +223,40 @@ export async function removeRecord(kind: "area" | "machine", rec: { id: string; 
   const { error } = await supabase.from(table).update({ status, updated_at: new Date().toISOString() }).eq("id", rec.id);
   if (error) throw new Error(error.message);
   await logEvent({ plant_id: rec.plant_id, entity: kind, entity_id: rec.id, kind: restore ? "restored" : "deleted", remark: `${restore ? "Restored" : "Deleted"} ${kind} ${rec.name}${reason ? ` — ${reason}` : ""}`, by_user: by });
+}
+
+// ---------- device delete + duplicate serial rule
+
+/** Serial rule: trimmed, upper-case, inner spaces removed — "sn 62041 " and "SN62041" are the same serial. */
+export const normSerial = (v: string) => v.trim().replace(/\s+/g, "").toUpperCase();
+
+/** Where (if anywhere) this serial is already in use, across every plant. Retired devices don't block reuse. */
+export async function findSerialOwner(kind: "sensor" | "gateway", serial: string, excludeId?: string): Promise<string | null> {
+  const n = normSerial(serial);
+  if (!n) return null;
+  const table = kind === "sensor" ? "plant_sensors" : "plant_gateways";
+  const retired = kind === "sensor" ? RETIRED : ["replaced", "inactive"];
+  const { data } = await supabase.from(table).select("id, plant_id, serial_no, status").ilike("serial_no", n);
+  const hit = (data ?? []).find((r) => r.id !== excludeId && !retired.includes(r.status) && normSerial(r.serial_no) === n);
+  if (!hit) return null;
+  const { data: pl } = await supabase.from("plants").select("name").eq("id", hit.plant_id).maybeSingle();
+  return `${kind === "sensor" ? "Sensor" : "Gateway"} serial ${n} is already active at ${pl?.name ?? "another plant"}. Replace, move or delete that one first.`;
+}
+
+export function deviceBlocker(d: TechData, kind: "sensor" | "gateway", id: string): string | null {
+  if (kind === "sensor") return null;
+  const n = gatewaySensorCount(d, id);
+  return n ? `Move the ${n} sensor(s) on this gateway to another gateway first` : null;
+}
+
+/** Wrong sensor/gateway: marked inactive (frees its serial), never hard-deleted, history kept. */
+export async function removeDevice(kind: "sensor" | "gateway", rec: { id: string; plant_id: string; serial_no: string }, reason: string, by: string, restore = false) {
+  if (restore) { const dup = await findSerialOwner(kind, rec.serial_no, rec.id); if (dup) throw new Error(dup); }
+  const table = kind === "sensor" ? "plant_sensors" : "plant_gateways";
+  const status = restore ? (kind === "sensor" ? "installed" : "online") : "inactive";
+  const { error } = await supabase.from(table).update({ status, updated_at: new Date().toISOString() }).eq("id", rec.id);
+  if (error) throw new Error(friendly(error.message));
+  await logEvent({ plant_id: rec.plant_id, entity: kind, entity_id: rec.id, kind: restore ? "restored" : "deleted", remark: `${restore ? "Restored" : "Deleted"} ${kind} ${rec.serial_no}${reason ? ` — ${reason}` : ""}`, by_user: by });
 }
 
 /** Every sensor that has sat on a measurement point, oldest first, with the replacement reason. */
