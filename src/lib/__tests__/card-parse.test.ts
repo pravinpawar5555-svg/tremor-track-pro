@@ -22,3 +22,12 @@ describe("visiting card parsing", () => {
   });
   it("does not treat a PIN code as a phone", () => expect(parseCard("Pune 411001").phone).toBe(""));
 });
+
+describe("visiting card noise filtering", () => {
+  it("ignores garbled OCR lines when picking the name", () => {
+    const f = parseCard(`Ll g\nwh Ne Be wi BR © %\nPravin Pawar\nRegional Manager\nMob: 98220 12345`);
+    expect(f.name).toBe("Pravin Pawar");
+    expect(f.position).toBe("Regional Manager");
+  });
+  it("keeps phone numbers on noisy lines", () => expect(parseCard("~~ M: +91 98765 43210 ~~").phone).toBe("+919876543210"));
+});
