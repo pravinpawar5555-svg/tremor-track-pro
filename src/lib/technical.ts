@@ -93,7 +93,7 @@ function cell(v: unknown) {
   if (/^[=+\-@]/.test(s)) s = `'${s}`;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
-export const TECH_HEADERS = ["Plant Name", "Area Name", "Machine Name", "Machine Tag", "Machine Type", "Measurement Point", "Component", "Position", "Bearing Number", "Sensor Serial Number", "Sensor Type", "Sensor Model", "Gateway Serial Number", "Installation Date", "Status"];
+export const TECH_HEADERS = ["Plant Name", "Area Name", "Machine Name", "Machine Tag", "Measurement Point", "Sensor Serial Number", "Sensor Type", "Gateway Serial Number", "Installation Date", "Status"];
 /** One row per measurement point (with its current sensor); machines with no points get one row. */
 export function buildTechCsv(d: TechData, plantName: string, areaId?: string) {
   const lines = [TECH_HEADERS.join(",")];
@@ -101,11 +101,11 @@ export function buildTechCsv(d: TechData, plantName: string, areaId?: string) {
     if (areaId && m.area_id !== areaId) continue;
     const area = d.areas.find((a) => a.id === m.area_id)?.name ?? "";
     const pts = d.points.filter((p) => p.machine_id === m.id);
-    if (!pts.length) lines.push([plantName, area, m.name, m.tag, m.machine_type, "", "", "", "", "", "", "", "", "", m.status].map(cell).join(","));
+    if (!pts.length) lines.push([plantName, area, m.name, m.tag, "", "", "", "", "", m.status].map(cell).join(","));
     for (const p of pts) {
       const s = pointSensors(d, p.id).current;
       const gw = s?.gateway_id ? d.gateways.find((g) => g.id === s.gateway_id)?.serial_no ?? "" : "";
-      lines.push([plantName, area, m.name, m.tag, m.machine_type, p.name, p.component, p.position, p.bearing_no, s?.serial_no ?? "", s?.sensor_type ?? "", s?.model ?? "", gw, s?.install_date ?? "", s?.status ?? p.status].map(cell).join(","));
+      lines.push([plantName, area, m.name, m.tag, p.name, s?.serial_no ?? "", s?.sensor_type ?? "", gw, s?.install_date ?? "", s?.status ?? p.status].map(cell).join(","));
     }
   }
   return lines.join("\r\n");
