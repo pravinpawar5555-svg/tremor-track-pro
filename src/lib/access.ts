@@ -13,7 +13,7 @@ export function navAllowed(manager: boolean, domain: Domain, to: string, perms?:
   if (to === "/settings") return false;
   const mod = PATH_MODULE[to];
   if (perms && perms.length && mod && (domain === "customer_success" || domain === "execution")) return levelOf(perms, domain, mod, "view") !== "none";
-  if (to === "/engineers") return false;
+  if (to === "/engineers") return true; // engineers see Workload only
   if (domain === "execution") return to !== "/visits" && to !== "/reports";
   return to !== "/execution";
 }
