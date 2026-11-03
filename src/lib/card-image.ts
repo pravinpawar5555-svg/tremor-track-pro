@@ -11,9 +11,9 @@ export async function prepareCardImage(file: File, binarize = true): Promise<HTM
   ctx.drawImage(bmp, 0, 0, w, h);
   bmp.close?.();
   const img = ctx.getImageData(0, 0, w, h);
-  const d = img.data;
-  const gray = new Uint8ClampedArray(w * h);
-  const hist = new Array(256).fill(0);
+  const d = img.data as unknown as number[];
+  const gray = new Uint8ClampedArray(w * h) as unknown as number[];
+  const hist: number[] = new Array(256).fill(0);
   for (let i = 0, j = 0; i < d.length; i += 4, j++) {
     const g = (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1000;
     gray[j] = g; hist[gray[j]]++;
@@ -24,8 +24,8 @@ export async function prepareCardImage(file: File, binarize = true): Promise<HTM
   acc = 0;
   for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc > total * 0.02) { hi = v; break; } }
   const range = Math.max(1, hi - lo);
-  const st = new Uint8ClampedArray(total);
-  const h2 = new Array(256).fill(0);
+  const st = new Uint8ClampedArray(total) as unknown as number[];
+  const h2: number[] = new Array(256).fill(0);
   for (let j = 0; j < total; j++) { st[j] = ((gray[j] - lo) * 255) / range; h2[st[j]]++; }
   // Otsu threshold.
   let sum = 0; for (let v = 0; v < 256; v++) sum += v * h2[v];
@@ -42,7 +42,7 @@ export async function prepareCardImage(file: File, binarize = true): Promise<HTM
   let dark = 0; for (let j = 0; j < total; j++) if (st[j] < thr) dark++;
   const invert = dark > total / 2;
   for (let i = 0, j = 0; i < d.length; i += 4, j++) {
-    let v = binarize ? (st[j] < thr ? 0 : 255) : st[j];
+    let v: number = binarize ? (st[j] < thr ? 0 : 255) : st[j];
     if (invert) v = 255 - v;
     d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255;
   }

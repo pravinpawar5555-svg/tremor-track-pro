@@ -12,13 +12,14 @@ export function CardScanButton({ onScan, label = "Scan card" }: { onScan: (f: Ca
 
   const read = async (file: File) => {
     setPct(0);
-    let worker: { recognize: (i: HTMLCanvasElement) => Promise<{ data: { text: string } }>; setParameters: (p: Record<string, string>) => Promise<unknown>; terminate: () => Promise<unknown> } | null = null;
+    type W = { recognize: (i: HTMLCanvasElement) => Promise<{ data: { text: string } }>; setParameters: (p: Record<string, string>) => Promise<unknown>; terminate: () => Promise<unknown> };
+    let worker = null as W | null;
     try {
       const [{ createWorker }, { prepareCardImage }] = await Promise.all([import("tesseract.js"), import("@/lib/card-image")]);
       let pass = 0;
       worker = (await createWorker("eng", 1, {
         logger: (m: { status: string; progress: number }) => { if (m.status === "recognizing text") setPct(Math.round((pass * 100 + m.progress * 100) / 2)); },
-      })) as unknown as typeof worker;
+      })) as unknown as W;
       await worker!.setParameters({ tessedit_pageseg_mode: "11", preserve_interword_spaces: "1" });
       const imgA = await prepareCardImage(file, true);
       const a = parseCard((await worker!.recognize(imgA)).data.text);
