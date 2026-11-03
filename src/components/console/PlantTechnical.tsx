@@ -9,7 +9,7 @@ import { TechnicalImport } from "@/components/console/TechnicalImport";
 import {
   GATEWAY_ISSUES, GATEWAY_STATUS, MACHINE_STATUS, MACHINE_TYPES, SENSOR_ISSUES, SENSOR_STATUS, SENSOR_TYPES, STANDARD_POINTS,
   buildTechCsv, faultHistory, gatewaySensorCount, hasIssue, isActiveSensor, moveSensor, pointSensors, replaceSensor, reportIssue,
-  resolveIssue, saveRecord, removeRecord, removeBlocker, pointSerialHistory, REPLACE_REASONS, searchTech, sensorPath, techTotals, useTechnical,
+  resolveIssue, saveRecord, removeRecord, removeBlocker, removeDevice, deviceBlocker, findSerialOwner, normSerial, pointSerialHistory, REPLACE_REASONS, searchTech, sensorPath, techTotals, useTechnical,
   type Area, type Gateway, type Machine, type Point, type Sensor, type TechData,
 } from "@/lib/technical";
 
@@ -385,6 +385,7 @@ function SensorDetail({ id, ctx, onClose, initialMode = "" }: { id: string; ctx:
           <Button variant="ghost" onClick={() => setForm({ kind: "sensor", row: s })}>Edit details</Button>
         </div>
       ) : <p className="mt-3 text-xs text-mute">This sensor is retired; its history is kept below.</p>}
+      <DeleteDevice kind="sensor" rec={s} by={by} data={data} active={active} canRestore={s.status === "inactive"} run={run} />
       {mode === "issue" ? <IssueBox entity="sensor" issues={SENSOR_ISSUES} onDone={(i, rm) => run(() => reportIssue("sensor", s, i, rm, by), "Issue recorded — status Under Troubleshooting")} /> : null}
       {mode === "resolve" ? (
         <div className="mt-3 space-y-2 rounded-md p-3 ring-1 ring-line">
@@ -440,6 +441,7 @@ function GatewayDetail({ id, ctx, onClose }: { id: string; ctx: Ctx; onClose: ()
         {["troubleshooting", "offline", "faulty"].includes(g.status) ? <Button onClick={() => setMode("resolve")}>Resolved</Button> : null}
         <Button variant="ghost" onClick={() => setForm({ kind: "gateway", row: g })}>Edit / replace</Button>
       </div>
+      <DeleteDevice kind="gateway" rec={g} by={by} data={data} active={!["replaced", "inactive"].includes(g.status)} canRestore={g.status === "inactive"} run={run} />
       {mode === "issue" ? <IssueBox entity="gateway" issues={GATEWAY_ISSUES} onDone={(i, rm) => run(() => reportIssue("gateway", g, i, rm, by), "Issue recorded")} /> : null}
       {mode === "resolve" ? (
         <div className="mt-3 space-y-2 rounded-md p-3 ring-1 ring-line">
@@ -451,6 +453,24 @@ function GatewayDetail({ id, ctx, onClose }: { id: string; ctx: Ctx; onClose: ()
       {sensors.length ? <div className="flex flex-wrap gap-1">{sensors.map((s) => <button key={s.id} type="button" onClick={() => openSensor(s.id)} className="num rounded px-1.5 py-0.5 text-xs ring-1 ring-line hover:bg-black/5">{s.serial_no}</button>)}</div> : <p className="text-xs text-mute">None linked.</p>}
       <div className="mt-4"><RecentEvents data={data} entityId={g.id} /></div>
     </Modal>
+  );
+}
+
+function DeleteDevice({ kind, rec, by, data, active, canRestore, run }: { kind: "sensor" | "gateway"; rec: { id: string; plant_id: string; serial_no: string }; by: string; data: TechData; active: boolean; canRestore: boolean; run: (f: () => Promise<unknown>, ok: string) => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("Added by mistake");
+  if (!active) return canRestore ? <div className="mt-2"><Button variant="ghost" onClick={() => run(() => removeDevice(kind, rec, "", by, true), `${rec.serial_no} restored`)}><RotateCcw className="size-3.5" />Restore</Button></div> : null;
+  if (!open) return <div className="mt-2"><Button variant="ghost" onClick={() => { const b = deviceBlocker(data, kind, rec.id); if (b) { toast.error(b); return; } setOpen(true); }}><Trash2 className="size-3.5 text-sev-high" />Delete {kind}</Button></div>;
+  return (
+    <div className="mt-3 space-y-2 rounded-md bg-sev-high/5 p-3 ring-1 ring-sev-high/30">
+      <div className="text-sm font-semibold">Delete {kind} {rec.serial_no}?</div>
+      <p className="text-xs text-mute">It is hidden from counts and its serial number becomes free, but its history is kept and it can be restored.</p>
+      <Field label="Reason"><Select value={reason} onChange={(e) => setReason(e.target.value)}>{["Added by mistake", "Duplicate entry", "Wrong serial number", "Returned to Forbes Marshall", "Other"].map((x) => <option key={x}>{x}</option>)}</Select></Field>
+      <div className="flex gap-2">
+        <Button variant="solid" onClick={() => run(() => removeDevice(kind, rec, reason, by), `${rec.serial_no} deleted — kept in history`)}><Trash2 className="size-3.5" />Delete</Button>
+        <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+      </div>
+    </div>
   );
 }
 
@@ -484,7 +504,12 @@ function RecordForm({ form, ctx, onClose }: { form: Form; ctx: Ctx; onClose: () 
   const save = async () => {
     const missing = required[form.kind].find(([k]) => !v(k).trim());
     if (missing) { toast.error(`${missing[1]} is required`); return; }
-    const clean = Object.fromEntries(Object.entries(row).filter(([k]) => !["created_at", "updated_at"].includes(k)));
+    const clean: Record<string, unknown> = Object.fromEntries(Object.entries(row).filter(([k]) => !["created_at", "updated_at"].includes(k)));
+    if ((form.kind === "sensor" || form.kind === "gateway") && !isEdit) {
+      clean["serial_no"] = normSerial(v("serial_no"));
+      const dup = await findSerialOwner(form.kind, v("serial_no"), form.row.id as string | undefined);
+      if (dup) { toast.error(dup); return; }
+    }
     const lbl = `${titles[form.kind].toLowerCase()} ${v("name") || v("serial_no")}`;
     try { await saveRecord(table[form.kind], clean as never, by, lbl); await refresh(); toast.success(`${titles[form.kind]} saved`); onClose(); }
     catch (e) { toast.error((e as Error).message); }
