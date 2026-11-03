@@ -185,7 +185,8 @@ function DailyWorkPage() {
   };
 
   const scopeIds = manager ? (engFilter === "all" ? team.map((t) => t.id) : [engFilter]) : [me];
-  const scoped = data.tasks.filter((t) => scopeIds.includes(t.engineerId));
+  // Engineers also see tasks they handed to someone else (delegated), in the same list.
+  const scoped = data.tasks.filter((t) => scopeIds.includes(t.engineerId) || (!manager && t.assignedBy === me));
   const dayTasks = scoped.filter((t) => t.taskDate === date);
   const active = dayTasks.filter((t) => t.status !== "completed");
   const doneToday = dayTasks.filter((t) => t.status === "completed").sort((a, b) => ((a.completedAt ?? "") < (b.completedAt ?? "") ? 1 : -1));
@@ -511,7 +512,15 @@ function AddTaskDialog({ open, onClose, data, manager, me, date, defaultEngineer
           <div className="sm:col-span-2"><Field label="Task"><TextInput autoFocus value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="e.g. Prepare SWAS weekly report" /></Field></div>
           {manager ? (
             <Field label="Assign to"><Select value={f.engineerId} onChange={(e) => setF({ ...f, engineerId: e.target.value })}>{team.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}<option value={me}>🔒 Myself (private)</option></Select></Field>
-          ) : null}
+          ) : (
+            <Field label="Assign to">
+              <Select value={f.engineerId} onChange={(e) => setF({ ...f, engineerId: e.target.value })}>
+                <option value={me}>Myself</option>
+                <optgroup label="Managers">{data.engineers.filter((e) => e.role === "manager").map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</optgroup>
+                <optgroup label="Engineers">{team.filter((a) => a.id !== me).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</optgroup>
+              </Select>
+            </Field>
+          )}
           <Field label="Plant"><Select value={f.plantId} onChange={(e) => setF({ ...f, plantId: e.target.value })}><option value="">— None —</option>{plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select></Field>
           <Field label="Type"><Select value={f.taskType} onChange={(e) => setF({ ...f, taskType: e.target.value as TaskType })}>{types.map((t) => <option key={t} value={t}>{taskTypeLabel[t]}</option>)}</Select></Field>
           <Field label="Priority"><Select value={f.priority} onChange={(e) => setF({ ...f, priority: e.target.value as TaskPriority })}>{prios.map((p) => <option key={p} value={p}>{taskPriorityLabel[p]}</option>)}</Select></Field>
