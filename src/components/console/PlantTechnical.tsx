@@ -506,7 +506,7 @@ function RecordForm({ form, ctx, onClose }: { form: Form; ctx: Ctx; onClose: () 
     if (missing) { toast.error(`${missing[1]} is required`); return; }
     const clean: Record<string, unknown> = Object.fromEntries(Object.entries(row).filter(([k]) => !["created_at", "updated_at"].includes(k)));
     if ((form.kind === "sensor" || form.kind === "gateway") && !isEdit) {
-      clean.serial_no = normSerial(v("serial_no"));
+      clean["serial_no"] = normSerial(v("serial_no"));
       const dup = await findSerialOwner(form.kind, v("serial_no"), form.row.id as string | undefined);
       if (dup) { toast.error(dup); return; }
     }
