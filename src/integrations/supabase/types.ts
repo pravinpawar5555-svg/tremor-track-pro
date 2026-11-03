@@ -401,7 +401,9 @@ export type Database = {
           note: string
           person_id: string
           reason: string
+          reviewed_by: string
           start_date: string
+          status: string
         }
         Insert: {
           created_at?: string
@@ -411,7 +413,9 @@ export type Database = {
           note?: string
           person_id: string
           reason?: string
+          reviewed_by?: string
           start_date: string
+          status?: string
         }
         Update: {
           created_at?: string
@@ -421,7 +425,9 @@ export type Database = {
           note?: string
           person_id?: string
           reason?: string
+          reviewed_by?: string
           start_date?: string
+          status?: string
         }
         Relationships: []
       }
