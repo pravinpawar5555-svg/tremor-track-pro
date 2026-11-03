@@ -460,7 +460,14 @@ function DeleteDevice({ kind, rec, by, data, active, canRestore, run }: { kind: 
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("Added by mistake");
   if (!active) return canRestore ? <div className="mt-2"><Button variant="ghost" onClick={() => run(() => removeDevice(kind, rec, "", by, true), `${rec.serial_no} restored`)}><RotateCcw className="size-3.5" />Restore</Button></div> : null;
-  if (!open) return <div className="mt-2"><Button variant="ghost" onClick={() => { const b = deviceBlocker(data, kind, rec.id); if (b) { toast.error(b); return; } setOpen(true); }}><Trash2 className="size-3.5 text-sev-high" />Delete {kind}</Button></div>;
+  if (!open) return (
+    <div className="mt-3 border-t border-line pt-3">
+      <button type="button" onClick={() => { const b = deviceBlocker(data, kind, rec.id); if (b) { toast.error(b); return; } setOpen(true); }}
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold text-sev-high ring-1 ring-sev-high/50 hover:bg-sev-high/10 sm:w-auto">
+        <Trash2 className="size-4" />Delete {kind}
+      </button>
+    </div>
+  );
   return (
     <div className="mt-3 space-y-2 rounded-md bg-sev-high/5 p-3 ring-1 ring-sev-high/30">
       <div className="text-sm font-semibold">Delete {kind} {rec.serial_no}?</div>
