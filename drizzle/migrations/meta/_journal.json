@@ -288,6 +288,13 @@
       "when": 1793600388077,
       "tag": "0040_opportunity_exhibition_details",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793669190370,
+      "tag": "0041_tasks_assigned_by_access",
+      "breakpoints": true
     }
   ]
 }
