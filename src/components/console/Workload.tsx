@@ -12,7 +12,7 @@ import {
 import { useVisits } from "@/lib/visits";
 import { useComms, openFollowUp } from "@/lib/comms";
 import { onJob, swapEngineer, useExecution, saveJob, siteVisitTypeLabel, installTypeLabel, execStatusLabel, type ExecJob } from "@/lib/execution";
-import { addLeave, deleteLeave, leaveOn, levelFor, useLeaves, useWorkloadSettings, type Level } from "@/lib/workload";
+import { addLeave, deleteLeave, leaveOn, reviewLeave, levelFor, useLeaves, useWorkloadSettings, type Level } from "@/lib/workload";
 import { dayKind, execOnSite, type DayKind } from "@/lib/access";
 const kindMeta: Record<DayKind, { label: string; cls: string; Icon: typeof MapPin }> = {
   office: { label: "Office", cls: "bg-black/[0.05] text-ink ring-line", Icon: Building2 },
@@ -86,6 +86,7 @@ type Drill =
   | null;
 
 export function Workload({ data, myName }: { data: AppData; myName: string }) {
+  const isMgr = data.role === "manager";
   const visits = useVisits();
   const comms = useComms();
   const ex = useExecution();
@@ -287,7 +288,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
                 </div>
               ))}
               {tot.weekend ? <span className="text-[11px] text-sev-medium">Comp-off due for {tot.weekend} weekend / holiday day{tot.weekend > 1 ? "s" : ""}</span> : null}
-              <div className="ml-auto"><Button onClick={() => setLeaveForm({ personId: people[0]?.id ?? "", start: TODAY, end: TODAY, reason: "Casual", note: "" })}>+ Mark Leave</Button></div>
+              <div className="ml-auto"><Button onClick={() => setLeaveForm({ personId: people[0]?.id ?? "", start: TODAY, end: TODAY, reason: "Casual", note: "" })}>{isMgr ? "+ Mark Leave" : "+ Apply for Leave"}</Button></div>
             </div>
             {now.length ? <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]"><span className="text-mute">Today:</span>{now.map((n) => <span key={n.name} className="flex items-center gap-1">{n.name} <KindBadge k={n.k} where={n.where} /></span>)}</div> : null}
             {leaveForm ? (
@@ -298,7 +299,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
                 <input type="date" aria-label="From" className="rounded-md bg-panel px-2 py-1.5 text-sm ring-1 ring-line" value={leaveForm.start} onChange={(e) => setLeaveForm({ ...leaveForm, start: e.target.value, end: leaveForm.end < e.target.value ? e.target.value : leaveForm.end })} />
                 <input type="date" aria-label="To" className="rounded-md bg-panel px-2 py-1.5 text-sm ring-1 ring-line" value={leaveForm.end} min={leaveForm.start} onChange={(e) => setLeaveForm({ ...leaveForm, end: e.target.value })} />
                 <Select value={leaveForm.reason} onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} aria-label="Leave type">{LEAVE_REASONS.map((r) => <option key={r}>{r}</option>)}</Select>
-                <div className="flex gap-2"><Button variant="ghost" onClick={() => setLeaveForm(null)}>Cancel</Button><Button variant="solid" disabled={!leaveForm.personId} onClick={async () => { try { await addLeave(leaveForm, myName); toast.success("Leave marked"); setLeaveForm(null); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not save leave"); } }}>Save</Button></div>
+                <div className="flex gap-2"><Button variant="ghost" onClick={() => setLeaveForm(null)}>Cancel</Button><Button variant="solid" disabled={!leaveForm.personId} onClick={async () => { try { await addLeave(leaveForm, myName, isMgr); toast.success(isMgr ? "Leave marked" : "Leave request sent to manager for approval"); setLeaveForm(null); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not save leave"); } }}>Save</Button></div>
               </div>
             ) : null}
           </div>
@@ -373,7 +374,14 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
           <div className="divide-y divide-line/60">{leaves.filter((l) => l.start <= days[days.length - 1]! && l.end >= days[0]!).map((l) => (
             <div key={l.id} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
               <div><div className="font-medium">{ex.engineers.find((e) => e.id === l.personId)?.name ?? engineerName(data, l.personId)}</div><div className="text-xs text-mute">{l.reason} · {fmtDate(l.start)}{l.end !== l.start ? ` – ${fmtDate(l.end)}` : ""}</div></div>
-              <button type="button" aria-label="Delete leave" className="text-sev-critical" onClick={async () => { if (!window.confirm("Delete this leave?")) return; try { await deleteLeave(l.id); toast.success("Leave removed"); } catch { toast.error("Could not delete"); } }}><Trash2 className="size-4" /></button>
+              <div className="flex items-center gap-2">
+                {(l.status ?? "approved") !== "approved" ? <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-semibold", l.status === "pending" ? "bg-sev-medium/15 text-sev-medium" : "bg-sev-critical/15 text-sev-critical")}>{l.status === "pending" ? "Pending" : "Rejected"}</span> : null}
+                {isMgr && l.status === "pending" ? <>
+                  <Button variant="solid" onClick={async () => { try { await reviewLeave(l.id, true, myName); toast.success("Leave approved"); } catch { toast.error("Could not approve"); } }}>Approve</Button>
+                  <Button variant="ghost" onClick={async () => { try { await reviewLeave(l.id, false, myName); toast.success("Leave rejected"); } catch { toast.error("Could not reject"); } }}>Reject</Button>
+                </> : null}
+                {isMgr || l.status === "pending" ? <button type="button" aria-label="Delete leave" className="text-sev-critical" onClick={async () => { if (!window.confirm("Delete this leave?")) return; try { await deleteLeave(l.id); toast.success("Leave removed"); } catch { toast.error("Could not delete"); } }}><Trash2 className="size-4" /></button> : null}
+              </div>
             </div>
           ))}{!leaves.some((l) => l.start <= days[days.length - 1]! && l.end >= days[0]!) ? <Empty>No leave in this period.</Empty> : null}</div>
         </Panel>

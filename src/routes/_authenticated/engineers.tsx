@@ -93,7 +93,8 @@ function EngineersPage() {
   if (data.role !== "manager") {
     return (
       <AppShell>
-        <Empty>Only the manager can manage engineers and approve accounts.</Empty>
+        <PageHeader title="Team Workload" subtitle="Who has work, when, and where — apply for leave here" />
+        <Workload data={data} myName={engineerName(data, data.currentUserId) || "Engineer"} />
       </AppShell>
     );
   }

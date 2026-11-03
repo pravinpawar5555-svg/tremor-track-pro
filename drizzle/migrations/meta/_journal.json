@@ -295,6 +295,13 @@
       "when": 1793669190370,
       "tag": "0041_tasks_assigned_by_access",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1793670804011,
+      "tag": "0042_leave_approval",
+      "breakpoints": true
     }
   ]
 }

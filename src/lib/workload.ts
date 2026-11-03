@@ -52,14 +52,14 @@ export function levelFor(value: number, high: number | null, over: number | null
 }
 
 /* ------------------------------------------------------------ Engineer leaves */
-export interface Leave { id: string; personId: string; start: string; end: string; reason: string; note: string }
+export interface Leave { id: string; personId: string; start: string; end: string; reason: string; note: string; status?: string }
 let leaves: Leave[] = [];
 let leavesLoaded = false;
 const leaveListeners = new Set<() => void>();
 const emitLeaves = () => leaveListeners.forEach((l) => l());
 export async function loadLeaves() {
   const { data } = await db.from("engineer_leaves").select("*").order("start_date");
-  leaves = (data ?? []).map((r: any) => ({ id: r.id, personId: r.person_id, start: r.start_date, end: r.end_date, reason: r.reason, note: r.note }));
+  leaves = (data ?? []).map((r: any) => ({ id: r.id, personId: r.person_id, start: r.start_date, end: r.end_date, reason: r.reason, note: r.note, status: r.status ?? "approved" }));
   leavesLoaded = true;
   emitLeaves();
 }
@@ -67,8 +67,8 @@ export function useLeaves() {
   useEffect(() => { if (!leavesLoaded) void loadLeaves(); }, []);
   return useSyncExternalStore((cb) => { leaveListeners.add(cb); return () => { leaveListeners.delete(cb); }; }, () => leaves, () => leaves);
 }
-export async function addLeave(l: Omit<Leave, "id">, by: string) {
-  const { error } = await db.from("engineer_leaves").insert({ person_id: l.personId, start_date: l.start, end_date: l.end, reason: l.reason, note: l.note, created_by: by });
+export async function addLeave(l: Omit<Leave, "id">, by: string, approved = true) {
+  const { error } = await db.from("engineer_leaves").insert({ person_id: l.personId, start_date: l.start, end_date: l.end, reason: l.reason, note: l.note, created_by: by, status: approved ? "approved" : "pending", reviewed_by: approved ? by : "" });
   if (error) throw new Error(error.message);
   await loadLeaves();
 }
@@ -77,4 +77,10 @@ export async function deleteLeave(id: string) {
   if (error) throw new Error(error.message);
   await loadLeaves();
 }
-export const leaveOn = (ls: Leave[], personId: string, d: string) => ls.find((l) => l.personId === personId && l.start <= d && l.end >= d);
+export async function reviewLeave(id: string, approve: boolean, by: string) {
+  const { error } = await db.from("engineer_leaves").update({ status: approve ? "approved" : "rejected", reviewed_by: by }).eq("id", id);
+  if (error) throw error;
+  await loadLeaves();
+}
+/** Only approved leave counts as a Leave day in Workload. */
+export const leaveOn = (ls: Leave[], personId: string, d: string) => ls.find((l) => (l.status ?? "approved") === "approved" && l.personId === personId && l.start <= d && l.end >= d);
