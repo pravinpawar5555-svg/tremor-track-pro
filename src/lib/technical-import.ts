@@ -14,7 +14,7 @@ const FIELD: Record<string, keyof Omit<TechImportRow, "line">> = {
   "area name": "area", "machine name": "machine", "machine tag": "tag", "machine type": "machineType",
   "measurement point": "point", component: "component", position: "position", "bearing number": "bearing",
   "sensor serial number": "serial", "sensor type": "sensorType", "sensor model": "model",
-  "gateway serial number": "gateway", "installation date": "installDate",
+  "gateway serial number": "gateway", "gateway serial": "gateway", gateway: "gateway", "gateway name": "gateway", "installation date": "installDate",
 };
 const norm = (s: unknown) => String(s ?? "").trim();
 const low = (s: string) => s.trim().toLowerCase();
@@ -89,6 +89,6 @@ export function importCounts(r: RowReview[]) {
 }
 
 export const templateCsv = () => [TECH_HEADERS.join(","),
-  "Plant,Boiler House,BFP-2,P-102,Pump,Motor NDE,Motor,Horizontal,6316,N6-10234,Node 6,,GW-01,15-10-2026,",
-  "Plant,Boiler House,BFP-2,P-102,Pump,Motor DE,Motor,Vertical,6318,NX-55621,Node X,,GW-01,15-10-2026,",
+  "Plant,Boiler House,BFP-2,P-102,Motor NDE,N6-10234,Node 6,GW-01,15-10-2026,",
+  "Plant,Boiler House,BFP-2,P-102,Motor DE,NX-55621,Node X,GW-01,15-10-2026,",
 ].join("\r\n");
