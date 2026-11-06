@@ -1,5 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyNew } from "./push.functions";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const db = supabase as any;
@@ -144,6 +145,8 @@ export async function saveReminder(r: Reminder) {
   emit();
   const { error } = await db.from("reminders").upsert(fromReminder(r));
   if (error) console.error("reminder save failed", error);
+  else if (!exists && r.userId && r.userId !== r.createdBy)
+    notifyNew({ data: { kind: "reminder", id: r.id } }).catch((e) => console.error("push notify failed", e));
 }
 
 export async function deleteReminder(id: string) {
