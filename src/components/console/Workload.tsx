@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Building2, ChevronLeft, ChevronRight, Coffee, MapPin, Palmtree, Trash2, Zap } from "lucide-react";
 import { Button, Empty, Panel, Select } from "@/components/console/ui";
@@ -93,6 +94,16 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
   const rules = useWorkloadSettings();
   const leaves = useLeaves();
   const [leaveForm, setLeaveForm] = useState<{ personId: string; start: string; end: string; reason: string; note: string } | null>(null);
+  // Engineers may only request leave for themselves (RLS: person_id in my_person_ids).
+  const [myIds, setMyIds] = useState<string[]>([]);
+  useEffect(() => {
+    if (isMgr) return;
+    void (async () => {
+      const { data: rows } = await supabase.rpc("my_person_ids", { _uid: (await supabase.auth.getUser()).data.user?.id ?? "" });
+      setMyIds(((rows ?? []) as unknown[]).map((r) => (typeof r === "string" ? r : String(Object.values(r as object)[0]))));
+    })();
+  }, [isMgr]);
+  const leavePeople = [...analystsOf(data).map((a) => ({ id: a.id, name: a.name })), ...ex.engineers.filter((e) => e.status === "active").map((e) => ({ id: e.id, name: e.name }))];
   const [period, setPeriod] = useState<Period>("week");
   const [anchor, setAnchor] = useState(TODAY);
   const [team, setTeam] = useState<Team>("all");
@@ -288,18 +299,18 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
                 </div>
               ))}
               {tot.weekend ? <span className="text-[11px] text-sev-medium">Comp-off due for {tot.weekend} weekend / holiday day{tot.weekend > 1 ? "s" : ""}</span> : null}
-              <div className="ml-auto"><Button onClick={() => setLeaveForm({ personId: people[0]?.id ?? "", start: TODAY, end: TODAY, reason: "Casual", note: "" })}>{isMgr ? "+ Mark Leave" : "+ Apply for Leave"}</Button></div>
+              <div className="ml-auto"><Button onClick={() => setLeaveForm({ personId: isMgr ? (people[0]?.id ?? "") : (leavePeople.find((p) => myIds.includes(p.id))?.id ?? ""), start: TODAY, end: TODAY, reason: "Casual", note: "" })}>{isMgr ? "+ Mark Leave" : "+ Apply for Leave"}</Button></div>
             </div>
             {now.length ? <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]"><span className="text-mute">Today:</span>{now.map((n) => <span key={n.name} className="flex items-center gap-1">{n.name} <KindBadge k={n.k} where={n.where} /></span>)}</div> : null}
             {leaveForm ? (
               <div className="grid gap-2 rounded-md p-3 ring-1 ring-signal/40 sm:grid-cols-6">
                 <Select className="sm:col-span-2" value={leaveForm.personId} onChange={(e) => setLeaveForm({ ...leaveForm, personId: e.target.value })} aria-label="Engineer">
-                  {[...analystsOf(data).map((a) => ({ id: a.id, name: a.name })), ...ex.engineers.filter((e) => e.status === "active").map((e) => ({ id: e.id, name: e.name }))].map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  {(isMgr ? leavePeople : leavePeople.filter((p) => myIds.includes(p.id))).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </Select>
                 <input type="date" aria-label="From" className="rounded-md bg-panel px-2 py-1.5 text-sm ring-1 ring-line" value={leaveForm.start} onChange={(e) => setLeaveForm({ ...leaveForm, start: e.target.value, end: leaveForm.end < e.target.value ? e.target.value : leaveForm.end })} />
                 <input type="date" aria-label="To" className="rounded-md bg-panel px-2 py-1.5 text-sm ring-1 ring-line" value={leaveForm.end} min={leaveForm.start} onChange={(e) => setLeaveForm({ ...leaveForm, end: e.target.value })} />
                 <Select value={leaveForm.reason} onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} aria-label="Leave type">{LEAVE_REASONS.map((r) => <option key={r}>{r}</option>)}</Select>
-                <div className="flex gap-2"><Button variant="ghost" onClick={() => setLeaveForm(null)}>Cancel</Button><Button variant="solid" disabled={!leaveForm.personId} onClick={async () => { try { await addLeave(leaveForm, myName, isMgr); toast.success(isMgr ? "Leave marked" : "Leave request sent to manager for approval"); setLeaveForm(null); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not save leave"); } }}>Save</Button></div>
+                <div className="flex gap-2"><Button variant="ghost" onClick={() => setLeaveForm(null)}>Cancel</Button><Button variant="solid" disabled={!leaveForm.personId || (!isMgr && !myIds.includes(leaveForm.personId))} onClick={async () => { try { await addLeave(leaveForm, myName, isMgr); toast.success(isMgr ? "Leave marked" : "Leave request sent to manager for approval"); setLeaveForm(null); } catch (err) { toast.error(isMgr && err instanceof Error ? err.message : "Could not send the leave request. You can only apply for your own leave."); } }}>Save</Button></div>
               </div>
             ) : null}
           </div>
