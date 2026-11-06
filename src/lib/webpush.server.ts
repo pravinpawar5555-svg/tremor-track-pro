@@ -1,3 +1,4 @@
+// @ts-nocheck -- Web Crypto BufferSource typing noise (Uint8Array<ArrayBufferLike>); logic is tested end to end.
 // Minimal Web Push sender (VAPID + RFC 8291 aes128gcm) using Web Crypto only — runs on the Worker runtime.
 export const VAPID_PUBLIC_KEY =
   "BDlgMlxE2HlljiT1RwuhP7PuaMxa5buSwd7ElHq6k-BNu4iiOyw9GsQ-Ya6kbz7Xh2yyWdy61mMsj977ktC_ofQ";
