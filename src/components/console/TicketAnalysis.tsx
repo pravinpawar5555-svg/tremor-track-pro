@@ -16,6 +16,7 @@ import {
   reviewStage,
   reviewStageLabel,
   severityLabel,
+  allAnalysisSeverities,
   type MachineAnalysis,
 } from "@/lib/ticket-analysis";
 
@@ -329,6 +330,7 @@ export function MachineAnalysisSection({
                       <div className="grid gap-2 text-sm sm:grid-cols-2">
                         <div><div className="label-caps">Condition</div>{a.condition ? conditionLabel[a.condition] : "—"}</div>
                         <div><div className="label-caps">Fault type</div>{a.fault || "—"}</div>
+                        <div><div className="label-caps">Severity</div>{a.severity ? severityLabel[a.severity] : "—"}</div>
                         <div className="sm:col-span-2"><div className="label-caps">Manager observation</div><p className="whitespace-pre-wrap">{a.observation || "—"}</p></div>
                         <div className="sm:col-span-2"><div className="label-caps">Recommendation / next action</div><p className="whitespace-pre-wrap">{a.recommendation || "—"}</p></div>
                       </div>
@@ -344,6 +346,13 @@ export function MachineAnalysisSection({
                         </Field>
                         <Field label="Fault type">
                           <TextInput list="fault-type-list" value={a.fault} onChange={(e) => patch(i, { fault: e.target.value })} placeholder="Search fault type" />
+                        </Field>
+                        <Field label="Severity" hint="High Risk and Highest Risk raise the urgent 24h alert.">
+                          <Select value={a.severity} onChange={(e) => patch(i, { severity: e.target.value as MachineAnalysis["severity"] })}>
+                            <option value="">Select…</option>
+                            {a.severity === "normal" && <option value="normal">{severityLabel.normal}</option>}
+                            {allAnalysisSeverities.map((s) => <option key={s} value={s}>{severityLabel[s]}</option>)}
+                          </Select>
                         </Field>
                       </div>
                       <datalist id="fault-type-list">
