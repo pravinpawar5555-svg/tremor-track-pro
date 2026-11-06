@@ -1,5 +1,6 @@
 import { analysisProgress, analysisSummaryText, blankAnalysis, isEscalated, type MachineAnalysis } from "./ticket-analysis";
 import { useSyncExternalStore } from "react";
+import { notifyNew } from "./push.functions";
 
 // ---------------------------------------------------------------- types
 
@@ -1388,6 +1389,8 @@ export function createTicket(input: {
     assignedTo: manager,
   };
   commit({ ...data, tickets: [ticket, ...data.tickets] });
+  if (manager && manager !== input.raisedBy)
+    notifyNew({ data: { kind: "ticket", id: ticket.id } }).catch((e) => console.error("push notify failed", e));
   return { ok: true, message: `Ticket ${ticket.ticketNo} raised with ${engineerName(data, manager)}.`, id: ticket.id };
 }
 

@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { markRemindersSeen, useDailyWork, type Reminder } from "@/lib/dailywork";
 import { TODAY, canSeeThread, engineerName, fmtDate, plantName, useData } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { PushToggle } from "@/components/console/PushToggle";
 
 type Note = { id: string; kind: "assigned" | "due"; r: Reminder };
 
@@ -139,6 +140,7 @@ export function NotificationBell() {
         ) : chats.length ? null : (
           <div className="px-3 py-6 text-center text-xs text-mute">No new notifications.</div>
         )}
+        <PushToggle />
       </PopoverContent>
     </Popover>
   );
