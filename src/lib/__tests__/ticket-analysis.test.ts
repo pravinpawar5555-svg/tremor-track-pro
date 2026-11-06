@@ -53,7 +53,7 @@ describe("ticket machine-wise analysis", () => {
   });
 });
 
-import { isEscalated } from "../ticket-analysis";
+import { isEscalated, severityLabel, allAnalysisSeverities } from "../ticket-analysis";
 describe("ticket escalation SLA", () => {
   const base = { status: "open", priority: "medium", raisedOn: "2026-10-01", raisedAt: "10:00", analysis: [] as never[] };
   const now = new Date("2026-10-02T10:30:00");
@@ -71,8 +71,7 @@ describe("ticket escalation SLA", () => {
     expect(isEscalated({ ...base, priority: "critical", status: "responded" }, now)).toBe(false);
   });
   it("High Risk and Highest Risk escalate after 24h; Low/Medium Risk do not", () => {
-    const now = new Date(base.createdAt ?? Date.now()).getTime() + 25 * 3600_000;
-    expect(isEscalated({ ...base, analysis: [{ status: "done", severity: "high" }] as never }, now)).toBe(true);
+        expect(isEscalated({ ...base, analysis: [{ status: "done", severity: "high" }] as never }, now)).toBe(true);
     expect(isEscalated({ ...base, analysis: [{ status: "done", severity: "critical" }] as never }, now)).toBe(true);
     expect(isEscalated({ ...base, analysis: [{ status: "done", severity: "medium" }] as never }, now)).toBe(false);
   });
