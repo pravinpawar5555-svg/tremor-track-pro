@@ -29,12 +29,13 @@ export const allConditions = Object.keys(conditionLabel) as Condition[];
 
 export const severityLabel: Record<AnalysisSeverity, string> = {
   normal: "Normal",
-  low: "Low",
-  medium: "Medium",
-  high: "High",
-  critical: "Critical",
+  low: "Low Risk",
+  medium: "Medium Risk",
+  high: "High Risk",
+  critical: "Highest Risk",
 };
-export const allAnalysisSeverities = Object.keys(severityLabel) as AnalysisSeverity[];
+/** Risk levels offered in the form (stored keys kept for older tickets; "critical" = Highest Risk). */
+export const allAnalysisSeverities: AnalysisSeverity[] = ["low", "medium", "high", "critical"];
 
 export const analysisStatusLabel: Record<AnalysisStatus, string> = {
   pending: "Pending Review",

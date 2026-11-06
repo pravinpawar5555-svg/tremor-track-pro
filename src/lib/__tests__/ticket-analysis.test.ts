@@ -70,4 +70,14 @@ describe("ticket escalation SLA", () => {
     expect(isEscalated(base, now)).toBe(false);
     expect(isEscalated({ ...base, priority: "critical", status: "responded" }, now)).toBe(false);
   });
+  it("High Risk and Highest Risk escalate after 24h; Low/Medium Risk do not", () => {
+    const now = new Date(base.createdAt ?? Date.now()).getTime() + 25 * 3600_000;
+    expect(isEscalated({ ...base, analysis: [{ status: "done", severity: "high" }] as never }, now)).toBe(true);
+    expect(isEscalated({ ...base, analysis: [{ status: "done", severity: "critical" }] as never }, now)).toBe(true);
+    expect(isEscalated({ ...base, analysis: [{ status: "done", severity: "medium" }] as never }, now)).toBe(false);
+  });
+  it("labels risk levels", () => {
+    expect(severityLabel.critical).toBe("Highest Risk");
+    expect(allAnalysisSeverities.map((s) => severityLabel[s])).toEqual(["Low Risk", "Medium Risk", "High Risk", "Highest Risk"]);
+  });
 });
