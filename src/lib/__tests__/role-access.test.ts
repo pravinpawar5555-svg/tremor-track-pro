@@ -52,7 +52,7 @@ describe("Workload integration", () => {
   it("cancelled jobs never create Site days", () => expect(execOnSite(jobs, visits, E1, "2026-10-27").site).toBe(false));
   it("another engineer's visit does not count for me", () => expect(execOnSite(jobs, [visit("x", "2026-10-28", [E2])], E1, "2026-10-28").site).toBe(false));
   it("day types: leave on working days, weekend site = Holiday work, weekend idle = Off, weekday = Site/Office", () => {
-    expect(dayKind(true, false, true, true)).toBe("site");
+    expect(dayKind(true, false, true, true)).toBe("leave");
     expect(dayKind(false, true, true, false)).toBe("weekend");
     expect(dayKind(false, true, false, false)).toBe("off");
     expect(dayKind(false, false, true, false)).toBe("site");
