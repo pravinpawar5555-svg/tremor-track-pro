@@ -6,7 +6,7 @@ import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, PageHeader, Panel, Select, TextInput } from "@/components/console/ui";
 import { peekDomain } from "@/lib/domain";
 import { useData, engineerName } from "@/lib/store";
-import { saveWorkloadSettings, useWorkloadSettings, type WorkloadSettings } from "@/lib/workload";
+import { dateRange, saveWorkloadSettings, useWorkloadSettings, type WorkloadSettings } from "@/lib/workload";
 import {
   emailOk, phoneSuspicious, saveBranch, saveKam, saveSales, useBranches,
   type Branch, type Kam, type SalesEngineer,
