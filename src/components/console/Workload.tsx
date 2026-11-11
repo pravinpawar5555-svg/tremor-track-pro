@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Building2, ChevronLeft, ChevronRight, Coffee, House, MapPin, Palmtree, Trash2, Zap } from "lucide-react";
+import { Building2, ChevronLeft, ChevronRight, Coffee, House, MapPin, Palmtree, PartyPopper, Trash2, Zap } from "lucide-react";
 import { Button, Empty, Panel, Select } from "@/components/console/ui";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -126,12 +126,14 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
   const csKind = (id: string, d: string) => {
     const c = csDay(data, x, id, d);
     const worked = c.tasks.some((t) => doneOn(t) === d) || c.reports.some((r) => r.sentDate === d);
-    return { c, k: kindFor(id, d, c.visits.length > 0, worked), where: c.visits[0] ? plantName(data, c.visits[0].plantId) : "" };
+    const k = kindFor(id, d, c.visits.length > 0, worked);
+    return { c, k, where: k === "holiday" ? holName(d) : c.visits[0] ? plantName(data, c.visits[0].plantId) : "" };
   };
   const exKind = (id: string, d: string) => {
     const { job: j, visit: sv, site } = execOnSite(ex.jobs, ex.siteVisits, id, d);
     const svWhere = sv ? (sv.plantId ? plantName(data, sv.plantId) : "") || sv.location || siteVisitTypeLabel[sv.visitType] : "";
-    return { k: kindFor(id, d, site, false), where: j ? j.plantName || j.customerName : svWhere };
+    const k = kindFor(id, d, site, false);
+    return { k, where: k === "holiday" ? holName(d) : j ? j.plantName || j.customerName : svWhere };
   };
 
   const jobsOf = (id: string) => ex.jobs.filter((j) => onJob(j, id) && j.status !== "cancelled");
