@@ -283,10 +283,10 @@ function PlantsPage() {
                   {formSales.map((x) => <option key={x.id} value={x.id}>{x.name}{x.branchId === form.branchId ? "" : ` (${bs.branches.find((b) => b.id === x.branchId)?.name ?? "—"})`}{x.status === "inactive" ? " — inactive" : ""}</option>)}
                 </Select>
               </Field>
-              <Field label="AMC start date">
+              <Field label={form.category === "demo" ? "Demo start date" : "AMC start date"}>
                 <TextInput type="date" value={form.amcStart} onChange={(e) => setForm({ ...form, amcStart: e.target.value })} />
               </Field>
-              <Field label="AMC end date" hint="Renewal alert starts 60 days before.">
+              <Field label={form.category === "demo" ? "Demo end date" : "AMC end date"} hint={form.category === "demo" ? "Date the demo period ends." : "Renewal alert starts 60 days before."}>
                 <TextInput type="date" value={form.amcEnd} onChange={(e) => setForm({ ...form, amcEnd: e.target.value })} />
               </Field>
               <div className="text-xs"><div className="label-caps">HO Division KAM</div><div className="mt-1">{formKam?.name ?? "—"}</div></div>
