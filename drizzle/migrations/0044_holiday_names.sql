@@ -1,0 +1,1 @@
+ALTER TABLE public.workload_settings ADD COLUMN IF NOT EXISTS holiday_names jsonb NOT NULL DEFAULT '{}'::jsonb;

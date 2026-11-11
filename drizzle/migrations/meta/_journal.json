@@ -309,6 +309,13 @@
       "when": 1793950978779,
       "tag": "0043_push_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1794383794089,
+      "tag": "0044_holiday_names",
+      "breakpoints": true
     }
   ]
 }

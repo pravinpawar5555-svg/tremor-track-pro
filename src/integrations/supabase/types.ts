@@ -2246,6 +2246,7 @@ export type Database = {
           cs_over: number | null
           exec_high: number | null
           exec_over: number | null
+          holiday_names: Json
           holidays: string[]
           id: string
           non_working_days: number[]
@@ -2257,6 +2258,7 @@ export type Database = {
           cs_over?: number | null
           exec_high?: number | null
           exec_over?: number | null
+          holiday_names?: Json
           holidays?: string[]
           id?: string
           non_working_days?: number[]
@@ -2268,6 +2270,7 @@ export type Database = {
           cs_over?: number | null
           exec_high?: number | null
           exec_over?: number | null
+          holiday_names?: Json
           holidays?: string[]
           id?: string
           non_working_days?: number[]

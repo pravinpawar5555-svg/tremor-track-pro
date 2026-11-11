@@ -12,8 +12,9 @@ export interface WorkloadSettings {
   execOver: number | null;
   nonWorkingDays: number[]; // 0 = Sunday
   holidays: string[];
+  holidayNames: Record<string, string>;
 }
-const defaults: WorkloadSettings = { csHigh: null, csOver: null, execHigh: null, execOver: null, nonWorkingDays: [0, 6], holidays: [] };
+const defaults: WorkloadSettings = { csHigh: null, csOver: null, execHigh: null, execOver: null, nonWorkingDays: [0, 6], holidays: [], holidayNames: {} };
 
 let state: WorkloadSettings = defaults;
 let loaded = false;
@@ -22,7 +23,7 @@ const emit = () => listeners.forEach((l) => l());
 
 export async function loadWorkloadSettings() {
   const { data } = await db.from("workload_settings").select("*").eq("id", "default").maybeSingle();
-  if (data) state = { csHigh: data.cs_high, csOver: data.cs_over, execHigh: data.exec_high, execOver: data.exec_over, nonWorkingDays: data.non_working_days ?? [0, 6], holidays: data.holidays ?? [] };
+  if (data) state = { csHigh: data.cs_high, csOver: data.cs_over, execHigh: data.exec_high, execOver: data.exec_over, nonWorkingDays: data.non_working_days ?? [0, 6], holidays: data.holidays ?? [], holidayNames: data.holiday_names ?? {} };
   loaded = true;
   emit();
 }
@@ -35,7 +36,7 @@ export function useWorkloadSettings() {
 export async function saveWorkloadSettings(s: WorkloadSettings, by: string) {
   const { error } = await db.from("workload_settings").upsert({
     id: "default", cs_high: s.csHigh, cs_over: s.csOver, exec_high: s.execHigh, exec_over: s.execOver,
-    non_working_days: s.nonWorkingDays, holidays: s.holidays, updated_by: by, updated_at: new Date().toISOString(),
+    non_working_days: s.nonWorkingDays, holidays: s.holidays, holiday_names: s.holidayNames, updated_by: by, updated_at: new Date().toISOString(),
   });
   if (error) throw new Error(error.message);
   state = s;
@@ -88,3 +89,13 @@ export const isWfh = (l: Leave) => l.reason === WFH_REASON;
 const approvedOn = (ls: Leave[], personId: string, d: string, wfh: boolean) => ls.find((l) => (l.status ?? "approved") === "approved" && isWfh(l) === wfh && l.personId === personId && l.start <= d && l.end >= d);
 export const leaveOn = (ls: Leave[], personId: string, d: string) => approvedOn(ls, personId, d, false);
 export const wfhOn = (ls: Leave[], personId: string, d: string) => approvedOn(ls, personId, d, true);
+
+/** All ISO dates from start to end inclusive (max 366). */
+export function dateRange(start: string, end: string): string[] {
+  const out: string[] = [];
+  if (!start) return out;
+  const e = end && end >= start ? end : start;
+  const d = new Date(start + "T00:00:00Z");
+  while (out.length < 366) { const iso = d.toISOString().slice(0, 10); if (iso > e) break; out.push(iso); d.setUTCDate(d.getUTCDate() + 1); }
+  return out;
+}

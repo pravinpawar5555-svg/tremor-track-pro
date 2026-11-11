@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Building2, ChevronLeft, ChevronRight, Coffee, House, MapPin, Palmtree, Trash2, Zap } from "lucide-react";
+import { Building2, ChevronLeft, ChevronRight, Coffee, House, MapPin, Palmtree, PartyPopper, Trash2, Zap } from "lucide-react";
 import { Button, Empty, Panel, Select } from "@/components/console/ui";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -21,11 +21,12 @@ const kindMeta: Record<DayKind, { label: string; cls: string; Icon: typeof MapPi
   site: { label: "Site", cls: "bg-signal text-signal-foreground ring-signal", Icon: MapPin },
   weekend: { label: "Holiday work", cls: "bg-signal text-signal-foreground ring-2 ring-sev-medium", Icon: Zap },
   leave: { label: "Leave", cls: "bg-[oklch(0.93_0.04_300)] text-[oklch(0.4_0.15_300)] ring-[oklch(0.75_0.1_300)] ring-dashed", Icon: Palmtree },
+  holiday: { label: "Holiday", cls: "bg-sev-medium/10 text-sev-medium ring-sev-medium/40", Icon: PartyPopper },
   off: { label: "Off", cls: "bg-transparent text-mute ring-transparent", Icon: Coffee },
 };
 function KindBadge({ k, where }: { k: DayKind; where?: string }) {
   const m = kindMeta[k];
-  return <span title={where ? `${m.label}: ${where}` : m.label} className={cn("inline-flex max-w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-[10px] font-semibold ring-1", m.cls)}><m.Icon className="size-3 shrink-0" /><span className="truncate">{where && (k === "site" || k === "weekend") ? where : m.label}</span></span>;
+  return <span title={where ? `${m.label}: ${where}` : m.label} className={cn("inline-flex max-w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-[10px] font-semibold ring-1", m.cls)}><m.Icon className="size-3 shrink-0" /><span className="truncate">{where && (k === "site" || k === "weekend" || k === "holiday") ? where : m.label}</span></span>;
 }
 const LEAVE_REASONS = ["Casual", "Sick", "Earned", "Comp-off", "Other"];
 
@@ -119,16 +120,20 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
   const showCs = team !== "exec";
   const showEx = team !== "cs";
   const x = { visits, comms };
-  const kindFor = (pid: string, d: string, site: boolean, worked: boolean): DayKind => dayKind(!!leaveOn(leaves, pid, d), nonWork(d), site, worked, !!wfhOn(leaves, pid, d));
+  const isHol = (d: string) => rules.holidays.includes(d);
+  const holName = (d: string) => rules.holidayNames?.[d] || "Holiday";
+  const kindFor = (pid: string, d: string, site: boolean, worked: boolean): DayKind => dayKind(!!leaveOn(leaves, pid, d), rules.nonWorkingDays.includes(dow(d)), site, worked, !!wfhOn(leaves, pid, d), isHol(d));
   const csKind = (id: string, d: string) => {
     const c = csDay(data, x, id, d);
     const worked = c.tasks.some((t) => doneOn(t) === d) || c.reports.some((r) => r.sentDate === d);
-    return { c, k: kindFor(id, d, c.visits.length > 0, worked), where: c.visits[0] ? plantName(data, c.visits[0].plantId) : "" };
+    const k = kindFor(id, d, c.visits.length > 0, worked);
+    return { c, k, where: k === "holiday" ? holName(d) : c.visits[0] ? plantName(data, c.visits[0].plantId) : "" };
   };
   const exKind = (id: string, d: string) => {
     const { job: j, visit: sv, site } = execOnSite(ex.jobs, ex.siteVisits, id, d);
     const svWhere = sv ? (sv.plantId ? plantName(data, sv.plantId) : "") || sv.location || siteVisitTypeLabel[sv.visitType] : "";
-    return { k: kindFor(id, d, site, false), where: j ? j.plantName || j.customerName : svWhere };
+    const k = kindFor(id, d, site, false);
+    return { k, where: k === "holiday" ? holName(d) : j ? j.plantName || j.customerName : svWhere };
   };
 
   const jobsOf = (id: string) => ex.jobs.filter((j) => onJob(j, id) && j.status !== "cancelled");
@@ -170,6 +175,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
         <div key={d} className={cn("px-1 py-2 text-center text-[11px]", d === TODAY ? "border-t-2 border-signal bg-signal/5 font-semibold text-ink" : "text-mute", nonWork(d) && "bg-black/[0.04]")}>
           {period === "month" ? d.slice(8) : fmtDate(d).split(" ").slice(0, 2).join(" ")}
           {period !== "month" ? <div className="text-[10px]">{new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" })}</div> : null}
+          {isHol(d) ? <div title={holName(d)} className="mx-auto mt-0.5 max-w-full truncate rounded bg-sev-medium/15 px-1 text-[9px] font-semibold text-sev-medium">{period === "month" ? "🏖" : `🏖 ${holName(d)}`}</div> : null}
         </div>
       ))}
     </div>
@@ -286,15 +292,15 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
 
       {(() => {
         const people: { id: string; name: string; isCs: boolean }[] = [...(showCs ? csTeam.map((a) => ({ id: a.id, name: a.name, isCs: true })) : []), ...(showEx ? exTeam.map((e) => ({ id: e.id, name: e.name, isCs: false })) : [])];
-        const tot: Record<DayKind, number> = { site: 0, office: 0, wfh: 0, weekend: 0, leave: 0, off: 0 };
+        const tot: Record<DayKind, number> = { site: 0, office: 0, wfh: 0, weekend: 0, leave: 0, off: 0, holiday: 0 };
         const per: Record<string, Record<DayKind, number>> = {};
-        for (const p of people) { per[p.name] = { site: 0, office: 0, wfh: 0, weekend: 0, leave: 0, off: 0 }; for (const d of days) { const k = p.isCs ? csKind(p.id, d).k : exKind(p.id, d).k; tot[k]++; per[p.name]![k]++; } }
+        for (const p of people) { per[p.name] = { site: 0, office: 0, wfh: 0, weekend: 0, leave: 0, off: 0, holiday: 0 }; for (const d of days) { const k = p.isCs ? csKind(p.id, d).k : exKind(p.id, d).k; tot[k]++; per[p.name]![k]++; } }
         const todayIn = days.includes(TODAY);
         const now = todayIn ? people.map((p) => ({ name: p.name, ...(p.isCs ? csKind(p.id, TODAY) : exKind(p.id, TODAY)) })) : [];
         return (
           <div className="panel-glass mb-3 grid gap-2 p-3">
             <div className="flex flex-wrap items-center gap-2">
-              {(["site", "office", "wfh", "weekend", "leave"] as DayKind[]).map((k) => (
+              {(["site", "office", "wfh", "weekend", "leave", "holiday"] as DayKind[]).map((k) => (
                 <div key={k} title={people.map((p) => `${p.name}: ${per[p.name]![k]}`).join("\n")} className="flex items-center gap-2 rounded-md bg-base px-3 py-1.5 ring-1 ring-line/60">
                   <KindBadge k={k} /><span className="num text-lg font-semibold text-ink">{tot[k]}</span><span className="text-[11px] text-mute">days</span>
                 </div>
@@ -321,7 +327,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
         );
       })()}
       <div className="mb-3 flex flex-wrap gap-3 text-[11px] text-mute">
-        {(["office", "wfh", "site", "weekend", "leave"] as DayKind[]).map((k) => <KindBadge key={k} k={k} />)}
+        {(["office", "wfh", "site", "weekend", "leave", "holiday"] as DayKind[]).map((k) => <KindBadge key={k} k={k} />)}
         <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-black/10" />Sat / Sun / holiday off</span>
         {[["bg-sev-low/30", "Normal"], ["bg-sev-medium/40", "High"], ["bg-sev-critical/40", "Over capacity / conflict"], ["bg-signal/30", "Scheduled"], ["bg-sev-high/40", "Carried / blocked"], ["bg-black/10", "No work / non-working"]].map(([c, l]) => <span key={l} className="flex items-center gap-1.5"><span className={cn("size-2.5 rounded-sm", c)} />{l}</span>)}
         {rules.csHigh === null && rules.execHigh === null ? <span>· Workload levels not configured — showing counts only (Settings → Workload)</span> : null}
