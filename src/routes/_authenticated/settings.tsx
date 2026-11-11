@@ -253,6 +253,73 @@ function History() {
   );
 }
 
+function HolidayEditor({ v, set }: { v: WorkloadSettings; set: (s: WorkloadSettings) => void }) {
+  const [mode, setMode] = useState<"single" | "range">("single");
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
+  const [name, setName] = useState("");
+  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const names = v.holidayNames ?? {};
+  const add = () => {
+    const ds = dateRange(start, mode === "range" ? end : start);
+    if (!ds.length) return;
+    const nn = { ...names };
+    for (const d of ds) nn[d] = name.trim() || nn[d] || "Holiday";
+    set({ ...v, holidays: [...new Set([...v.holidays, ...ds])].sort(), holidayNames: nn });
+    setStart(""); setEnd(""); setName("");
+  };
+  const remove = (d: string) => { const nn = { ...names }; delete nn[d]; set({ ...v, holidays: v.holidays.filter((x) => x !== d), holidayNames: nn }); };
+  const byMonth = new Map<string, string[]>();
+  for (const d of [...v.holidays].sort()) byMonth.set(d.slice(0, 7), [...(byMonth.get(d.slice(0, 7)) ?? []), d]);
+  const mLabel = (m: string) => new Date(m + "-01T00:00:00Z").toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+  const first = new Date(month + "-01T00:00:00Z");
+  const lead = (first.getUTCDay() + 6) % 7;
+  const dim = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+  const shiftM = (n: number) => { const d = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + n, 1)); setMonth(d.toISOString().slice(0, 7)); };
+  return (
+    <div className="grid gap-3">
+      <div className="label-caps">Company holidays</div>
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="inline-flex overflow-hidden rounded-md ring-1 ring-line">
+          {(["single", "range"] as const).map((m) => <button key={m} type="button" onClick={() => setMode(m)} className={`px-2.5 py-1.5 text-xs ${mode === m ? "bg-signal text-signal-foreground" : "text-mute"}`}>{m === "single" ? "Single date" : "Date range"}</button>)}
+        </div>
+        <Field label={mode === "range" ? "From" : "Date"}><TextInput type="date" value={start} onChange={(e) => setStart(e.target.value)} /></Field>
+        {mode === "range" ? <Field label="To"><TextInput type="date" value={end} min={start} onChange={(e) => setEnd(e.target.value)} /></Field> : null}
+        <Field label="Holiday name"><TextInput value={name} placeholder="e.g. Diwali" onChange={(e) => setName(e.target.value)} /></Field>
+        <Button disabled={!start} onClick={add}>+ Add</Button>
+      </div>
+      <div className="grid gap-3 lg:grid-cols-[260px_1fr]">
+        <div className="rounded-md p-2 ring-1 ring-line">
+          <div className="mb-1 flex items-center justify-between text-xs font-medium">
+            <button type="button" aria-label="Previous month" onClick={() => shiftM(-1)} className="px-2">‹</button>{mLabel(month)}<button type="button" aria-label="Next month" onClick={() => shiftM(1)} className="px-2">›</button>
+          </div>
+          <div className="grid grid-cols-7 gap-0.5 text-center text-[10px]">
+            {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <div key={i} className="text-mute">{d}</div>)}
+            {Array.from({ length: lead }, (_, i) => <div key={"b" + i} />)}
+            {Array.from({ length: dim }, (_, i) => { const d = `${month}-${String(i + 1).padStart(2, "0")}`; const h = v.holidays.includes(d); const off = v.nonWorkingDays.includes(new Date(d + "T00:00:00Z").getUTCDay());
+              return <div key={d} title={h ? names[d] || "Holiday" : undefined} className={`rounded py-1 ${h ? "bg-sev-medium/20 font-semibold text-sev-medium" : off ? "text-mute" : ""}`}>{i + 1}</div>; })}
+          </div>
+        </div>
+        <div className="grid content-start gap-2 sm:grid-cols-2">
+          {byMonth.size === 0 ? <div className="text-xs text-mute">No holidays added yet.</div> : [...byMonth].map(([m, ds]) => (
+            <div key={m} className="rounded-md p-2 ring-1 ring-line">
+              <button type="button" onClick={() => setMonth(m)} className="mb-1 text-xs font-semibold">{mLabel(m)} — {ds.length} holiday{ds.length > 1 ? "s" : ""}</button>
+              {ds.map((d) => (
+                <div key={d} className="flex items-center gap-2 py-0.5 text-xs">
+                  <span className="num w-20 text-mute">{new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", timeZone: "UTC" })}</span>
+                  <span className="flex-1 truncate">{names[d] || "Holiday"}</span>
+                  <button type="button" aria-label={`Remove ${d}`} onClick={() => remove(d)} className="text-mute hover:text-sev-critical">✕</button>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="text-[11px] text-mute">Holidays inside an approved leave are not counted as leave. Click Save to apply.</div>
+    </div>
+  );
+}
+
 function WorkloadRules() {
   const cur = useWorkloadSettings();
   const data = useData();
@@ -285,9 +352,7 @@ function WorkloadRules() {
             {days.map((d, i) => { const on = v.nonWorkingDays.includes(i); return <button key={d} type="button" onClick={() => setF({ ...v, nonWorkingDays: on ? v.nonWorkingDays.filter((x) => x !== i) : [...v.nonWorkingDays, i] })} className={`rounded-md px-2.5 py-1 text-xs ring-1 ${on ? "bg-signal/10 text-signal ring-signal/40" : "text-mute ring-line"}`}>{d}</button>; })}
           </div>
         </div>
-        <Field label="Company holidays" hint="Dates separated by commas, e.g. 2026-10-20, 2026-11-08">
-          <TextInput value={v.holidays.join(", ")} onChange={(e) => setF({ ...v, holidays: e.target.value.split(/[,\s]+/).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x)) })} />
-        </Field>
+        <div className="md:col-span-2"><HolidayEditor v={v} set={setF} /></div>
       </div>
       <div className="flex justify-end gap-2 px-4 pb-4">
         <Button variant="solid" disabled={!f} onClick={async () => { if (f && (await wrap(saveWorkloadSettings(f, engineerName(data, data.currentUserId) || "Manager"), "Workload settings saved"))) setF(null); }}>Save</Button>
