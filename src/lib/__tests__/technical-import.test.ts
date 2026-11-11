@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { canSave, reviewTechImport, rowsFromGrid, toIsoDate } from "@/lib/technical-import";
 import type { TechData } from "@/lib/technical";
+import Papa from "papaparse";
+import k1Csv from "./fixtures/k1-technical.csv?raw";
 
 const head = ["Plant Name", "Area Name", "Machine Name", "Measurement Point", "Sensor Serial Number", "Sensor Type", "Installation Date"];
 const data = {
@@ -10,6 +12,18 @@ const data = {
 } as unknown as TechData;
 
 describe("technical import", () => {
+  it("accepts all 152 DFPCL K-1 sensor rows without dropping shared machines or points", () => {
+    const rows = rowsFromGrid(Papa.parse<string[]>(k1Csv, { skipEmptyLines: true }).data);
+    const empty: TechData = { areas: [], machines: [], points: [], gateways: [], sensors: [], events: [] };
+    const review = reviewTechImport(rows, empty);
+    expect(rows).toHaveLength(152);
+    expect(new Set(rows.map((r) => r.serial.toLowerCase())).size).toBe(152);
+    expect(new Set(rows.map((r) => r.area)).size).toBe(7);
+    expect(new Set(rows.map((r) => `${r.area}/${r.machine}`)).size).toBe(43);
+    expect(rows.every((r) => r.installDate === "2026-06-19")).toBe(true);
+    expect(review.filter((r) => r.state === "problem")).toHaveLength(0);
+    expect(canSave(review)).toBe(true);
+  });
   it("reads DD-MM-YYYY dates", () => expect(toIsoDate("05-03-2026")).toBe("2026-03-05"));
   it("skips existing active sensors and existing machines", () => {
     const r = reviewTechImport(rowsFromGrid([head, ["X", "boiler house", "bfp-2", "Motor DE", "n6-1", "Node 6", ""]]), data);
