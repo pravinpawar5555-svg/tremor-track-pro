@@ -27,3 +27,8 @@
 # Execution multiple engineers
 - [x] Database stores several engineers per job; all of them can edit.
 - [ ] Multi-select in job form and counts across lists/workload.
+
+# DFPCL K-1 import timeout
+- [x] Reproduce the uploaded 152-row import with the requesting account.
+- [ ] Replace repeated row-by-row database operations with atomic bulk inserts, preserving access rules and history.
+- [ ] Verify the exact file saves, reads back, and safely skips existing sensors on repeat import.
