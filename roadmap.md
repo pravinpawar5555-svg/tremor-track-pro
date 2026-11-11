@@ -30,5 +30,5 @@
 
 # DFPCL K-1 import timeout
 - [x] Reproduce the uploaded 152-row import with the requesting account.
-- [ ] Replace repeated row-by-row database operations with atomic bulk inserts, preserving access rules and history.
-- [ ] Verify the exact file saves, reads back, and safely skips existing sensors on repeat import.
+- [x] Replace repeated row-by-row database operations with atomic bulk inserts, preserving access rules and history.
+- [x] Verify the exact file saves, reads back, and safely skips existing sensors on repeat import; 7 areas, 43 machines and 152 points/sensors confirmed; 11 focused tests pass.
