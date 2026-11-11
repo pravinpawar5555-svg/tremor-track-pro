@@ -41,9 +41,10 @@ export function execOnSite(jobs: ExecJob[], visits: ExecSiteVisit[], id: string,
   return { job, visit, site: !!job || !!visit };
 }
 
-export type DayKind = "site" | "office" | "leave" | "off" | "weekend";
-export function dayKind(onLeave: boolean, nonWorking: boolean, site: boolean, worked: boolean): DayKind {
+export type DayKind = "site" | "office" | "wfh" | "leave" | "off" | "weekend";
+/** Approved WFH counts as a working day: site work that day still wins, non-working days are unaffected. */
+export function dayKind(onLeave: boolean, nonWorking: boolean, site: boolean, worked: boolean, wfh = false): DayKind {
   if (onLeave) return "leave";
   if (nonWorking) return site || worked ? "weekend" : "off";
-  return site ? "site" : "office";
+  return site ? "site" : wfh ? "wfh" : "office";
 }

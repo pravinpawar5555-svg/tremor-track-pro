@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Building2, ChevronLeft, ChevronRight, Coffee, MapPin, Palmtree, Trash2, Zap } from "lucide-react";
+import { Building2, ChevronLeft, ChevronRight, Coffee, House, MapPin, Palmtree, Trash2, Zap } from "lucide-react";
 import { Button, Empty, Panel, Select } from "@/components/console/ui";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -13,10 +13,11 @@ import {
 import { useVisits } from "@/lib/visits";
 import { useComms, openFollowUp } from "@/lib/comms";
 import { onJob, swapEngineer, useExecution, saveJob, siteVisitTypeLabel, installTypeLabel, execStatusLabel, type ExecJob } from "@/lib/execution";
-import { addLeave, deleteLeave, leaveOn, reviewLeave, levelFor, useLeaves, useWorkloadSettings, type Level } from "@/lib/workload";
+import { addLeave, deleteLeave, isWfh, leaveOn, wfhOn, WFH_REASON, reviewLeave, levelFor, useLeaves, useWorkloadSettings, type Level } from "@/lib/workload";
 import { dayKind, execOnSite, type DayKind } from "@/lib/access";
 const kindMeta: Record<DayKind, { label: string; cls: string; Icon: typeof MapPin }> = {
   office: { label: "Office", cls: "bg-black/[0.05] text-ink ring-line", Icon: Building2 },
+  wfh: { label: "WFH", cls: "bg-signal/10 text-signal ring-signal/40", Icon: House },
   site: { label: "Site", cls: "bg-signal text-signal-foreground ring-signal", Icon: MapPin },
   weekend: { label: "Holiday work", cls: "bg-signal text-signal-foreground ring-2 ring-sev-medium", Icon: Zap },
   leave: { label: "Leave", cls: "bg-[oklch(0.93_0.04_300)] text-[oklch(0.4_0.15_300)] ring-[oklch(0.75_0.1_300)] ring-dashed", Icon: Palmtree },
@@ -118,7 +119,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
   const showCs = team !== "exec";
   const showEx = team !== "cs";
   const x = { visits, comms };
-  const kindFor = (pid: string, d: string, site: boolean, worked: boolean): DayKind => dayKind(!!leaveOn(leaves, pid, d), nonWork(d), site, worked);
+  const kindFor = (pid: string, d: string, site: boolean, worked: boolean): DayKind => dayKind(!!leaveOn(leaves, pid, d), nonWork(d), site, worked, !!wfhOn(leaves, pid, d));
   const csKind = (id: string, d: string) => {
     const c = csDay(data, x, id, d);
     const worked = c.tasks.some((t) => doneOn(t) === d) || c.reports.some((r) => r.sentDate === d);
@@ -285,21 +286,24 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
 
       {(() => {
         const people: { id: string; name: string; isCs: boolean }[] = [...(showCs ? csTeam.map((a) => ({ id: a.id, name: a.name, isCs: true })) : []), ...(showEx ? exTeam.map((e) => ({ id: e.id, name: e.name, isCs: false })) : [])];
-        const tot: Record<DayKind, number> = { site: 0, office: 0, weekend: 0, leave: 0, off: 0 };
+        const tot: Record<DayKind, number> = { site: 0, office: 0, wfh: 0, weekend: 0, leave: 0, off: 0 };
         const per: Record<string, Record<DayKind, number>> = {};
-        for (const p of people) { per[p.name] = { site: 0, office: 0, weekend: 0, leave: 0, off: 0 }; for (const d of days) { const k = p.isCs ? csKind(p.id, d).k : exKind(p.id, d).k; tot[k]++; per[p.name]![k]++; } }
+        for (const p of people) { per[p.name] = { site: 0, office: 0, wfh: 0, weekend: 0, leave: 0, off: 0 }; for (const d of days) { const k = p.isCs ? csKind(p.id, d).k : exKind(p.id, d).k; tot[k]++; per[p.name]![k]++; } }
         const todayIn = days.includes(TODAY);
         const now = todayIn ? people.map((p) => ({ name: p.name, ...(p.isCs ? csKind(p.id, TODAY) : exKind(p.id, TODAY)) })) : [];
         return (
           <div className="panel-glass mb-3 grid gap-2 p-3">
             <div className="flex flex-wrap items-center gap-2">
-              {(["site", "office", "weekend", "leave"] as DayKind[]).map((k) => (
+              {(["site", "office", "wfh", "weekend", "leave"] as DayKind[]).map((k) => (
                 <div key={k} title={people.map((p) => `${p.name}: ${per[p.name]![k]}`).join("\n")} className="flex items-center gap-2 rounded-md bg-base px-3 py-1.5 ring-1 ring-line/60">
                   <KindBadge k={k} /><span className="num text-lg font-semibold text-ink">{tot[k]}</span><span className="text-[11px] text-mute">days</span>
                 </div>
               ))}
               {tot.weekend ? <span className="text-[11px] text-sev-medium">Comp-off due for {tot.weekend} weekend / holiday day{tot.weekend > 1 ? "s" : ""}</span> : null}
-              <div className="ml-auto"><Button onClick={() => setLeaveForm({ personId: isMgr ? (people[0]?.id ?? "") : (leavePeople.find((p) => myIds.includes(p.id))?.id ?? ""), start: TODAY, end: TODAY, reason: "Casual", note: "" })}>{isMgr ? "+ Mark Leave" : "+ Apply for Leave"}</Button></div>
+              <div className="ml-auto flex flex-wrap gap-2">{(() => { const pid = isMgr ? (people[0]?.id ?? "") : (leavePeople.find((p) => myIds.includes(p.id))?.id ?? ""); return <>
+                <Button onClick={() => setLeaveForm({ personId: pid, start: TODAY, end: TODAY, reason: "Casual", note: "" })}>{isMgr ? "+ Mark Leave" : "+ Apply for Leave"}</Button>
+                <Button onClick={() => setLeaveForm({ personId: pid, start: TODAY, end: TODAY, reason: WFH_REASON, note: "" })}>{isMgr ? "+ Mark WFH" : "+ Request WFH"}</Button>
+              </>; })()}</div>
             </div>
             {now.length ? <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]"><span className="text-mute">Today:</span>{now.map((n) => <span key={n.name} className="flex items-center gap-1">{n.name} <KindBadge k={n.k} where={n.where} /></span>)}</div> : null}
             {leaveForm ? (
@@ -309,15 +313,15 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
                 </Select>
                 <input type="date" aria-label="From" className="rounded-md bg-panel px-2 py-1.5 text-sm ring-1 ring-line" value={leaveForm.start} onChange={(e) => setLeaveForm({ ...leaveForm, start: e.target.value, end: leaveForm.end < e.target.value ? e.target.value : leaveForm.end })} />
                 <input type="date" aria-label="To" className="rounded-md bg-panel px-2 py-1.5 text-sm ring-1 ring-line" value={leaveForm.end} min={leaveForm.start} onChange={(e) => setLeaveForm({ ...leaveForm, end: e.target.value })} />
-                <Select value={leaveForm.reason} onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} aria-label="Leave type">{LEAVE_REASONS.map((r) => <option key={r}>{r}</option>)}</Select>
-                <div className="flex gap-2"><Button variant="ghost" onClick={() => setLeaveForm(null)}>Cancel</Button><Button variant="solid" disabled={!leaveForm.personId || (!isMgr && !myIds.includes(leaveForm.personId))} onClick={async () => { try { await addLeave(leaveForm, myName, isMgr); toast.success(isMgr ? "Leave marked" : "Leave request sent to manager for approval"); setLeaveForm(null); } catch (err) { toast.error(isMgr && err instanceof Error ? err.message : "Could not send the leave request. You can only apply for your own leave."); } }}>Save</Button></div>
+                {leaveForm.reason === WFH_REASON ? <input aria-label="WFH reason" placeholder="Reason (optional)" className="rounded-md bg-panel px-2 py-1.5 text-sm ring-1 ring-line" value={leaveForm.note} onChange={(e) => setLeaveForm({ ...leaveForm, note: e.target.value })} /> : <Select value={leaveForm.reason} onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} aria-label="Leave type">{LEAVE_REASONS.map((r) => <option key={r}>{r}</option>)}</Select>}
+                <div className="flex gap-2"><Button variant="ghost" onClick={() => setLeaveForm(null)}>Cancel</Button><Button variant="solid" disabled={!leaveForm.personId || (!isMgr && !myIds.includes(leaveForm.personId))} onClick={async () => { try { const w = leaveForm.reason === WFH_REASON; await addLeave(leaveForm, myName, isMgr); toast.success(isMgr ? (w ? "WFH marked" : "Leave marked") : (w ? "WFH request sent to manager for approval" : "Leave request sent to manager for approval")); setLeaveForm(null); } catch (err) { toast.error(isMgr && err instanceof Error ? err.message : "Could not send the leave request. You can only apply for your own leave."); } }}>Save</Button></div>
               </div>
             ) : null}
           </div>
         );
       })()}
       <div className="mb-3 flex flex-wrap gap-3 text-[11px] text-mute">
-        {(["office", "site", "weekend", "leave"] as DayKind[]).map((k) => <KindBadge key={k} k={k} />)}
+        {(["office", "wfh", "site", "weekend", "leave"] as DayKind[]).map((k) => <KindBadge key={k} k={k} />)}
         <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-black/10" />Sat / Sun / holiday off</span>
         {[["bg-sev-low/30", "Normal"], ["bg-sev-medium/40", "High"], ["bg-sev-critical/40", "Over capacity / conflict"], ["bg-signal/30", "Scheduled"], ["bg-sev-high/40", "Carried / blocked"], ["bg-black/10", "No work / non-working"]].map(([c, l]) => <span key={l} className="flex items-center gap-1.5"><span className={cn("size-2.5 rounded-sm", c)} />{l}</span>)}
         {rules.csHigh === null && rules.execHigh === null ? <span>· Workload levels not configured — showing counts only (Settings → Workload)</span> : null}
@@ -381,15 +385,15 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
         <Panel title="Scheduling Conflicts">
           <div className="divide-y divide-line/60">{conflicts.map((c, i) => <div key={i} className="px-4 py-2 text-sm"><div className="font-medium">{c.who}</div><div className="text-xs text-sev-critical">{c.text}</div></div>)}{!conflicts.length ? <Empty>No conflicts.</Empty> : null}</div>
         </Panel>
-        <Panel title="Leaves in this period">
+        <Panel title="Leave & WFH in this period">
           <div className="divide-y divide-line/60">{leaves.filter((l) => l.start <= days[days.length - 1]! && l.end >= days[0]!).map((l) => (
             <div key={l.id} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
-              <div><div className="font-medium">{ex.engineers.find((e) => e.id === l.personId)?.name ?? engineerName(data, l.personId)}</div><div className="text-xs text-mute">{l.reason} · {fmtDate(l.start)}{l.end !== l.start ? ` – ${fmtDate(l.end)}` : ""}</div></div>
+              <div><div className="font-medium">{ex.engineers.find((e) => e.id === l.personId)?.name ?? engineerName(data, l.personId)}</div><div className="text-xs text-mute">{isWfh(l) ? "🏠 WFH" : l.reason}{isWfh(l) && l.note ? ` – ${l.note}` : ""} · {fmtDate(l.start)}{l.end !== l.start ? ` – ${fmtDate(l.end)}` : ""}</div></div>
               <div className="flex items-center gap-2">
                 {(l.status ?? "approved") !== "approved" ? <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-semibold", l.status === "pending" ? "bg-sev-medium/15 text-sev-medium" : "bg-sev-critical/15 text-sev-critical")}>{l.status === "pending" ? "Pending" : "Rejected"}</span> : null}
                 {isMgr && l.status === "pending" ? <>
-                  <Button variant="solid" onClick={async () => { try { await reviewLeave(l.id, true, myName); toast.success("Leave approved"); } catch { toast.error("Could not approve"); } }}>Approve</Button>
-                  <Button variant="ghost" onClick={async () => { try { await reviewLeave(l.id, false, myName); toast.success("Leave rejected"); } catch { toast.error("Could not reject"); } }}>Reject</Button>
+                  <Button variant="solid" onClick={async () => { try { await reviewLeave(l.id, true, myName); toast.success(isWfh(l) ? "WFH approved" : "Leave approved"); } catch { toast.error("Could not approve"); } }}>Approve</Button>
+                  <Button variant="ghost" onClick={async () => { try { await reviewLeave(l.id, false, myName); toast.success(isWfh(l) ? "WFH rejected" : "Leave rejected"); } catch { toast.error("Could not reject"); } }}>Reject</Button>
                 </> : null}
                 {isMgr || l.status === "pending" ? <button type="button" aria-label="Delete leave" className="text-sev-critical" onClick={async () => { if (!window.confirm("Delete this leave?")) return; try { await deleteLeave(l.id); toast.success("Leave removed"); } catch { toast.error("Could not delete"); } }}><Trash2 className="size-4" /></button> : null}
               </div>

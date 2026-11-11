@@ -83,4 +83,8 @@ export async function reviewLeave(id: string, approve: boolean, by: string) {
   await loadLeaves();
 }
 /** Only approved leave counts as a Leave day in Workload. */
-export const leaveOn = (ls: Leave[], personId: string, d: string) => ls.find((l) => (l.status ?? "approved") === "approved" && l.personId === personId && l.start <= d && l.end >= d);
+export const WFH_REASON = "Work From Home";
+export const isWfh = (l: Leave) => l.reason === WFH_REASON;
+const approvedOn = (ls: Leave[], personId: string, d: string, wfh: boolean) => ls.find((l) => (l.status ?? "approved") === "approved" && isWfh(l) === wfh && l.personId === personId && l.start <= d && l.end >= d);
+export const leaveOn = (ls: Leave[], personId: string, d: string) => approvedOn(ls, personId, d, false);
+export const wfhOn = (ls: Leave[], personId: string, d: string) => approvedOn(ls, personId, d, true);
