@@ -316,6 +316,13 @@
       "when": 1794383794089,
       "tag": "0044_holiday_names",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1794397302001,
+      "tag": "0045_bulk_technical_import",
+      "breakpoints": true
     }
   ]
 }

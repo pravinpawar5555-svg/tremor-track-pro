@@ -1,0 +1,153 @@
+﻿Plant Name,Area Name,Machine Name,Machine Tag,Measurement Point,Sensor Serial Number,Sensor Type,Gateway Serial Number,Installation Date,Status
+DFPCL-K1,Ammonia Area,AMMONIA CBM OF OLD AMMONIA LOADING PUMP-D1-0902,,Motor Drive end,23918336,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA CBM OF OLD AMMONIA LOADING PUMP-D1-0902,,Pump Drive end,67035886,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA CBM OF OLD AMMONIA LOADING PUMP-D2-0902,,Motor Drive end,c62949de,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA CBM OF OLD AMMONIA LOADING PUMP-D2-0902,,Pump Drive end,8b29eba9,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA CBM OF OLD AMMONIA LOADING PUMP-D3-0902,,Motor Drive end,fe095b40,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA CBM OF OLD AMMONIA LOADING PUMP-D3-0902,,Pump Drive end,a3ddeeed,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA STORAGE COMPRESSOR-A,,Compressor Input DE,269eb140,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA STORAGE COMPRESSOR-A,,Compressor Input NDE,3ed12f1c,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA STORAGE COMPRESSOR-A,,Compressor Output DE,25366cb7,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA STORAGE COMPRESSOR-A,,Compressor Output NDE,b04c29e6,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA STORAGE COMPRESSOR-A,,Motor Drive end,1eac1181,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA STORAGE COMPRESSOR-A,,Motor Non-Drive End,6f8eb4ed,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA STORAGE COMPRESSOR-C,,Compressor Input DE,fe6860d2,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA STORAGE COMPRESSOR-C,,Compressor Input NDE,e73f26a2,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA STORAGE COMPRESSOR-C,,Compressor Output DE,2288e8e7,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA STORAGE COMPRESSOR-C,,Compressor Output NDE,ef1217f9,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA STORAGE COMPRESSOR-C,,Motor Drive end,2cdb97ca,Node X,,19-06-2026,installed
+DFPCL-K1,Ammonia Area,AMMONIA STORAGE COMPRESSOR-C,,Motor Non-Drive End,31aabb72,Node X,,19-06-2026,installed
+DFPCL-K1,TLF Area,TLF P745A PUMP WNA FEED TO ANP/LDAN,,Pump Drive end,24ffa43f,Node X,,19-06-2026,installed
+DFPCL-K1,TLF Area,TLF P745A PUMP WNA FEED TO ANP/LDAN,,Pump Non-Drive end,3c5c65ce,Node X,,19-06-2026,installed
+DFPCL-K1,TLF Area,TLF P745A PUMP WNA FEED TO ANP/LDAN,,Motor Drive end,ba62a95d,Node X,,19-06-2026,installed
+DFPCL-K1,TLF Area,TLF P745A PUMP WNA FEED TO ANP/LDAN,,Motor Non-Drive End,556c5789,Node X,,19-06-2026,installed
+DFPCL-K1,TLF Area,TLF P745B PUMP FOR WNA FEED TO ANP/LD,,Pump Drive end,c3f40c50,Node X,,19-06-2026,installed
+DFPCL-K1,TLF Area,TLF P745B PUMP FOR WNA FEED TO ANP/LD,,Motor Drive end,75d14841,Node X,,19-06-2026,installed
+DFPCL-K1,TLF Area,TLF P745B PUMP FOR WNA FEED TO ANP/LD,,Motor Non-Drive End,790af26f,Node X,,19-06-2026,installed
+DFPCL-K1,TLF Area,TLF P745B PUMP FOR WNA FEED TO ANP/LD,,Pump Non-Drive end,725aba5e,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA COOLING TOWER PUMP P9004-B,,Motor Drive end,83146de7,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA COOLING TOWER PUMP P9004-B,,Motor Non-Drive End,8a4437f6,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA COOLING TOWER PUMP P9004-B,,Pump Drive end,6d815cd6,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA COOLING TOWER PUMP P9004-B,,Pump Non-Drive end,4b2d6be2,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA CT FAN K9001-A,,Gearbox Input Stage Drive End,1ef9b7ce,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA CT FAN K9001-A,,Gearbox Output Stage Non-Drive End,26cb6520,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA CT FAN K9001-A,,Motor Drive end,35fb3207,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA CT FAN K9001-A,,Motor Non-Drive End,76a1aea8,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA CT FAN K9001-B,,Gearbox Input Stage Drive End,b4c03106,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA CT FAN K9001-B,,Output Non-Drive End,a45dd913,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA CT FAN K9001-B,,Motor Drive end,95e9cf35,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA CT FAN K9001-B,,Motor Non-Drive End,207667de,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA RACIPROCATING PUMP,,1st Stage Cylinder Drive end,85eed34e,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA RACIPROCATING PUMP,,2nd Stage Cylinder Drive end,b5533de6,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA RACIPROCATING PUMP,,GB Input DE,ee4ddf96,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA RACIPROCATING PUMP,,GB Output DE,c892790c,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA RACIPROCATING PUMP,,Motor Drive end,a13e556c,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA RACIPROCATING PUMP,,Motor Non-Drive End,d48bb721,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 09-B,,Motor Drive end,355e56ad,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 09-B,,Motor Non-Drive End,6e9c6860,Node X,,19-06-2026,installed
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 09-B,,Pump Drive end,da624d0c,Node X,,19-06-2026,
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 09-C,,Motor Drive end,c779d0d1,Node X,,19-06-2026,
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 09-C,,Motor Non-Drive End,e41a84a6,Node X,,19-06-2026,
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 09-C,,Pump Drive end,32613fc9,Node X,,19-06-2026,
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 1-A,,Motor Drive end,eeaf353a,Node X,,19-06-2026,
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 1-A,,Pump Drive end,797af065,Node X,,19-06-2026,
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 12-A,,Motor Drive end,324b8deb,Node X,,19-06-2026,
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 12-A,,Motor Non-Drive End,f472bf4c,Node X,,19-06-2026,
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 12-A,,Pump Drive end,3d5aaec4,Node X,,19-06-2026,
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 2-A,,Motor Drive end,1627985f,Node X,,19-06-2026,
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 2-A,,Motor Non-Drive End,ef7d249e,Node X,,19-06-2026,
+DFPCL-K1,IPA Area,IPA VERTICAL PUMP 2-A,,Pump Drive end,3b5c4172,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL AUX. CT FAN A,,Gearbox Input Stage Drive End,6005f10e,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL AUX. CT FAN A,,Motor Drive end,b89cd504,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL AUX. CT FAN A,,Motor Non-Drive end,789f380d,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL AUX. CT FAN A,,Gearbox Output Stage Non-Drive End,9b7e5fed,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL AUX. CT FAN B,,Gearbox Input Stage Drive End,ea5cfd11,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL AUX. CT FAN B,,Motor Drive end,eb39ca4f,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL AUX. CT FAN B,,Motor Non-Drive end,a3521e32,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL AUX. CT FAN B,,Gearbox Output Stage Non-Drive End,04fa4782,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL COOLING WATER PUMP 705,,Pump Drive end,d0c3c0ed,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL COOLING WATER PUMP 705,,Motor Drive end,41826785,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL COOLING WATER PUMP 705,,Motor Non-Drive End,7d156d97,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL COOLING WATER PUMP 705,,Pump Non-Drive end,c3776ace,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL COOLING WATER PUMP 705A,,Pump Drive end,31e90154,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL COOLING WATER PUMP 705A,,Motor Drive end,6b8d5e11,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL COOLING WATER PUMP 705A,,Motor Non-Drive End,23dfab14,Node X,,19-06-2026,
+DFPCL-K1,Utility Area,UTL COOLING WATER PUMP 705A,,Pump Non-Drive end,70ab8f4f,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 36 TPH FD FAN A,,FAN Drive end,41f3c927,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 36 TPH FD FAN A,,Motor Drive end,73248979,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 36 TPH FD FAN A,,Motor Non-Drive end,2ddf0322,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 36 TPH FD FAN A,,Fan Non-Drive end,fbd94067,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 36 TPH ID FAN A,,Fan Drive End,dc26478f,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 36 TPH ID FAN A,,Motor Drive end,b201bb33,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 36 TPH ID FAN A,,Motor Non-Drive end,33e48616,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 36 TPH ID FAN A,,Fan Non Drive End,35d374fa,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 36 TPH PA FAN A,,FAN Drive end,62673e8b,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 36 TPH PA FAN A,,Motor Drive end,6db96bae,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 36 TPH PA FAN A,,Motor Non-Drive end,09e74f38,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 36 TPH PA FAN A,,Fan Non-Drive end,04c625a3,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH BFW PUMP A,,Pump Drive end,cc7c1d1a,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH BFW PUMP A,,Motor Drive end,accbb6c2,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH BFW PUMP A,,Motor Non-Drive end,41f58b4c,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH BFW PUMP A,,Pump Non-Drive end,9af2078f,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH FD FAN A,,FAN Drive end,1069cbba,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH FD FAN A,,Motor Drive end,720ec40a,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH FD FAN A,,Motor Non-Drive End,d1ba9b35,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH FD FAN A,,FAN Non-Drive end,d49b000f,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH ID FAN A,,Fan Drive End,8e5ad94a,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH ID FAN A,,Motor Drive end,a5e4dce0,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH ID FAN A,,Motor Non-Drive end,aab67a19,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH ID FAN A,,Fan Non Drive End,9e5af68c,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH PA FAN A,,Fan Drive End,c163196d,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH PA FAN A,,Motor Drive end,90696ae0,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH PA FAN A,,Motor Non-Drive end,233c222f,Node X,,19-06-2026,
+DFPCL-K1,CFB Area,CFB 70 TPH PA FAN A,,Fan Non Drive End,904c70ff,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 1 MGN PUMP,,Pump Drive end,57806ddf,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 1 MGN PUMP,,Motor Drive end,b218ef28,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 1 MGN PUMP,,Motor Non-Drive end,94a4fec4,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 1 MGN PUMP,,Pump Non-Drive end,bc9ef1b5,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 2 MGN PUMP,,Pump Drive end,f75116c1,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 2 MGN PUMP,,Motor Drive end,8205b38b,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 2 MGN PUMP,,Motor Non-Drive end,515be36e,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 2 MGN PUMP,,Pump Non-Drive end,a2142a68,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 6208A COOLING TOWER,,Pump Drive end,993c9602,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 6208A COOLING TOWER PUMP,,Motor Drive end,842217d7,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 6208A COOLING TOWER PUMP,,Motor Non-Drive end,c449b98e,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 6208A COOLING TOWER,,Pump Non-Drive end,e95c5869,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 CT FAN A,,Motor Drive end,d7521649,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 CT FAN A,,Motor Non-Drive end,893d7d69,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 CT FAN B,,Gearbox Input Stage Drive End,67b42f71,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 CT FAN B,,Motor Drive end,b3b50522,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 CT FAN B,,Motor Non-Drive end,edcbaed4,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 CT FAN B,,Output Non-Drive End,e514598b,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 CT FAN-A,,Gearbox Input Stage Drive End,561dcd6a,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 CT FAN-A,,Gearbox Output Stage Non-Drive End,abaecc74,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 MGN PUMP,,Pump Drive end,0e52114f,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 MGN PUMP,,Motor Drive end,79f1fb0e,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 MGN PUMP,,Motor Non-Drive end,084e3447,Node X,,19-06-2026,
+DFPCL-K1,CNA Area,CNA 3 MGN PUMP,,Pump Non-Drive end,9f90f9bf,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 AOP I Pump,,Pump Drive end,b382e45a,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 FRICK COMP,,Input Drive end,5d7198b3,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 FRICK COMP,,Input Non-Drive end,fddaa915,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 FRICK COMP,,Motor Drive end,957924b9,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 FRICK COMP,,Motor Non-Drive end,7943c0ac,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 FRICK COMP,,Output Drive end,4a277511,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 FRICK COMP,,Output Non-Drive end,16ca6b6a,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 LUBE OIL PUMP,,Motor Drive end,20119d26,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 LUBE OIL PUMP,,Motor Non-Drive End,54d666b6,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 PUMP BFW,,Pump Drive end,40afa61b,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 PUMP BFW,,Motor Drive end,9a3e2ddd,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 PUMP BFW,,Motor Non-Drive end,1e9005bb,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 1 PUMP BFW,,Pump Non-Drive end,5fb88a99,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 2 FRICK COMP,,Input Drive end,f9d5da85,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 2 FRICK COMP,,Input Non-Drive end,e1f51364,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 2 FRICK COMP,,Motor Drive end,5ff7b2b8,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 2 FRICK COMP,,Motor Non-Drive end,0d346388,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 2 FRICK COMP,,Output Drive end,b392ac74,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 2 FRICK COMP,,Output Non-Drive end,c72f60ee,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 2 LUBE OIL PUMP,,Pump Drive end,5b0c25cc,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 2 LUBE OIL PUMP,,Pump Non-Drive end,9563b567,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 2 PUMP BFW,,Pump Drive end,ccdd2e47,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 2 PUMP BFW,,Motor Drive end,f70bb171,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 2 PUMP BFW,,Motor Non-Drive end,7af8f580,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 2 PUMP BFW,,Pump Non-Drive end,c71e4c36,Node X,,19-06-2026,
+DFPCL-K1,WNA Area,WNA 3 BFW CIRCULATION PUMP T/D G4308,,Pump Drive end,a93b3deb,Node X,,19-06-2026,
