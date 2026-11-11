@@ -39,13 +39,28 @@ export function TechnicalImport({ plantId, data, by, onDone }: { plantId: string
     } catch (e) { toast.error(`Could not read file: ${(e as Error).message}`); }
   };
 
+  const [progress, setProgress] = useState("");
   const save = async () => {
     setBusy(true);
-    const { data: res, error } = await supabase.rpc("import_technical", { p_plant: plantId, p_rows: rows.map((r) => r.row) as never, p_by: by });
-    setBusy(false);
-    if (error) { toast.error(`Nothing saved: ${error.message}`); return; }
-    const c = res as { areas: number; machines: number; points: number; sensors: number; gateways: number; skipped: number };
-    toast.success(`Imported ${c.areas} areas, ${c.machines} machines, ${c.points} points, ${c.sensors} sensors, ${c.gateways} gateways${c.skipped ? ` (${c.skipped} sensors already present)` : ""}`);
+    const all = rows.map((r) => r.row);
+    const size = 100;
+    const batches = Math.max(1, Math.ceil(all.length / size));
+    const t = { areas: 0, machines: 0, points: 0, sensors: 0, gateways: 0, skipped: 0 };
+    for (let i = 0; i < batches; i++) {
+      const part = all.slice(i * size, (i + 1) * size);
+      setProgress(`Saving ${i + 1} of ${batches} (${Math.min((i + 1) * size, all.length)} / ${all.length} rows)…`);
+      const { data: res, error } = await supabase.rpc("import_technical", { p_plant: plantId, p_rows: part as never, p_by: by });
+      if (error) {
+        setBusy(false); setProgress("");
+        toast.error(i === 0 ? `Nothing saved: ${error.message}` : `Saved ${i * size} rows, stopped at row ${i * size + 1}: ${error.message}. Choose the same file again — saved rows are skipped.`);
+        if (i > 0) onDone();
+        return;
+      }
+      const c = (res ?? {}) as Partial<typeof t>;
+      (Object.keys(t) as (keyof typeof t)[]).forEach((k) => { t[k] += Number(c[k] ?? 0); });
+    }
+    setBusy(false); setProgress("");
+    toast.success(`Imported ${t.areas} areas, ${t.machines} machines, ${t.points} points, ${t.sensors} sensors, ${t.gateways} gateways${t.skipped ? ` (${t.skipped} sensors already present)` : ""}`);
     setOpen(false); setRows([]); setFile(""); onDone();
   };
   const c = importCounts(rows);
@@ -89,7 +104,7 @@ export function TechnicalImport({ plantId, data, by, onDone }: { plantId: string
               <div className="flex items-center justify-end gap-2">
                 {!canSave(rows) ? <span className="text-xs text-sev-high">Fix the problem rows in the file and choose it again.</span> : null}
                 <Button onClick={() => { setRows([]); setFile(""); }}>Clear</Button>
-                <Button variant="solid" disabled={!canSave(rows) || busy} onClick={() => void save()}>{busy ? "Saving…" : "Save all"}</Button>
+                <Button variant="solid" disabled={!canSave(rows) || busy} onClick={() => void save()}>{busy ? progress || "Saving…" : "Save all"}</Button>
               </div>
             </>
           ) : null}
