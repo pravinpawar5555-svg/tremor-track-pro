@@ -3,6 +3,11 @@
 - [x] Verify storage columns, mapping tests (7 checks passed), and clean build.
 - [ ] Signed-in form/save/read-back check — blocked: no portal account matches the requesting user's email; user must sign in to the preview.
 
+# Demo expiry and AMC separation
+- [ ] Exclude demo plants from AMC renewal indicators and dashboard counts.
+- [ ] Add demo-end reminders through existing Daily Work, with quotation/order follow-up links.
+- [ ] Test category rules and verify the signed-in reminder flow.
+
 # Customer contacts
 - [x] Add plant-linked contact storage with protected access.
 - [x] Add searchable phonebook and plant contact management.
