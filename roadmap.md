@@ -34,6 +34,6 @@
 - [x] Verify the exact file saves, reads back, and safely skips existing sensors on repeat import; 7 areas, 43 machines and 152 points/sensors confirmed; 11 focused tests pass.
 
 # Holiday names and dates persistence
-- [ ] Reproduce named-holiday save, reopen and reload behavior with a manager login.
-- [ ] Fix date/name persistence without changing workload access rules.
-- [ ] Add regression coverage and verify the real settings screen end to end.
+- [x] Reproduce named-holiday save, reopen and reload behavior with a manager login.
+- [x] Fix date/name persistence without changing workload access rules.
+- [x] Add regression coverage and verify add, save, reload, rename, second reload and cleanup in the real settings screen; 119 tests pass.
