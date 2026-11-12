@@ -19,7 +19,7 @@ import { useVisits, visitStatus, visitTypeLabel } from "@/lib/visits";
 import { useExecution, installTypeLabel, execStatusLabel, type ExecJob } from "@/lib/execution";
 import { useComms, openFollowUp } from "@/lib/comms";
 import { useOpps } from "@/lib/opportunities";
-import { amcStatus } from "@/lib/amc";
+import { plantAmcStatus } from "@/lib/amc";
 import { ownershipOf, useBranches } from "@/lib/branches";
 
 export type ManagerView = "overview" | "cs" | "execution";
@@ -575,7 +575,7 @@ function AmcPanel({ data, inCat }: { data: AppData; inCat: (pid: string) => bool
   const bs = useBranches();
   const rows = data.plants
     .filter((p) => inCat(p.id))
-    .map((p) => ({ p, a: amcStatus(p.amcEnd, TODAY), o: ownershipOf(bs, p) }))
+    .map((p) => ({ p, a: plantAmcStatus(p, TODAY), o: ownershipOf(bs, p) }))
     .filter((r) => r.a.state === "renewal" || r.a.state === "expired")
     .sort((x, y) => (x.a.days ?? 0) - (y.a.days ?? 0));
   const noDate = data.plants.filter((p) => inCat(p.id) && (p.category ?? "order") === "order" && !p.amcEnd).length;
@@ -600,9 +600,9 @@ function AmcPanel({ data, inCat }: { data: AppData; inCat: (pid: string) => bool
               <div className="grid gap-1">
                 {list.map(({ p, a }) => (
                   <Link key={p.id} to="/plants" className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm ring-1 ring-line/60 hover:bg-base">
-                    <span className="min-w-0 truncate">{p.name}<span className="text-xs text-mute"> · ends {fmtDate(p.amcEnd!)}</span></span>
+                    <span className="min-w-0 truncate">{p.name}<span className="text-xs text-mute"> · ends {fmtDate(p.amcEnd)}</span></span>
                     <span className={cn("num shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium", a.state === "expired" ? "bg-sev-high/10 text-sev-high" : (a.days ?? 0) <= 30 ? "bg-sev-high/10 text-sev-high" : "bg-sev-medium/10 text-sev-medium")}>
-                      {a.state === "expired" ? `Expired ${-a.days!}d` : `${a.days}d left`}
+                      {a.state === "expired" ? `Expired ${-(a.days ?? 0)}d` : `${a.days}d left`}
                     </span>
                   </Link>
                 ))}

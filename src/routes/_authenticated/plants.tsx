@@ -4,7 +4,8 @@ import { ChevronRight, MoreHorizontal } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ownershipOf, useBranches } from "@/lib/branches";
 import { useDomain } from "@/lib/domain";
-import { amcStatus } from "@/lib/amc";
+import { amcStatus, plantAmcStatus } from "@/lib/amc";
+import { DemoFollowUp } from "@/components/console/DemoFollowUp";
 import { BillingDialog, BillingFormSection, BillingLine, BillingTracker } from "@/components/console/PlantBilling";
 import { blankConfig, plantBilling, saveBillingConfig, useBilling, type BillingConfig } from "@/lib/billing";
 import { toast } from "sonner";
@@ -409,6 +410,8 @@ function PlantsPage() {
                     {cycles.length ? cycles.map((f) => <FrequencyChip key={f} frequency={f} />) : <span className="text-xs text-mute">No report cycle</span>}
                   </div>
                   {canBilling ? <BillingLine view={bv(p)} onOpen={() => setBillPlant(p)} /> : null}
+                  <PlantDateChip plant={p} />
+                  {canBilling && p.category === "demo" ? <DemoFollowUp plant={p} userId={me} /> : null}
                   <div className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
                     <span className="text-mute">CS Engineer</span><span className="truncate">{engineerName(data, p.engineerId)}</span>
                     <span className="text-mute">Last report</span><span className="num">{fmtDate(s.lastReportSent)}</span>
@@ -497,7 +500,8 @@ function PlantsPage() {
                         <Td className="align-top">
                           <div className="truncate text-xs"><span className="text-mute">CS:</span> {engineerName(data, p.engineerId)}</div>
                           <div className="truncate text-xs text-mute">{o.branch?.name ?? "No branch"} · {o.sales?.name ?? "No sales eng."}</div>
-                          <AmcChip end={p.amcEnd} />
+                          <PlantDateChip plant={p} />
+                          {canBilling && p.category === "demo" ? <DemoFollowUp plant={p} userId={me} /> : null}
                         </Td>
                         <Td align="right" className="align-top">
                           <span className="inline-flex items-center justify-end gap-1">
@@ -597,10 +601,14 @@ function Ownership({ o }: { o: ReturnType<typeof ownershipOf> }) {
   );
 }
 
-function AmcChip({ end }: { end?: string | undefined }) {
-  const a = amcStatus(end, TODAY);
-  if (a.state === "none") return <div className="mt-1 text-[11px] text-mute">AMC: not set</div>;
+function PlantDateChip({ plant }: { plant: Plant }) {
+  const demo = plant.category === "demo";
+  const end = plant.amcEnd;
+  const a = demo ? amcStatus(end, TODAY) : plantAmcStatus(plant, TODAY);
+  if (a.state === "none") return <div className="mt-1 text-[11px] text-mute">{demo ? "Demo end" : "AMC"}: not set</div>;
   const cls = a.state === "expired" ? "bg-sev-high/10 text-sev-high" : a.state === "renewal" ? "bg-sev-medium/10 text-sev-medium" : "bg-signal/10 text-signal";
-  const txt = a.state === "expired" ? `AMC expired ${-a.days!}d ago` : a.state === "renewal" ? `AMC renewal in ${a.days}d` : `AMC till ${fmtDate(end!)}`;
+  const txt = demo
+    ? a.state === "expired" ? `Demo ended ${-(a.days ?? 0)}d ago` : `Demo ends ${fmtDate(end)}`
+    : a.state === "expired" ? `AMC expired ${-(a.days ?? 0)}d ago` : a.state === "renewal" ? `AMC renewal in ${a.days}d` : `AMC till ${fmtDate(end)}`;
   return <span className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[11px] font-medium ${cls}`}>{txt}</span>;
 }
