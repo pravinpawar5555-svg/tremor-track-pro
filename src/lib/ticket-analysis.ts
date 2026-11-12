@@ -15,6 +15,13 @@ export interface MachineAnalysis {
   recommendation: string;
   status: AnalysisStatus;
   infoRequest: string;
+  /** Permanent Technical Register links (absent on older tickets → matched by name). */
+  machineId?: string | undefined;
+  areaId?: string | undefined;
+  /** Stamped when the manager completes this machine. */
+  analyzedOn?: string | undefined;
+  analyzedBy?: string | undefined;
+  sensors?: string[] | undefined;
 }
 
 export const conditionLabel: Record<Condition, string> = {
@@ -68,8 +75,10 @@ export const FAULT_TYPES = [
 export const NORMAL_OBSERVATION = "Vibration condition reviewed and found within acceptable operating condition.";
 export const NORMAL_RECOMMENDATION = "Continue routine monitoring.";
 
-export function blankAnalysis(machine: string, area = "", note = ""): MachineAnalysis {
+export function blankAnalysis(machine: string, area = "", note = "", ids: { machineId?: string; areaId?: string } = {}): MachineAnalysis {
   return {
+    ...(ids.machineId ? { machineId: ids.machineId } : {}),
+    ...(ids.areaId ? { areaId: ids.areaId } : {}),
     machine,
     area,
     note,
