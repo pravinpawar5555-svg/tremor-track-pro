@@ -375,7 +375,7 @@ export function MachineAnalysisSection({
               </button>
 
               {isOpen ? (
-                <div className="grid gap-3 border-t border-line/60 bg-base/40 p-3">
+                <div className="grid gap-3 border-t border-line/60 bg-panel p-3">
                   {a.note ? <p className="text-xs text-mute"><b>Engineer note:</b> {a.note}</p> : null}
                   {a.status === "more-info" && a.infoRequest ? (
                     <p className="rounded bg-sev-info/10 px-2 py-1 text-xs text-sev-info">Information requested: {a.infoRequest}</p>
