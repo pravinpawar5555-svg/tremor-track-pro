@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTechnical } from "@/lib/technical";
-import { ChevronDown, ChevronRight, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Cpu, History, Search } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  conditionTrend,
+  machineHistory,
+  previouslyObserved,
+  sensorChangesSince,
+  showCondition,
+  showFault,
+  showText,
+  type HistoryEntry,
+  type HistoryTicket,
+} from "@/lib/machine-history";
 import { Button, Field, Select, TextArea, TextInput } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
 import {
@@ -59,6 +71,7 @@ function RowBadge({ a }: { a: MachineAnalysis }) {
 // ------------------------------------------------------------------ creation picker
 
 export interface PickedMachine {
+  machineId?: string;
   machine: string;
   area: string;
   note: string;
@@ -226,7 +239,19 @@ export function MachineAnalysisSection({
   onSave,
   onRequestInfo,
   onPublish,
+  plantId,
+  ticketId,
+  tickets,
+  nameOf,
+  analystId,
+  today,
 }: {
+  plantId: string;
+  ticketId: string;
+  tickets: HistoryTicket[];
+  nameOf: (id: string) => string;
+  analystId: string;
+  today: string;
   rows: MachineAnalysis[];
   editable: boolean;
   published: boolean;
@@ -241,6 +266,21 @@ export function MachineAnalysisSection({
   const [infoText, setInfoText] = useState("");
   const [askInfo, setAskInfo] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const { data: reg } = useTechnical(plantId);
+  const [drawer, setDrawer] = useState<number | null>(null);
+  /** Permanent register link for a row: stored id, else matched by area + machine name. */
+  const link = (a: MachineAnalysis) => {
+    if (a.machineId) return { machineId: a.machineId, areaId: a.areaId };
+    const n = a.machine.trim().toLowerCase();
+    const areaIds = reg.areas.filter((x) => a.area.toLowerCase().split(", ").includes(x.name.trim().toLowerCase())).map((x) => x.id);
+    const cands = reg.machines.filter((m) => m.name.trim().toLowerCase() === n);
+    const m = cands.find((x) => areaIds.includes(x.area_id)) ?? (cands.length === 1 ? cands[0] : undefined);
+    return { machineId: m?.id, areaId: m?.area_id };
+  };
+  const histories = useMemo(
+    () => rows.map((a) => machineHistory(tickets, { plantId, machine: a.machine, area: a.area, machineId: link(a).machineId }, ticketId)),
+    [rows, tickets, plantId, ticketId, reg], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const p = analysisProgress(rows);
   const stage = reviewStage(rows, published);
   const readOnly = !editable;
@@ -254,7 +294,22 @@ export function MachineAnalysisSection({
   };
   const saveDraft = (i: number) => commitRows(rows.map((x, k) => (k === i ? { ...x, status: "draft" as const } : x)));
   const complete = (i: number, goNext: boolean) => {
-    const next = rows.map((x, k) => (k === i ? { ...x, status: "complete" as const, infoRequest: "" } : x));
+    const next = rows.map((x, k) => {
+      if (k !== i) return x;
+      const l = link(x);
+      const pts = l.machineId ? reg.points.filter((pt) => pt.machine_id === l.machineId).map((pt) => pt.id) : [];
+      const sensors = reg.sensors.filter((sn) => sn.point_id && pts.includes(sn.point_id) && !["replaced", "removed", "returned", "inactive"].includes(sn.status)).map((sn) => sn.serial_no);
+      return {
+        ...x,
+        ...(l.machineId ? { machineId: l.machineId } : {}),
+        ...(l.areaId ? { areaId: l.areaId } : {}),
+        ...(sensors.length ? { sensors } : {}),
+        status: "complete" as const,
+        infoRequest: "",
+        analyzedOn: today,
+        analyzedBy: analystId,
+      };
+    });
     commitRows(next);
     setOpen(goNext ? nextPendingIndex(next, i) : -1);
   };
@@ -313,6 +368,7 @@ export function MachineAnalysisSection({
                   </span>
                 </span>
                 <span className="flex items-center gap-1.5">
+                  {editable ? (histories[i]?.length ? <span className="hidden text-[10px] text-mute sm:inline">History: {histories[i]!.length}</span> : <Badge tone="grey">First analysis</Badge>) : null}
                   {hidden ? <Badge tone="grey">Pending review</Badge> : <RowBadge a={a} />}
                   {isOpen ? <ChevronDown className="size-4 text-mute" /> : <ChevronRight className="size-4 text-mute" />}
                 </span>
@@ -324,6 +380,20 @@ export function MachineAnalysisSection({
                   {a.status === "more-info" && a.infoRequest ? (
                     <p className="rounded bg-sev-info/10 px-2 py-1 text-xs text-sev-info">Information requested: {a.infoRequest}</p>
                   ) : null}
+
+                  {editable ? (
+                    <PreviousAnalysis
+                      history={histories[i] ?? []}
+                      nameOf={nameOf}
+                      onFull={() => setDrawer(i)}
+                      sensorChanges={(() => {
+                        const last = histories[i]?.[0];
+                        const mid = link(a).machineId;
+                        return last && mid ? sensorChangesSince(reg.points, reg.sensors, mid, last.date) : [];
+                      })()}
+                    />
+                  ) : null}
+                  {editable ? <div className="label-caps -mb-1 pt-1">Current analysis</div> : null}
 
                   {readOnly ? (
                     hidden ? null : (
@@ -358,6 +428,7 @@ export function MachineAnalysisSection({
                       <datalist id="fault-type-list">
                         {["None", ...FAULT_TYPES].map((f) => <option key={f} value={f} />)}
                       </datalist>
+                      <CurrentContext a={a} history={histories[i] ?? []} onView={() => setDrawer(i)} />
                       <Field label="Manager observation">
                         <TextArea value={a.observation} onChange={(e) => patch(i, { observation: e.target.value })} />
                       </Field>
@@ -389,6 +460,10 @@ export function MachineAnalysisSection({
         })}
       </div>
 
+      {drawer !== null && rows[drawer] ? (
+        <HistoryDrawer machine={rows[drawer]!.machine} area={rows[drawer]!.area} history={histories[drawer] ?? []} nameOf={nameOf} onClose={() => setDrawer(null)} />
+      ) : null}
+
       {editable && !published && stage === "ready" ? (
         confirm ? (
           <div className="grid gap-2 rounded-md bg-signal/5 p-3 text-sm ring-1 ring-signal/30">
@@ -404,6 +479,117 @@ export function MachineAnalysisSection({
         )
       ) : null}
     </div>
+  );
+}
+
+// ------------------------------------------------------------------ previous analysis (read-only reference)
+
+const fmt = (iso: string) => {
+  const d = new Date(`${iso}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
+const Small = ({ l, v }: { l: string; v: React.ReactNode }) => (
+  <div className="min-w-0"><div className="text-[10px] uppercase tracking-wide text-mute">{l}</div><div className="text-xs">{v}</div></div>
+);
+
+function PreviousAnalysis({ history, nameOf, onFull, sensorChanges }: {
+  history: HistoryEntry[];
+  nameOf: (id: string) => string;
+  onFull: () => void;
+  sensorChanges: { pointName: string; previous: string; current: string; changed: string }[];
+}) {
+  const last = history[0];
+  return (
+    <section aria-label="Previous analysis" className="grid gap-2 rounded-md bg-muted/60 p-3 ring-1 ring-line/70">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-mute"><History className="size-3.5" />Previous analysis{history.length ? ` (${history.length})` : ""} · read only</span>
+        {history.length ? <button type="button" onClick={onFull} className="text-[11px] text-signal hover:underline">View full history</button> : <Badge tone="grey">First analysis</Badge>}
+      </div>
+      {!last ? (
+        <div className="text-xs">
+          <p className="font-medium">No previous analysis recorded for this machine.</p>
+          <p className="text-mute">This is the first recorded analysis. The completed analysis will become the baseline history.</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Small l="Last analysed" v={<span className="num">{fmt(last.date)}</span>} />
+            <Small l="Previous analyses" v={<span className="num">{history.length}</span>} />
+            <Small l="Latest condition" v={last.a.condition ? <Badge tone={conditionTone[last.a.condition] ?? "grey"}>{conditionLabel[last.a.condition]}</Badge> : "—"} />
+            <Small l="Latest fault" v={showFault(last.a.fault)} />
+          </div>
+          <div className="grid gap-1.5 text-xs">
+            <div><span className="text-mute">Observation: </span>{showText(last.a.observation)}</div>
+            <div><span className="text-mute">Recommendation: </span>{showText(last.a.recommendation)}</div>
+            <div className="text-[11px] text-mute">Ticket <span className="num">{last.ticketNo}</span> · Analysed by {nameOf(last.analyzedBy) || "—"}</div>
+          </div>
+          {sensorChanges.length ? (
+            <div className="rounded bg-sev-medium/10 px-2 py-1.5 text-[11px] text-sev-medium ring-1 ring-sev-medium/30">
+              <div className="flex items-center gap-1 font-semibold"><Cpu className="size-3" />Sensor changed since previous analysis</div>
+              {sensorChanges.map((c) => (
+                <div key={c.pointName} className="num">{c.pointName}: {c.previous} → {c.current} · changed {fmt(c.changed)}</div>
+              ))}
+            </div>
+          ) : null}
+        </>
+      )}
+    </section>
+  );
+}
+
+function CurrentContext({ a, history, onView }: { a: MachineAnalysis; history: HistoryEntry[]; onView: () => void }) {
+  const last = history[0];
+  const trend = last ? conditionTrend(last.a.condition, a.condition) : null;
+  const seen = previouslyObserved(history, a.fault);
+  if (!trend && !seen) return null;
+  return (
+    <div className="flex flex-wrap gap-2 text-[11px]">
+      {trend && last ? (
+        <span className="inline-flex items-center gap-1 rounded bg-base px-2 py-1 ring-1 ring-line/70">
+          Previous {showCondition(last.a.condition)} → Current {showCondition(a.condition)}
+          {trend === "escalated" ? <b className="inline-flex items-center text-sev-critical"><ArrowUp className="size-3" />Condition escalated</b>
+            : trend === "improved" ? <b className="inline-flex items-center text-sev-low"><ArrowDown className="size-3" />Condition improved</b>
+            : <span className="text-mute">· unchanged</span>}
+        </span>
+      ) : null}
+      {seen ? (
+        <span className="inline-flex items-center gap-1 rounded bg-base px-2 py-1 ring-1 ring-line/70">
+          Previously observed · last recorded <span className="num">{fmt(seen.date)}</span>
+          <button type="button" onClick={onView} className="text-signal hover:underline">View previous analysis</button>
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function HistoryDrawer({ machine, area, history, nameOf, onClose }: { machine: string; area: string; history: HistoryEntry[]; nameOf: (id: string) => string; onClose: () => void }) {
+  const [openIdx, setOpenIdx] = useState(0);
+  return (
+    <Sheet open onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
+        <SheetHeader><SheetTitle>{machine} — Analysis history</SheetTitle></SheetHeader>
+        <p className="text-xs text-mute">{area || "—"} · {history.length} completed analys{history.length === 1 ? "is" : "es"} · reference only</p>
+        <ol className="mt-3 grid gap-2">
+          {history.map((h, k) => (
+            <li key={h.ticketId + k} className="rounded-md bg-muted/50 ring-1 ring-line/70">
+              <button type="button" onClick={() => setOpenIdx(openIdx === k ? -1 : k)} className="flex w-full flex-wrap items-center gap-2 px-3 py-2 text-left text-xs">
+                <span className="num font-medium">{fmt(h.date)}</span>
+                {h.a.condition ? <Badge tone={conditionTone[h.a.condition] ?? "grey"}>{conditionLabel[h.a.condition]}</Badge> : null}
+                <span className="min-w-0 flex-1 truncate">{showFault(h.a.fault)}</span>
+                <span className="num text-mute">{h.ticketNo}</span>
+              </button>
+              {openIdx === k ? (
+                <div className="grid gap-1.5 border-t border-line/60 px-3 py-2 text-xs">
+                  <div><div className="label-caps">Observation</div>{showText(h.a.observation)}</div>
+                  <div><div className="label-caps">Recommendation</div>{showText(h.a.recommendation)}</div>
+                  <div className="text-mute">Ticket <span className="num">{h.ticketNo}</span> · Manager {nameOf(h.analyzedBy) || "—"} · {fmt(h.date)}</div>
+                </div>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -433,6 +619,11 @@ export function useKnownPlantMachines(
       }
     }
     Object.values(machines).forEach((l) => l.sort());
-    return { areas: [...areas].sort(), machines };
+    const idOf = (area: string, machine: string) => {
+      const a = reg.areas.find((x) => x.name === area);
+      const m = a ? reg.machines.find((x) => x.area_id === a.id && x.name === machine) : undefined;
+      return m ? { machineId: m.id, areaId: a!.id } : {};
+    };
+    return { areas: [...areas].sort(), machines, idOf };
   }, [tickets, plantId, reg]);
 }
