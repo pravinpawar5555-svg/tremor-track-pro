@@ -218,7 +218,7 @@ function DiscussionsPage() {
       machine: form.items[0]?.machine ?? "",
       machines: form.items.map((i) => i.machine),
       areas: form.areas,
-      analysis: form.items.map((i) => blankAnalysis(i.machine, i.area, i.note.trim())),
+      analysis: form.items.map((i) => blankAnalysis(i.machine, i.area, i.note.trim(), known.idOf(i.area, i.machine))),
       raisedBy,
       assignedTo: managersOf(data)[0]?.id ?? "",
     });
@@ -533,6 +533,12 @@ function DiscussionsPage() {
                   rows={analysisRows(ticket)}
                   editable={manager}
                   published={!!ticket.publishedOn}
+                  plantId={ticket.plantId}
+                  ticketId={ticket.id}
+                  tickets={data.tickets}
+                  nameOf={(id) => engineerName(data, id) || id}
+                  analystId={meId}
+                  today={TODAY}
                   onSave={(rows) => saveTicketAnalysis(ticket.id, rows)}
                   onRequestInfo={(rows, machine, text) => {
                     const res = requestMachineInfo(ticket.id, meId, rows, machine, text);

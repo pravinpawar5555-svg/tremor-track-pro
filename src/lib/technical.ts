@@ -81,7 +81,7 @@ export function faultHistory(tickets: Ticket[], plantId: string, machineName?: s
     if (t.plantId !== plantId) continue;
     for (const a of analysisRows(t)) {
       if (n && a.machine.trim().toLowerCase() !== n) continue;
-      if (!a.condition && !a.fault && !a.observation) continue;
+      if (a.status !== "complete" || !a.condition) continue;
       out.push({ date: t.publishedOn || t.raisedOn, ticketNo: t.ticketNo, ticketId: t.id, area: a.area, machine: a.machine, a });
     }
   }

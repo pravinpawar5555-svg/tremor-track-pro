@@ -4,7 +4,8 @@ import { ChevronRight, Download, Plus, RotateCcw, Search, Trash2 } from "lucide-
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button, Empty, Field, Select, TextArea, TextInput } from "@/components/console/ui";
 import { TODAY, engineerName, fmtDate, useData, type Plant } from "@/lib/store";
-import { conditionLabel } from "@/lib/ticket-analysis";
+import { allConditions, conditionLabel } from "@/lib/ticket-analysis";
+import { groupByMachine, showCondition, showFault, showText } from "@/lib/machine-history";
 import { TechnicalImport } from "@/components/console/TechnicalImport";
 import {
   GATEWAY_ISSUES, GATEWAY_STATUS, MACHINE_STATUS, MACHINE_TYPES, SENSOR_ISSUES, SENSOR_STATUS, SENSOR_TYPES, STANDARD_POINTS,
@@ -131,7 +132,7 @@ function Body({ plant }: { plant: Plant }) {
           ) : tab === "machines" ? <MachinesTab {...ctx} onExport={exportCsv} />
             : tab === "sensors" ? <SensorsTab {...ctx} />
             : tab === "gateways" ? <GatewaysTab {...ctx} />
-            : <HistoryList entries={faultHistory(app.tickets, plant.id)} showMachine />}
+            : <HistoryTab entries={faultHistory(app.tickets, plant.id)} data={data} nameOf={(id) => engineerName(app, id)} />}
         </div>
       )}
       {form ? <RecordForm form={form} ctx={ctx} onClose={() => setForm(null)} /> : null}
@@ -286,13 +287,90 @@ function HistoryList({ entries, showMachine }: { entries: ReturnType<typeof faul
     <ol className="space-y-2">
       {entries.map((e, i) => (
         <li key={e.ticketId + i} className="rounded-md px-3 py-2 text-xs ring-1 ring-line">
-          <div className="flex flex-wrap items-center gap-2"><span className="num font-medium">{fmtDate(e.date)}</span>{showMachine ? <span className="font-medium">{e.machine}</span> : null}{e.area ? <span className="text-mute">{e.area}</span> : null}<span className="num text-mute">{e.ticketNo}</span></div>
-          <div className="mt-1">{e.a.fault || (e.a.condition ? conditionLabel[e.a.condition] : "—")}{e.a.severity ? ` · ${e.a.severity}` : ""}</div>
-          {e.a.observation ? <div className="text-mute">Observation: {e.a.observation}</div> : null}
-          {e.a.recommendation ? <div className="text-mute">Recommendation: {e.a.recommendation}</div> : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="num font-medium">{fmtDate(e.date)}</span>
+            {showMachine ? <span className="font-semibold">{e.machine}</span> : null}
+            {e.area ? <span className="text-mute">{e.area}</span> : null}
+            <span className="rounded-full bg-signal/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-signal">{showCondition(e.a.condition)}</span>
+            <span className="num ml-auto text-mute">Ticket {e.ticketNo}</span>
+          </div>
+          <div className="mt-1 font-medium">{showFault(e.a.fault)}</div>
+          <div className="mt-1 grid gap-1 sm:grid-cols-2">
+            <div><div className="label-caps">Observation</div><div className="text-mute">{showText(e.a.observation)}</div></div>
+            <div><div className="label-caps">Recommendation</div><div className="text-mute">{showText(e.a.recommendation)}</div></div>
+          </div>
         </li>
       ))}
     </ol>
+  );
+}
+
+function HistoryTab({ entries, data, nameOf }: { entries: ReturnType<typeof faultHistory>; data: TechData; nameOf: (id: string) => string }) {
+  const [view, setView] = useState<"timeline" | "machine">("timeline");
+  const [q, setQ] = useState("");
+  const [area, setArea] = useState("");
+  const [machine, setMachine] = useState("");
+  const [cond, setCond] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [oldest, setOldest] = useState(false);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  void nameOf;
+  const areas = [...new Set(entries.map((e) => e.area).filter(Boolean))].sort();
+  const machines = [...new Set(entries.filter((e) => !area || e.area === area).map((e) => e.machine))].sort();
+  const shown = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    const list = entries.filter((e) => {
+      if (area && e.area !== area) return false;
+      if (machine && e.machine !== machine) return false;
+      if (cond && e.a.condition !== cond) return false;
+      if (from && e.date < from) return false;
+      if (to && e.date > to) return false;
+      if (!s) return true;
+      const m = data.machines.find((x) => x.name.trim().toLowerCase() === e.machine.trim().toLowerCase());
+      const serials = [...(e.a.sensors ?? []), ...(m ? data.sensors.filter((sn) => data.points.some((p) => p.id === sn.point_id && p.machine_id === m.id)).map((sn) => sn.serial_no) : [])];
+      return [e.machine, m?.tag ?? "", e.a.fault, e.ticketNo, e.a.observation, e.a.recommendation, ...serials].some((v) => v.toLowerCase().includes(s));
+    });
+    return oldest ? [...list].reverse() : list;
+  }, [entries, q, area, machine, cond, from, to, oldest, data]);
+  return (
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex rounded-md ring-1 ring-line">
+          {(["timeline", "machine"] as const).map((v) => (
+            <button key={v} type="button" onClick={() => setView(v)} className={`px-3 py-1 text-xs ${view === v ? "bg-signal text-primary-foreground" : "text-mute"}`}>{v === "timeline" ? "Timeline view" : "By machine"}</button>
+          ))}
+        </div>
+        <div className="relative min-w-48 flex-1">
+          <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-mute" />
+          <TextInput className="h-8 pl-7 text-xs" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Machine, tag, fault, ticket, keyword or sensor serial" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+        <Select value={area} onChange={(e) => { setArea(e.target.value); setMachine(""); }}><option value="">All areas</option>{areas.map((a) => <option key={a}>{a}</option>)}</Select>
+        <Select value={machine} onChange={(e) => setMachine(e.target.value)}><option value="">All machines</option>{machines.map((m) => <option key={m}>{m}</option>)}</Select>
+        <Select value={cond} onChange={(e) => setCond(e.target.value)}><option value="">All conditions</option>{allConditions.map((c) => <option key={c} value={c}>{conditionLabel[c]}</option>)}</Select>
+        <TextInput type="date" aria-label="From date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        <TextInput type="date" aria-label="To date" value={to} onChange={(e) => setTo(e.target.value)} />
+        <Select value={oldest ? "old" : "new"} onChange={(e) => setOldest(e.target.value === "old")}><option value="new">Newest first</option><option value="old">Oldest first</option></Select>
+      </div>
+      {view === "timeline" ? <HistoryList entries={shown} showMachine /> : (
+        groupByMachine(shown).length ? (
+          <div className="grid gap-2">
+            {groupByMachine(shown).map((g) => (
+              <div key={g.key} className="rounded-md ring-1 ring-line">
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs">
+                  <span><span className="font-semibold">{g.machine}</span> <span className="text-mute">{g.area}</span>
+                    <span className="block text-mute">{g.entries.length} analys{g.entries.length === 1 ? "is" : "es"} · Last: {showCondition(g.entries[0]!.a.condition)}</span></span>
+                  <Button variant="ghost" onClick={() => setOpenGroup(openGroup === g.key ? null : g.key)}>{openGroup === g.key ? "Hide history" : "Open history"}</Button>
+                </div>
+                {openGroup === g.key ? <div className="border-t border-line p-2"><HistoryList entries={g.entries} /></div> : null}
+              </div>
+            ))}
+          </div>
+        ) : <p className="text-xs text-mute">No reviewed ticket analysis yet.</p>
+      )}
+    </div>
   );
 }
 
