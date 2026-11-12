@@ -87,12 +87,13 @@ export const showText = (s?: string) => {
 export const showCondition = (c?: MachineAnalysis["condition"]) => (c ? conditionLabel[c] : "—");
 
 /** Group entries by machine for the "By Machine" view; newest first inside, groups by latest date. */
-export function groupByMachine(entries: HistoryEntry[]) {
-  const groups: { key: string; machine: string; area: string; entries: HistoryEntry[] }[] = [];
+export function groupByMachine<E extends { machine: string; area: string; a: MachineAnalysis }>(entries: E[]) {
+  const id = (e: E) => ({ machineId: e.a.machineId, machine: e.machine, area: e.area });
+  const groups: { key: string; machine: string; area: string; entries: E[] }[] = [];
   for (const e of entries) {
-    const g = groups.find((x) => sameMachine(x.entries[0]!, e));
+    const g = groups.find((x) => sameMachine(id(x.entries[0]!), id(e)));
     if (g) g.entries.push(e);
-    else groups.push({ key: e.machineId || `${norm(e.area)}|${norm(e.machine)}`, machine: e.machine, area: e.area, entries: [e] });
+    else groups.push({ key: e.a.machineId || `${norm(e.area)}|${norm(e.machine)}`, machine: e.machine, area: e.area, entries: [e] });
   }
   return groups;
 }
