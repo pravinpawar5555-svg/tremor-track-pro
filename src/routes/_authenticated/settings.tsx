@@ -6,7 +6,7 @@ import { AppShell } from "@/components/console/AppShell";
 import { Button, Empty, Field, PageHeader, Panel, Select, TextInput } from "@/components/console/ui";
 import { peekDomain } from "@/lib/domain";
 import { useData, engineerName } from "@/lib/store";
-import { dateRange, saveWorkloadSettings, useWorkloadSettings, type WorkloadSettings } from "@/lib/workload";
+import { addHolidayDates, dateRange, loadWorkloadSettings, renameHoliday, saveWorkloadSettings, useWorkloadSettings, workloadSettingsLoaded, type WorkloadSettings } from "@/lib/workload";
 import {
   emailOk, phoneSuspicious, saveBranch, saveKam, saveSales, useBranches,
   type Branch, type Kam, type SalesEngineer,
@@ -263,9 +263,8 @@ function HolidayEditor({ v, set }: { v: WorkloadSettings; set: (s: WorkloadSetti
   const add = () => {
     const ds = dateRange(start, mode === "range" ? end : start);
     if (!ds.length) return;
-    const nn = { ...names };
-    for (const d of ds) nn[d] = name.trim() || nn[d] || "Holiday";
-    set({ ...v, holidays: [...new Set([...v.holidays, ...ds])].sort(), holidayNames: nn });
+    set(addHolidayDates(v, ds, name));
+    setMonth(start.slice(0, 7));
     setStart(""); setEnd(""); setName("");
   };
   const remove = (d: string) => { const nn = { ...names }; delete nn[d]; set({ ...v, holidays: v.holidays.filter((x) => x !== d), holidayNames: nn }); };
@@ -305,17 +304,17 @@ function HolidayEditor({ v, set }: { v: WorkloadSettings; set: (s: WorkloadSetti
             <div key={m} className="rounded-md p-2 ring-1 ring-line">
               <button type="button" onClick={() => setMonth(m)} className="mb-1 text-xs font-semibold">{mLabel(m)} — {ds.length} holiday{ds.length > 1 ? "s" : ""}</button>
               {ds.map((d) => (
-                <div key={d} className="flex items-center gap-2 py-0.5 text-xs">
-                  <span className="num w-20 text-mute">{new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", timeZone: "UTC" })}</span>
-                  <span className="flex-1 truncate">{names[d] || "Holiday"}</span>
-                  <button type="button" aria-label={`Remove ${d}`} onClick={() => remove(d)} className="text-mute hover:text-sev-critical">✕</button>
+                <div key={d} className="flex items-center gap-2 py-1 text-xs">
+                  <span className="num w-20 shrink-0 text-mute">{new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", timeZone: "UTC" })}</span>
+                  <TextInput aria-label={`Holiday name for ${d}`} value={names[d] ?? ""} placeholder="Holiday" onChange={(e) => set(renameHoliday(v, d, e.target.value))} className="min-w-0 flex-1 px-2 py-1 text-xs" />
+                  <button type="button" aria-label={`Remove ${d}`} onClick={() => remove(d)} className="shrink-0 text-mute hover:text-sev-critical">✕</button>
                 </div>
               ))}
             </div>
           ))}
         </div>
       </div>
-      <div className="text-[11px] text-mute">Holidays inside an approved leave are not counted as leave. Click Save to apply.</div>
+      <div className="text-[11px] text-mute">Edit any name beside its date, then click Save. Holidays inside approved leave are not counted as leave.</div>
     </div>
   );
 }
@@ -324,9 +323,30 @@ function WorkloadRules() {
   const cur = useWorkloadSettings();
   const data = useData();
   const [f, setF] = useState<WorkloadSettings | null>(null);
+  const [ready, setReady] = useState(workloadSettingsLoaded());
+  const [loadError, setLoadError] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    let active = true;
+    if (workloadSettingsLoaded()) { setReady(true); return () => { active = false; }; }
+    setReady(false); setLoadError("");
+    void loadWorkloadSettings()
+      .then(() => { if (active) setReady(true); })
+      .catch((e) => { if (active) setLoadError(e instanceof Error ? e.message : "Could not load saved settings"); });
+    return () => { active = false; };
+  }, [attempt]);
   const v = f ?? cur;
   const num = (x: string) => (x === "" ? null : Math.max(0, Number(x) || 0));
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  if (!ready) return (
+    <Panel title="Workload Settings">
+      <div className="flex items-center gap-3 p-4 text-sm text-mute">
+        {loadError || "Loading saved workload settings…"}
+        {loadError ? <Button onClick={() => setAttempt((n) => n + 1)}>Retry</Button> : null}
+      </div>
+    </Panel>
+  );
   return (
     <Panel title="Workload Settings" meta={<span>Leave blank to show counts only, without High / Over judgement</span>}>
       <div className="grid gap-4 p-4 md:grid-cols-2">
@@ -355,7 +375,13 @@ function WorkloadRules() {
         <div className="md:col-span-2"><HolidayEditor v={v} set={setF} /></div>
       </div>
       <div className="flex justify-end gap-2 px-4 pb-4">
-        <Button variant="solid" disabled={!f} onClick={async () => { if (f && (await wrap(saveWorkloadSettings(f, engineerName(data, data.currentUserId) || "Manager"), "Workload settings saved"))) setF(null); }}>Save</Button>
+        <Button variant="solid" disabled={!f || saving} onClick={async () => {
+          if (!f || saving) return;
+          setSaving(true);
+          try {
+            if (await wrap(saveWorkloadSettings(f, engineerName(data, data.currentUserId) || "Manager"), "Workload settings saved")) setF(null);
+          } finally { setSaving(false); }
+        }}>{saving ? "Saving…" : "Save"}</Button>
       </div>
     </Panel>
   );
