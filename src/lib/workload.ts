@@ -18,28 +18,65 @@ const defaults: WorkloadSettings = { csHigh: null, csOver: null, execHigh: null,
 
 let state: WorkloadSettings = defaults;
 let loaded = false;
+let loading: Promise<void> | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
+export const workloadSettingsLoaded = () => loaded;
+
+export function normalizeHolidayNames(holidays: string[], names: Record<string, string> = {}) {
+  return Object.fromEntries([...new Set(holidays)].sort().map((d) => [d, names[d]?.trim() || "Holiday"]));
+}
+
+function settingsFromRow(data: any): WorkloadSettings {
+  const holidays = data.holidays ?? [];
+  return {
+    csHigh: data.cs_high, csOver: data.cs_over, execHigh: data.exec_high, execOver: data.exec_over,
+    nonWorkingDays: data.non_working_days ?? [0, 6], holidays,
+    holidayNames: normalizeHolidayNames(holidays, data.holiday_names ?? {}),
+  };
+}
+
+export function addHolidayDates(s: WorkloadSettings, dates: string[], name: string): WorkloadSettings {
+  const holidays = [...new Set([...s.holidays, ...dates])].sort();
+  const names = { ...(s.holidayNames ?? {}) };
+  for (const d of dates) names[d] = name.trim() || names[d] || "Holiday";
+  return { ...s, holidays, holidayNames: normalizeHolidayNames(holidays, names) };
+}
+
+export function renameHoliday(s: WorkloadSettings, date: string, name: string): WorkloadSettings {
+  if (!s.holidays.includes(date)) return s;
+  return { ...s, holidayNames: { ...(s.holidayNames ?? {}), [date]: name } };
+}
+
 export async function loadWorkloadSettings() {
-  const { data } = await db.from("workload_settings").select("*").eq("id", "default").maybeSingle();
-  if (data) state = { csHigh: data.cs_high, csOver: data.cs_over, execHigh: data.exec_high, execOver: data.exec_over, nonWorkingDays: data.non_working_days ?? [0, 6], holidays: data.holidays ?? [], holidayNames: data.holiday_names ?? {} };
-  loaded = true;
-  emit();
+  if (loading) return loading;
+  loading = (async () => {
+    const { data, error } = await db.from("workload_settings").select("*").eq("id", "default").maybeSingle();
+    if (error) throw new Error(error.message);
+    state = data ? settingsFromRow(data) : defaults;
+    loaded = true;
+    emit();
+  })().finally(() => { loading = null; });
+  return loading;
 }
 
 export function useWorkloadSettings() {
-  useEffect(() => { if (!loaded) void loadWorkloadSettings(); }, []);
+  useEffect(() => { if (!loaded) void loadWorkloadSettings().catch(() => undefined); }, []);
   return useSyncExternalStore((cb) => { listeners.add(cb); return () => { listeners.delete(cb); }; }, () => state, () => state);
 }
 
 export async function saveWorkloadSettings(s: WorkloadSettings, by: string) {
-  const { error } = await db.from("workload_settings").upsert({
-    id: "default", cs_high: s.csHigh, cs_over: s.csOver, exec_high: s.execHigh, exec_over: s.execOver,
-    non_working_days: s.nonWorkingDays, holidays: s.holidays, holiday_names: s.holidayNames, updated_by: by, updated_at: new Date().toISOString(),
-  });
+  const holidays = [...new Set(s.holidays)].sort();
+  const clean = { ...s, holidays, holidayNames: normalizeHolidayNames(holidays, s.holidayNames) };
+  const { data, error } = await db.from("workload_settings").upsert({
+    id: "default", cs_high: clean.csHigh, cs_over: clean.csOver, exec_high: clean.execHigh, exec_over: clean.execOver,
+    non_working_days: clean.nonWorkingDays, holidays: clean.holidays, holiday_names: clean.holidayNames, updated_by: by, updated_at: new Date().toISOString(),
+  }).select("*").single();
   if (error) throw new Error(error.message);
-  state = s;
+  if (!data) throw new Error("Saved settings could not be read back");
+  state = settingsFromRow(data);
+  loaded = true;
   emit();
 }
 
