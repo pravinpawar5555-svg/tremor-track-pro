@@ -92,17 +92,21 @@ export function levelFor(value: number, high: number | null, over: number | null
 /* ------------------------------------------------------------ Engineer leaves */
 export interface Leave { id: string; personId: string; start: string; end: string; reason: string; note: string; status?: string }
 let leaves: Leave[] = [];
-let leavesLoaded = false;
 const leaveListeners = new Set<() => void>();
 const emitLeaves = () => leaveListeners.forEach((l) => l());
 export async function loadLeaves() {
-  const { data } = await db.from("engineer_leaves").select("*").order("start_date");
+  const { data, error } = await db.from("engineer_leaves").select("*").order("start_date");
+  if (error) throw new Error(error.message);
   leaves = (data ?? []).map((r: any) => ({ id: r.id, personId: r.person_id, start: r.start_date, end: r.end_date, reason: r.reason, note: r.note, status: r.status ?? "approved" }));
-  leavesLoaded = true;
   emitLeaves();
 }
 export function useLeaves() {
-  useEffect(() => { if (!leavesLoaded) void loadLeaves(); }, []);
+  useEffect(() => {
+    const refresh = () => { void loadLeaves().catch(() => undefined); };
+    refresh();
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, []);
   return useSyncExternalStore((cb) => { leaveListeners.add(cb); return () => { leaveListeners.delete(cb); }; }, () => leaves, () => leaves);
 }
 export async function addLeave(l: Omit<Leave, "id">, by: string, approved = true) {
@@ -116,16 +120,39 @@ export async function deleteLeave(id: string) {
   await loadLeaves();
 }
 export async function reviewLeave(id: string, approve: boolean, by: string) {
-  const { error } = await db.from("engineer_leaves").update({ status: approve ? "approved" : "rejected", reviewed_by: by }).eq("id", id);
+  const { data, error } = await db.from("engineer_leaves").update({ status: approve ? "approved" : "rejected", reviewed_by: by }).eq("id", id).select("id,status").single();
   if (error) throw error;
+  if (!data || data.status !== (approve ? "approved" : "rejected")) throw new Error("Approval could not be confirmed");
   await loadLeaves();
 }
 /** Only approved leave counts as a Leave day in Workload. */
 export const WFH_REASON = "Work From Home";
 export const isWfh = (l: Leave) => l.reason === WFH_REASON;
 const approvedOn = (ls: Leave[], personId: string, d: string, wfh: boolean) => ls.find((l) => (l.status ?? "approved") === "approved" && isWfh(l) === wfh && l.personId === personId && l.start <= d && l.end >= d);
-export const leaveOn = (ls: Leave[], personId: string, d: string) => approvedOn(ls, personId, d, false);
+export const leaveOn = (ls: Leave[], personId: string, d: string) => wfhOn(ls, personId, d) ? undefined : approvedOn(ls, personId, d, false);
 export const wfhOn = (ls: Leave[], personId: string, d: string) => approvedOn(ls, personId, d, true);
+
+/** Remove only WFH-covered dates from visible leave ranges; retain original requests for audit. */
+export function effectiveLeaves(ls: Leave[]): Leave[] {
+  return ls.flatMap((l) => {
+    if (isWfh(l) || l.status === "rejected") return [l];
+    const covered = ls.filter((w) => isWfh(w) && (w.status ?? "approved") === "approved" && w.personId === l.personId && w.start <= l.end && w.end >= l.start).sort((a, b) => a.start.localeCompare(b.start));
+    const out: Leave[] = [];
+    let start = l.start;
+    const adjacent = (d: string, n: number) => {
+      const date = new Date(d + "T00:00:00Z");
+      date.setUTCDate(date.getUTCDate() + n);
+      return date.toISOString().slice(0, 10);
+    };
+    for (const w of covered) {
+      if (w.start > start) out.push({ ...l, start, end: adjacent(w.start, -1) });
+      if (w.end >= start) start = adjacent(w.end, 1);
+      if (start > l.end) break;
+    }
+    if (start <= l.end) out.push({ ...l, start });
+    return out;
+  });
+}
 
 /** All ISO dates from start to end inclusive (max 366). */
 export function dateRange(start: string, end: string): string[] {

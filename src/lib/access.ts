@@ -46,6 +46,7 @@ export type DayKind = "site" | "office" | "wfh" | "leave" | "off" | "weekend" | 
 /** Holidays / non-working days win over leave, so leave counts only working days. */
 export function dayKind(onLeave: boolean, nonWorking: boolean, site: boolean, worked: boolean, wfh = false, holiday = false): DayKind {
   if (nonWorking || holiday) return site || worked ? "weekend" : holiday ? "holiday" : "off";
+  if (wfh) return site ? "site" : "wfh";
   if (onLeave) return "leave";
-  return site ? "site" : wfh ? "wfh" : "office";
+  return site ? "site" : "office";
 }

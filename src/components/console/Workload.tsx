@@ -13,7 +13,7 @@ import {
 import { useVisits } from "@/lib/visits";
 import { useComms, openFollowUp } from "@/lib/comms";
 import { onJob, swapEngineer, useExecution, saveJob, siteVisitTypeLabel, installTypeLabel, execStatusLabel, type ExecJob } from "@/lib/execution";
-import { addLeave, deleteLeave, isWfh, leaveOn, wfhOn, WFH_REASON, reviewLeave, levelFor, useLeaves, useWorkloadSettings, type Level } from "@/lib/workload";
+import { addLeave, deleteLeave, effectiveLeaves, isWfh, leaveOn, wfhOn, WFH_REASON, reviewLeave, levelFor, useLeaves, useWorkloadSettings, type Level } from "@/lib/workload";
 import { dayKind, execOnSite, type DayKind } from "@/lib/access";
 const kindMeta: Record<DayKind, { label: string; cls: string; Icon: typeof MapPin }> = {
   office: { label: "Office", cls: "bg-black/[0.05] text-ink ring-line", Icon: Building2 },
@@ -113,6 +113,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
   const [mode, setMode] = useState<"grid" | "summary">("grid");
   const [drill, setDrill] = useState<Drill>(null);
   const days = useMemo(() => periodDays(period, anchor), [period, anchor]);
+  const visibleLeaves = useMemo(() => effectiveLeaves(leaves).filter((l) => l.start <= (days.at(-1) ?? anchor) && l.end >= (days[0] ?? anchor)), [leaves, days, anchor]);
   const nonWork = (d: string) => rules.nonWorkingDays.includes(dow(d)) || rules.holidays.includes(d);
 
   const csTeam = analystsOf(data).filter((a) => eng === "all" || a.id === eng);
@@ -350,6 +351,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
                   {days.map((d) => { const c = csDay(data, x, a.id, d); const lvl = levelFor(c.total, rules.csHigh, rules.csOver); return (
                     <button key={d} type="button" onClick={() => setDrill({ kind: "cs", id: a.id, d })} className={cn("min-w-24 snap-start rounded-md p-2 text-left text-[11px] ring-1 ring-line/60", lvl ? levelCls[lvl] : "", d === TODAY && "ring-signal/50")}>
                       <div className="font-semibold">{fmtDate(d).split(" ").slice(0, 2).join(" ")}</div>
+                      <div className="my-1"><KindBadge k={csKind(a.id, d).k} where={csKind(a.id, d).where} /></div>
                       <div className="num text-lg font-semibold text-ink">{c.total} <span className="text-[10px] font-normal">active</span></div>
                       {c.reports.length ? <div>{c.reports.length} reports</div> : null}{c.visits.length ? <div>{c.visits.length} visit</div> : null}{c.follow.length ? <div>{c.follow.length} follow-up</div> : null}
                       {lvl === "high" ? <div className="text-sev-medium">High workload</div> : lvl === "over" ? <div className="text-sev-critical">Over capacity</div> : null}
@@ -359,6 +361,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
             )) : null}
             {showEx ? exTeam.map((e) => (
               <Panel key={e.id} title={e.name} meta={<span>Execution</span>}>
+                <div className="flex gap-2 overflow-x-auto p-3">{days.map((d) => { const k = exKind(e.id, d); return <div key={d} className="min-w-24 text-[11px]"><div className="mb-1 font-semibold">{fmtDate(d).split(" ").slice(0, 2).join(" ")}</div><KindBadge k={k.k} where={k.where} /></div>; })}</div>
                 <div className="divide-y divide-line/60">
                   {jobsOf(e.id).filter(inRange).map((j) => <button key={j.id} type="button" onClick={() => setDrill({ kind: "job", job: j })} className="block w-full px-4 py-2 text-left text-sm"><div className="font-medium">{j.plantName || j.customerName}</div><div className="text-xs text-mute">{installTypeLabel[j.installationType]} · {fmtDate(jStart(j))}{jEnd(j) !== jStart(j) ? ` – ${fmtDate(jEnd(j))}` : ""} · {execStatusLabel[j.status]}</div></button>)}
                   {!jobsOf(e.id).filter(inRange).length ? <Empty>No jobs in this period.</Empty> : null}
@@ -392,8 +395,8 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
           <div className="divide-y divide-line/60">{conflicts.map((c, i) => <div key={i} className="px-4 py-2 text-sm"><div className="font-medium">{c.who}</div><div className="text-xs text-sev-critical">{c.text}</div></div>)}{!conflicts.length ? <Empty>No conflicts.</Empty> : null}</div>
         </Panel>
         <Panel title="Leave & WFH in this period">
-          <div className="divide-y divide-line/60">{leaves.filter((l) => l.start <= days[days.length - 1]! && l.end >= days[0]!).map((l) => (
-            <div key={l.id} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
+          <div className="divide-y divide-line/60">{visibleLeaves.map((l) => (
+            <div key={`${l.id}:${l.start}`} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
               <div><div className="font-medium">{ex.engineers.find((e) => e.id === l.personId)?.name ?? engineerName(data, l.personId)}</div><div className="text-xs text-mute">{isWfh(l) ? "🏠 WFH" : l.reason}{isWfh(l) && l.note ? ` – ${l.note}` : ""} · {fmtDate(l.start)}{l.end !== l.start ? ` – ${fmtDate(l.end)}` : ""}</div></div>
               <div className="flex items-center gap-2">
                 {(l.status ?? "approved") !== "approved" ? <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-semibold", l.status === "pending" ? "bg-sev-medium/15 text-sev-medium" : "bg-sev-critical/15 text-sev-critical")}>{l.status === "pending" ? "Pending" : "Rejected"}</span> : null}
@@ -404,7 +407,7 @@ export function Workload({ data, myName }: { data: AppData; myName: string }) {
                 {isMgr || l.status === "pending" ? <button type="button" aria-label="Delete leave" className="text-sev-critical" onClick={async () => { if (!window.confirm("Delete this leave?")) return; try { await deleteLeave(l.id); toast.success("Leave removed"); } catch { toast.error("Could not delete"); } }}><Trash2 className="size-4" /></button> : null}
               </div>
             </div>
-          ))}{!leaves.some((l) => l.start <= days[days.length - 1]! && l.end >= days[0]!) ? <Empty>No leave in this period.</Empty> : null}</div>
+          ))}{!visibleLeaves.length ? <Empty>No leave or WFH in this period.</Empty> : null}</div>
         </Panel>
         <Panel title="Unscheduled / Carried Work">
           <div className="divide-y divide-line/60">{unsched.map((u, i) => <div key={i} className="flex justify-between px-4 py-2 text-sm"><span>{u.who}</span><span className="text-xs text-sev-high">{u.text}</span></div>)}{!unsched.length ? <Empty>All work is scheduled.</Empty> : null}</div>
