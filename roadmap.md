@@ -4,9 +4,9 @@
 - [ ] Signed-in form/save/read-back check — blocked: no portal account matches the requesting user's email; user must sign in to the preview.
 
 # Approved WFH workload
-- [ ] Diagnose Isha and Laxmi's approved requests and overlapping leave.
-- [ ] Make approved WFH replace leave on overlapping working days without removing unrelated leave dates.
-- [ ] Run regression tests and verify the signed-in Workload display.
+- [x] Diagnose Isha and Laxmi's approved requests and overlapping leave.
+- [x] Make approved WFH replace leave on overlapping working days without removing unrelated leave dates; preserve original requests for history.
+- [x] 32 regression tests passed; signed-in desktop/reload/phone checks show both WFH on November 13, 2 WFH days and 0 leave days, with no runtime errors.
 
 # Demo expiry and AMC separation
 - [x] Exclude demo plants from AMC renewal indicators and dashboard counts.
