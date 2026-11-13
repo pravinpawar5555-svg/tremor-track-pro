@@ -3,6 +3,11 @@
 - [x] Verify storage columns, mapping tests (7 checks passed), and clean build.
 - [ ] Signed-in form/save/read-back check — blocked: no portal account matches the requesting user's email; user must sign in to the preview.
 
+# Approved WFH workload
+- [ ] Diagnose Isha and Laxmi's approved requests and overlapping leave.
+- [ ] Make approved WFH replace leave on overlapping working days without removing unrelated leave dates.
+- [ ] Run regression tests and verify the signed-in Workload display.
+
 # Demo expiry and AMC separation
 - [x] Exclude demo plants from AMC renewal indicators and dashboard counts.
 - [x] Add demo-end reminders through existing Daily Work, with quotation/order follow-up links.
