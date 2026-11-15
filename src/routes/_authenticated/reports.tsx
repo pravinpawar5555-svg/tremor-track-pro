@@ -28,7 +28,6 @@ import {
   analystsOf,
   engineerName,
   fmtDate,
-  frequencyText,
   plantName,
   removeReport,
   reportKpis,
@@ -159,37 +158,10 @@ function ReportsPage() {
         <Kpi label="Due in 7 days" value={rk.dueThisWeek} />
       </div>
 
-      <div className="mt-4 flex items-center border-b border-line">
+      <div className="mt-4 flex flex-wrap items-center gap-1 border-b border-line pb-1">
         <ControlButton variant="ghost" aria-pressed={view === "overview"} onClick={() => { setAdding(false); setView("overview"); }} className={view === "overview" ? "rounded-none border-b-2 border-signal text-signal" : "text-mute"}><CalendarDays />Delivery overview</ControlButton>
-        <button
-          type="button"
-          onClick={() => setView("register")}
-          className={`relative px-4 py-3 text-sm font-semibold transition-colors ${
-            view === "register" ? "text-signal" : "text-mute hover:text-ink"
-          }`}
-        >
-          Report Register
-          <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] ${view === "register" ? "bg-signal/10" : "bg-canvas"}`}>
-            {allReports.length}
-          </span>
-          {view === "register" ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-signal" /> : null}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setAdding(false);
-            setView("recurring");
-          }}
-          className={`relative px-4 py-3 text-sm font-semibold transition-colors ${
-            view === "recurring" ? "text-signal" : "text-mute hover:text-ink"
-          }`}
-        >
-          Recurring Settings
-          <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] ${view === "recurring" ? "bg-signal/10" : "bg-canvas"}`}>
-            {scopedRecurring(data).length}
-          </span>
-          {view === "recurring" ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-signal" /> : null}
-        </button>
+        <ControlButton variant="ghost" aria-pressed={view === "register"} onClick={() => setView("register")} className={view === "register" ? "rounded-none border-b-2 border-signal text-signal" : "text-mute"}><List />Report Register<span className="num text-[11px]">{allReports.length}</span></ControlButton>
+        <ControlButton variant="ghost" aria-pressed={view === "recurring"} onClick={() => { setAdding(false); setView("recurring"); }} className={view === "recurring" ? "rounded-none border-b-2 border-signal text-signal" : "text-mute"}><Settings2 />Recurring Settings<span className="num text-[11px]">{scopedRecurring(data).length}</span></ControlButton>
       </div>
 
       {view === "recurring" ? <RecurringReports catFilter={cat} onCatFilter={setCat} /> : null}
@@ -251,7 +223,7 @@ function ReportsPage() {
                 </button>
               ))}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full ring-1 ring-line/80 p-1">
+            {view === "register" ? <span className="inline-flex flex-wrap items-center gap-1 rounded-md ring-1 ring-line/80 p-1">
               {([
                 ["all", `All (${allCount})`],
                 ["due", `Due (${dueCount})`],
@@ -268,7 +240,7 @@ function ReportsPage() {
                   {label}
                 </button>
               ))}
-            </span>
+            </span> : null}
             <TextInput
               aria-label="Search report plants"
               className="w-44"
