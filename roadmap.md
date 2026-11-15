@@ -1,3 +1,7 @@
+# Dashboard monitoring presentation
+- [ ] Improve the manager dashboard hierarchy, action queue, deadline/owner visibility and mobile layout using existing data only.
+- [ ] Preserve role dashboards, report scoping, AMC/demo separation and existing work rules; verify signed-in filters/navigation and regression tests.
+
 # Engineers monitoring presentation
 - [x] Add team overview, searchable role-specific monitoring, focused account management and clearer activity views; fleet/report detail remains expandable.
 - [x] Preserve non-manager Workload-only access and existing approval/work rules; reuse execScope for multi-engineer jobs and standalone site visits.
