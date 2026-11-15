@@ -48,18 +48,18 @@ export const Route = createFileRoute("/_authenticated/reports")({
   },
   head: () => ({
     meta: [
-      { title: "Report Delivery Tracker — Forbes Marshall CM Portal" },
+      { title: "Reports Control Center — Forbes Marshall CM Portal" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       {
         name: "description",
         content:
-          "Track on-demand, weekly and monthly customer reports: due date, prepared, sent date and whether delivery was on time or late.",
+          "Monitor overdue customer reports, this week’s delivery calendar and next week’s deadlines, with owners and delivery status.",
       },
-      { property: "og:title", content: "Report Delivery Tracker — Forbes Marshall CM Portal" },
+      { property: "og:title", content: "Reports Control Center — Forbes Marshall CM Portal" },
       {
         property: "og:description",
-        content: "Every customer report with due date, status and on-time or late delivery against the due date.",
+        content: "Customer report delivery horizons, weekly deadlines and overdue work for Forbes Marshall teams.",
       },
     ],
   }),
@@ -141,7 +141,7 @@ function ReportsPage() {
   return (
     <AppShell>
       <PageHeader
-        title="Report Delivery Tracker"
+        title="Reports Control Center"
         subtitle="Customer delivery · deadlines, owners and upcoming report schedules"
         actions={
           view !== "recurring" ? (
