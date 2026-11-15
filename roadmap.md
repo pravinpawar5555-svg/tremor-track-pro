@@ -1,5 +1,5 @@
 # Dashboard monitoring presentation
-- [ ] Replace divider-style metrics with consistent icon-led, status-accented cards across Management Overview, Customer Success and Execution; verify phone/desktop and retain all counts/actions.
+- [x] Replace divider-style metrics with consistent icon-led, status-accented cards across Management Overview, Customer Success and Execution; neutral zero states, navy planned work, attention accents and green ready-to-close. Thirty-six regression tests pass; signed-in checks confirm five cards per view, report-filter action preserved, 552/390px phone layouts without overflow, no runtime errors and clean build. Counts and permissions unchanged.
 - [x] Improve the manager dashboard hierarchy, searchable/expandable action queue, stored deadlines/owners and mobile layout using existing data only; retain customer-risk, delivery, execution, upcoming work, pipeline and AMC monitoring.
 - [x] Thirty-six regression tests pass; signed-in manager checks cover nine real report actions, search/clear, risk filters, show-all, report navigation, Today/Month and all three views; desktop and 552/390px phone layouts have no page overflow or runtime errors, and build is clean. Engineer dashboards and live records unchanged; physical device alerts remain blocked separately below.
 
