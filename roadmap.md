@@ -1,3 +1,8 @@
+# Device notifications
+- [ ] Move device controls to Settings for every approved account; automatically reconnect allowed devices without prompting again.
+- [ ] Send saved ticket/reminder/message alerts to authorized recipients and verify delivery results.
+- [ ] Run focused tests and signed-in desktop/phone checks; identify accounts needing device permission.
+
 # Ticket status filter
 - [x] Default to exact Open status, remove duplicate Open option and keep details within the filtered list.
 - [x] Fifteen regression tests pass; signed-in checks confirm one Open option, 6 Responded tickets, 41 Closed tickets, 47 under All, no out-of-filter details, and Open after reopening; desktop/mobile checked with no runtime errors.
