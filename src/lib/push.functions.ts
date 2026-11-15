@@ -25,7 +25,8 @@ export const notifyNew = createServerFn({ method: "POST" })
         const { data: t } = await sb.from("tickets").select("ticket_no,subject,assigned_to,raised_by,plant_id").eq("id", data.id).maybeSingle();
         if (t) {
           const { data: mine } = await sb.rpc("my_person_ids", { _uid: context.userId });
-          if (!mine?.includes(t.raised_by)) throw new Error("Only the sender can notify");
+          const { data: manager } = await sb.rpc("has_role", { _user_id: context.userId, _role: "manager" });
+          if (!mine?.includes(t.raised_by) && !manager) throw new Error("Only the sender can notify");
           const { data: p } = await sb.from("plants").select("name").eq("id", t.plant_id).maybeSingle();
           target = t.assigned_to;
           title = `New ticket ${t.ticket_no}${p?.name ? ` — ${p.name}` : ""}`;
@@ -94,6 +95,17 @@ export const notifyNew = createServerFn({ method: "POST" })
     ex?.forEach((e) => e.linked_user_id && ids.add(e.linked_user_id));
     if (!ids.size) return { sent: 0 };
     ids.delete(context.userId);
+    for (const id of [...ids]) {
+      const { data: approved } = await supabaseAdmin.rpc("is_approved", { _user_id: id });
+      if (!approved) { ids.delete(id); continue; }
+      if (data.kind === "ticket") {
+        const [domain, view] = await Promise.all([
+          supabaseAdmin.rpc("user_domain", { _uid: id }),
+          supabaseAdmin.rpc("perm_level", { _uid: id, _module: "discussions", _action: "view" }),
+        ]);
+        if (view.data === "none" || (domain.data === "execution" && view.data !== "all")) ids.delete(id);
+      }
+    }
     return deliverPush([...ids], { title, body, url, tag: `${data.kind}:${data.id}` }, priv);
   });
 
