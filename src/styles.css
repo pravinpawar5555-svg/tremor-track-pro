@@ -114,3 +114,29 @@
   letter-spacing: 0.12em;
   color: var(--color-mute);
 }
+
+/* Dashboard sections remain unframed; individual actions carry the hierarchy. */
+.operations-dashboard {
+  letter-spacing: 0;
+}
+.operations-dashboard .panel-glass {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  border-top: 1px solid var(--line);
+}
+.operations-dashboard .panel-glass > div:first-child {
+  padding-left: 0;
+  padding-right: 0;
+}
+.operations-dashboard h2 {
+  letter-spacing: 0;
+  font-size: 14px;
+}
+.operations-dashboard .dashboard-stat {
+  letter-spacing: 0;
+}
+.operations-dashboard .label-caps {
+  letter-spacing: 0;
+}

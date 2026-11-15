@@ -1,5 +1,7 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
+import { Activity, ArrowRight, CalendarDays, CheckCircle2, ClipboardList, Search, ShieldAlert, Users, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Empty, Panel, PageHeader, Select } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
 import {
@@ -33,8 +35,8 @@ const tone = {
   amber: "bg-sev-medium/10 text-sev-medium ring-sev-medium/30",
   green: "bg-sev-low/10 text-sev-low ring-sev-low/30",
   blue: "bg-signal/10 text-signal ring-signal/30",
-  purple: "bg-[oklch(0.55_0.18_300)]/10 text-[oklch(0.5_0.18_300)] ring-[oklch(0.55_0.18_300)]/30",
-  grey: "bg-black/5 text-mute ring-line",
+  purple: "bg-signal/10 text-signal ring-signal/30",
+  grey: "bg-muted text-mute ring-line",
 } as const;
 type Tone = keyof typeof tone;
 
@@ -45,21 +47,21 @@ function Badge({ t, children }: { t: Tone; children: ReactNode }) {
 function Card({ label, value, hint, t, onClick }: { label: string; value: number; hint?: string; t: Tone; onClick?: () => void }) {
   const dot = tone[t].split(" ")[1];
   return (
-    <button type="button" onClick={onClick} className="panel-glass group p-3 text-left transition hover:ring-1 hover:ring-signal/40">
-      <div className="label-caps">{label}</div>
-      <div className={cn("num mt-1 text-2xl font-semibold", value ? dot : "text-mute")}>{value}</div>
-      {hint ? <div className="mt-0.5 text-[11px] text-mute">{hint}</div> : null}
-    </button>
+    <Button type="button" variant="ghost" onClick={onClick} disabled={!onClick} className="dashboard-stat group h-auto min-h-28 min-w-0 flex-col items-start justify-start whitespace-normal rounded-none border-l-2 border-line px-4 py-3 text-left disabled:opacity-100">
+      <span className="flex w-full items-start justify-between gap-2"><span className="text-xs font-medium text-mute">{label}</span>{onClick ? <ArrowRight className="text-mute" /> : <Activity className="text-mute" />}</span>
+      <span className={cn("num mt-2 text-3xl font-semibold", value ? dot : "text-mute")}>{value}</span>
+      {hint ? <span className="mt-1 text-[11px] font-normal text-mute">{hint}</span> : null}
+    </Button>
   );
 }
 
 function Seg<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { id: T; label: string }[] }) {
   return (
-    <div className="inline-flex overflow-hidden rounded-md ring-1 ring-line">
+    <div className="inline-flex max-w-full flex-wrap gap-1 rounded-md bg-panel p-1 ring-1 ring-line">
       {options.map((o) => (
-        <button key={o.id} type="button" onClick={() => onChange(o.id)} className={cn("px-3 py-1.5 text-xs font-medium", value === o.id ? "bg-signal text-signal-foreground" : "bg-panel text-mute hover:bg-base")}>
+        <Button key={o.id} type="button" variant="ghost" size="sm" aria-pressed={value === o.id} onClick={() => onChange(o.id)} className={cn("h-auto min-h-8 whitespace-normal px-3 py-1.5 text-xs font-medium", value === o.id ? "bg-signal text-signal-foreground hover:bg-signal hover:text-signal-foreground" : "bg-panel text-mute hover:bg-base")}>
           {o.label}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -67,7 +69,7 @@ function Seg<T extends string>({ value, onChange, options }: { value: T; onChang
 
 function Row({ to, search, children }: { to: string; search?: Record<string, unknown> | undefined; children: ReactNode }) {
   return (
-    <Link to={to} search={search as never} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm hover:bg-black/[0.03]">
+    <Link to={to} search={search as never} className="group flex flex-col items-start justify-between gap-2 px-1 py-4 text-sm hover:bg-muted/70 sm:flex-row sm:gap-4">
       {children}
     </Link>
   );
@@ -106,22 +108,24 @@ export function ManagerDashboard({ data, view, onView, csExtra }: { data: AppDat
   const [period, setPeriod] = useState<Period>("7d");
   const m = useModel(data);
   const titles: Record<ManagerView, [string, string]> = {
-    overview: ["Management Overview", "Customer Success & Execution operational overview"],
+    overview: ["Operations Dashboard", "Customer Success & Execution"],
     cs: ["Customer Success", "Customer service health, reports and follow-ups"],
     execution: ["Execution", "Field job execution, installations and closures"],
   };
   return (
-    <>
+    <div className="operations-dashboard">
+      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-signal"><Activity className="size-4" />Forbes Marshall · Condition Monitoring</div>
       <PageHeader
         title={titles[view][0]}
         subtitle={`${titles[view][1]} · ${fmtDate(TODAY)}`}
         actions={<Seg value={period} onChange={setPeriod} options={[{ id: "today", label: "Today" }, { id: "7d", label: "7 Days" }, { id: "month", label: "Month" }]} />}
       />
-      <div className="mb-4 overflow-x-auto">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
         <Seg value={view} onChange={onView} options={[{ id: "overview", label: "Management Overview" }, { id: "cs", label: "Customer Success" }, { id: "execution", label: "Execution" }]} />
+        <Button asChild variant="outline" size="sm"><Link to="/engineers"><Users />Team workload<ArrowRight /></Link></Button>
       </div>
       {view === "overview" ? <Overview m={m} period={period} /> : view === "cs" ? <CustomerSuccess m={m} period={period} extra={csExtra} /> : <Execution m={m} period={period} />}
-    </>
+    </div>
   );
 }
 
@@ -130,9 +134,10 @@ type Model = ReturnType<typeof useModel>;
 /* ------------------------------------------------------------ OVERVIEW */
 function Overview({ m, period }: { m: Model; period: Period }) {
   const { data, visits, ex, comms } = m;
-  const nav = useNavigate();
   const [chip, setChip] = useState<"all" | "review" | "report" | "exec" | "commit">("all");
   const [cat, setCat] = useState<"all" | "order" | "demo">("all");
+  const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState(false);
   const horizon = shiftDate(TODAY, Math.max(periodDays[period], period === "today" ? 0 : 7));
   const catOf = (pid: string) => data.plants.find((p) => p.id === pid)?.category ?? "order";
   const inCat = (pid: string) => cat === "all" || catOf(pid) === cat;
@@ -145,15 +150,15 @@ function Overview({ m, period }: { m: Model; period: Period }) {
   const commits = comms.filter((c) => inCat(c.plantId) && openFollowUp(c.followUp) && (c.commitment.trim() || c.actions.some((a) => a.status === "open")));
 
   const prio = { critical: 0, high: 0, medium: 1, low: 2 } as const;
-  type Q = { key: string; kind: "review" | "report" | "exec" | "commit"; level: 0 | 1 | 2; ref?: string; title: string; plant: string; who: string; cta: string; to: string; search?: Record<string, unknown> };
+  type Q = { key: string; kind: "review" | "report" | "exec" | "commit"; level: 0 | 1 | 2; ref?: string; title: string; plant: string; who: string; cta: string; to: string; date?: string; search?: Record<string, unknown> };
   const queue: Q[] = [
     ...tickets.map((t): Q => ({ key: t.id, kind: "review", level: prio[t.priority], ref: t.ticketNo, title: `${t.subject}${t.machine ? ` — ${t.machine}` : ""}`, plant: plantName(data, t.plantId), who: `Raised by ${engineerName(data, t.raisedBy)}`, cta: "Review", to: "/discussions", search: { tickets: true } })),
-    ...repRisk.map((r): Q => ({ key: r.id, kind: "report", level: reportTiming(r).late ? 1 : 2, title: `${frequencyLabel[r.type]} report ${reportTiming(r).late ? "overdue" : `due ${fmtDate(r.dueDate)}`}`, plant: plantName(data, r.plantId), who: `Owner: ${engineerName(data, r.byEngineerId)}`, cta: "Review Report", to: "/reports", search: reportTiming(r).late ? { timing: "overdue" } : { timing: "due" } })),
-    ...execRisk.map((j): Q => ({ key: j.id, kind: "exec", level: j.priority === "high" ? 0 : 1, title: jobStage(j) === "blocked" ? `Execution pending — ${j.pendingReason || "reason not given"}` : `${installTypeLabel[j.installationType]} past planned date`, plant: j.plantName || plantName(data, j.plantId), who: `Owner: ${m.ex.engineers.find((e) => e.id === j.assignedEngineerId)?.name || "Unassigned"}`, cta: "Open Job", to: "/execution" })),
-    ...commits.map((c): Q => ({ key: c.id, kind: "commit", level: c.nextFollowUp && c.nextFollowUp < TODAY ? 1 : 2, title: `Customer commitment pending${c.subject ? ` — ${c.subject}` : ""}`, plant: plantName(data, c.plantId), who: c.followUpOwner ? `Owner: ${engineerName(data, c.followUpOwner) || c.followUpOwner}` : "", cta: "Open Communication", to: "/discussions" })),
+    ...repRisk.map((r): Q => ({ key: r.id, kind: "report", level: reportTiming(r).late ? 1 : 2, title: `${frequencyLabel[r.type]} report ${reportTiming(r).late ? "overdue" : `due ${fmtDate(r.dueDate)}`}`, date: r.dueDate, plant: plantName(data, r.plantId), who: `Owner: ${engineerName(data, r.byEngineerId)}`, cta: "Review Report", to: "/reports", search: reportTiming(r).late ? { timing: "overdue" } : { timing: "due" } })),
+    ...execRisk.map((j): Q => ({ key: j.id, kind: "exec", level: j.priority === "high" ? 0 : 1, title: jobStage(j) === "blocked" ? `Execution pending — ${j.pendingReason || "reason not given"}` : `${installTypeLabel[j.installationType]} past planned date`, date: jobEnd(j), plant: j.plantName || plantName(data, j.plantId), who: `Owner: ${m.ex.engineers.find((e) => e.id === j.assignedEngineerId)?.name || "Unassigned"}`, cta: "Open Job", to: "/execution" })),
+    ...commits.map((c): Q => ({ key: c.id, kind: "commit", level: c.nextFollowUp && c.nextFollowUp < TODAY ? 1 : 2, title: `Customer commitment pending${c.subject ? ` — ${c.subject}` : ""}`, date: c.nextFollowUp, plant: plantName(data, c.plantId), who: c.followUpOwner ? `Owner: ${engineerName(data, c.followUpOwner) || c.followUpOwner}` : "Owner: Unassigned", cta: "Open Communication", to: "/discussions" })),
   ].sort((a, b) => a.level - b.level);
-  const shown = queue.filter((q) => chip === "all" || q.kind === chip);
-  const levelBadge = (l: number) => (l === 0 ? <Badge t="red">High</Badge> : l === 1 ? <Badge t="orange">Medium</Badge> : <Badge t="grey">Low</Badge>);
+  const shown = queue.filter((q) => (chip === "all" || q.kind === chip) && `${q.title} ${q.plant} ${q.who} ${q.ref ?? ""}`.toLowerCase().includes(query.trim().toLowerCase()));
+  const levelBadge = (l: number) => (l === 0 ? <Badge t="red">High priority</Badge> : l === 1 ? <Badge t="orange">Attention</Badge> : <Badge t="grey">Follow up</Badge>);
 
   type U = { key: string; d: string; dom: "REPORT" | "VISIT" | "EXECUTION"; plant: string; what: string; who: string };
   const upcoming: U[] = [
@@ -165,75 +170,76 @@ function Overview({ m, period }: { m: Model; period: Period }) {
 
   const since = shiftDate(TODAY, -Math.max(periodDays[period], 7));
   const updates = [
-    ...(data.tickets ?? []).filter((t) => t.respondedOn && t.respondedOn >= since).map((t) => ({ d: t.respondedOn!, text: `Manager recommendation issued — ${t.ticketNo}`, sub: plantName(data, t.plantId), t: "purple" as Tone })),
-    ...data.reports.filter((r) => r.status === "sent" && r.sentDate && r.sentDate >= since).map((r) => ({ d: r.sentDate!, text: `${frequencyLabel[r.type]} report sent`, sub: `${plantName(data, r.plantId)} · ${engineerName(data, r.byEngineerId)}`, t: "green" as Tone })),
-    ...ex.jobs.filter((j) => j.completedAt && j.completedAt.slice(0, 10) >= since).map((j) => ({ d: j.completedAt!.slice(0, 10), text: `Execution completed — ${installTypeLabel[j.installationType]}`, sub: j.plantName || plantName(data, j.plantId), t: "green" as Tone })),
+    ...(data.tickets ?? []).filter((t) => t.respondedOn && t.respondedOn >= since).map((t) => ({ d: t.respondedOn ?? TODAY, text: `Manager recommendation issued — ${t.ticketNo}`, sub: plantName(data, t.plantId), t: "purple" as Tone })),
+    ...data.reports.filter((r) => r.status === "sent" && r.sentDate && r.sentDate >= since).map((r) => ({ d: r.sentDate ?? TODAY, text: `${frequencyLabel[r.type]} report sent`, sub: `${plantName(data, r.plantId)} · ${engineerName(data, r.byEngineerId)}`, t: "green" as Tone })),
+    ...ex.jobs.filter((j) => j.completedAt && j.completedAt.slice(0, 10) >= since).map((j) => ({ d: j.completedAt?.slice(0, 10) ?? TODAY, text: `Execution completed — ${installTypeLabel[j.installationType]}`, sub: j.plantName || plantName(data, j.plantId), t: "green" as Tone })),
     ...comms.filter((c) => c.date >= since).map((c) => ({ d: c.date, text: `Customer communication added${c.subject ? ` — ${c.subject}` : ""}`, sub: plantName(data, c.plantId), t: "blue" as Tone })),
-    ...visits.filter((v) => v.completedDate && v.completedDate >= since).map((v) => ({ d: v.completedDate!, text: `Visit completed${v.momNo ? ` · ${v.momNo}` : ""}`, sub: plantName(data, v.plantId), t: "blue" as Tone })),
+    ...visits.filter((v) => v.completedDate && v.completedDate >= since).map((v) => ({ d: v.completedDate ?? TODAY, text: `Visit completed${v.momNo ? ` · ${v.momNo}` : ""}`, sub: plantName(data, v.plantId), t: "blue" as Tone })),
   ].sort((a, b) => (a.d < b.d ? 1 : -1)).slice(0, 6);
 
   return (
     <>
-      <div className="mb-3 flex justify-end">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-sm font-semibold"><ShieldAlert className="size-4 text-signal" />Operational priorities</h2>
         <Seg value={cat} onChange={setCat} options={[{ id: "all", label: "All Plants" }, { id: "order", label: "Order" }, { id: "demo", label: "Demo" }]} />
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Card label="Needs My Decision" value={tickets.length} hint="Tickets waiting on you" t="purple" onClick={() => setChip("review")} />
         <Card label="Customer Commitments" value={commits.length} hint="Open customer actions" t="amber" onClick={() => setChip("commit")} />
-        <Card label="Reports at Risk" value={repRisk.length} hint="Overdue or due in 2 days" t="red" onClick={() => void nav({ to: "/reports", search: { timing: "overdue" } as never })} />
+        <Card label="Reports at Risk" value={repRisk.length} hint="Overdue or due in 2 days" t="red" onClick={() => setChip("report")} />
         <Card label="Execution at Risk" value={execRisk.length} hint="Blocked or past date" t="orange" onClick={() => setChip("exec")} />
-        <Card label={period === "month" ? "Upcoming 30 Days" : "Upcoming 7 Days"} value={upcoming.length} hint="Visits, reports, jobs" t="blue" />
+        <Card label={period === "month" ? "Upcoming 30 Days" : period === "today" ? "Upcoming Today" : "Upcoming 7 Days"} value={upcoming.length} hint="Visits, reports, jobs" t="blue" onClick={() => document.getElementById("dashboard-upcoming")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" })} />
       </div>
 
-      <AmcPanel data={data} inCat={inCat} />
-
-      <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.4fr_1fr]">
-        <Panel title="Management Action Queue" meta={<span>{queue.length} open</span>}>
-          <div className="flex flex-wrap gap-1.5 border-b border-line/60 px-4 py-2">
+      <div className="mt-7 grid items-start gap-7 xl:grid-cols-[1.5fr_1fr]">
+        <Panel title="Management Action Queue" meta={<span className="num">{shown.length} of {queue.length} actions</span>}>
+          <div className="flex flex-wrap gap-1.5 border-b border-line/60 py-3">
             {([["all", "All"], ["review", "Technical Review"], ["report", "Reports"], ["exec", "Execution"], ["commit", "Customer Commitment"]] as const).map(([id, l]) => (
-              <button key={id} type="button" onClick={() => setChip(id)} className={cn("rounded-full px-2.5 py-1 text-[11px] font-medium ring-1", chip === id ? "bg-signal text-signal-foreground ring-signal" : "text-mute ring-line hover:bg-base")}>
+              <Button key={id} type="button" variant="ghost" size="sm" aria-pressed={chip === id} onClick={() => { setChip(id); setExpanded(false); }} className={cn("h-auto min-h-8 whitespace-normal rounded-md px-2.5 py-1 text-[11px] font-medium ring-1", chip === id ? "bg-signal text-signal-foreground ring-signal hover:bg-signal hover:text-signal-foreground" : "text-mute ring-line hover:bg-base")}>
                 {l} <span className="num opacity-70">({id === "all" ? queue.length : queue.filter((q) => q.kind === id).length})</span>
-              </button>
+              </Button>
             ))}
           </div>
+          <div className="my-3 flex items-center gap-2 rounded-md border border-line bg-panel px-3"><Search className="size-4 shrink-0 text-mute" /><input aria-label="Search dashboard actions" placeholder="Search plant, owner or action" value={query} onChange={(event) => { setQuery(event.target.value); setExpanded(false); }} className="h-10 min-w-0 flex-1 bg-transparent text-sm outline-none focus-visible:ring-1 focus-visible:ring-signal" />{query ? <Button variant="ghost" size="icon" aria-label="Clear action search" onClick={() => setQuery("")}><X /></Button> : null}</div>
+          <div className="hidden items-center justify-between border-b border-line pb-2 text-[10px] font-medium uppercase text-mute sm:flex"><span>Priority · Plant · Owner</span><span>Next action</span></div>
           <div className="divide-y divide-line/60">
-            {shown.slice(0, 7).map((q) => (
-              <Row key={q.key} to={q.to} search={q.search}>
+            {(expanded ? shown : shown.slice(0, 7)).map((q) => (
+              <Row key={`${q.kind}-${q.key}`} to={q.to} search={q.search}>
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5">{levelBadge(q.level)}{q.ref ? <span className="num text-[11px] text-mute">{q.ref}</span> : null}</div>
+                  <div className="flex flex-wrap items-center gap-1.5">{levelBadge(q.level)}{q.ref ? <span className="num text-[11px] text-mute">{q.ref}</span> : null}{q.date ? <span className={cn("inline-flex items-center gap-1 text-[11px]", q.date < TODAY ? "text-sev-critical" : "text-mute")}><CalendarDays className="size-3" />{q.date < TODAY ? "Overdue · " : "Due · "}{fmtDate(q.date)}</span> : null}</div>
                   <div className="mt-0.5 font-medium">{q.title}</div>
                   <div className="text-xs text-mute">{[q.plant, q.who].filter(Boolean).join(" · ")}</div>
                 </div>
-                <span className="shrink-0 rounded-md px-2 py-1 text-[11px] font-medium text-signal ring-1 ring-signal/40">{q.cta}</span>
+                <span className="inline-flex shrink-0 items-center gap-1 self-end py-1 text-xs font-medium text-signal sm:self-center">{q.cta}<ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" /></span>
               </Row>
             ))}
-            {!shown.length ? <Empty>Nothing needs your decision right now.</Empty> : null}
+            {!shown.length ? <Empty>{query ? "No actions match your search." : "No actions in this category."}</Empty> : null}
           </div>
-          {shown.length > 7 ? <div className="border-t border-line/60 px-4 py-2 text-right text-xs text-mute">+{shown.length - 7} more — open the relevant tab to view all</div> : null}
+          {shown.length > 7 ? <div className="border-t border-line/60 py-3"><Button variant="outline" size="sm" onClick={() => setExpanded((value) => !value)}>{expanded ? "Show fewer" : `Show all ${shown.length} actions`}<ClipboardList /></Button></div> : null}
         </Panel>
 
         <div className="grid gap-4">
-          <Panel title={`Upcoming Commitments — ${period === "month" ? "Next 30 Days" : period === "today" ? "Today" : "Next 7 Days"}`}>
+          <div id="dashboard-upcoming" className="scroll-mt-24"><Panel title={`Upcoming Commitments — ${period === "month" ? "Next 30 Days" : period === "today" ? "Today" : "Next 7 Days"}`} meta={<CalendarDays className="size-4" />}>
             <div className="max-h-[360px] divide-y divide-line/60 overflow-y-auto">
               {upcoming.map((u) => (
                 <div key={u.key} className="flex items-start gap-3 px-4 py-2 text-sm">
                   <div className="num w-12 shrink-0 pt-0.5 text-xs font-semibold">{fmtDate(u.d).split(" ").slice(0, 2).join(" ")}</div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5"><Badge t={domTone[u.dom]}>{u.dom}</Badge><span className="truncate font-medium">{u.plant}</span></div>
+                    <div className="flex flex-wrap items-center gap-1.5"><Badge t={domTone[u.dom]}>{u.dom}</Badge><span className="min-w-0 break-words font-medium">{u.plant}</span></div>
                     <div className="text-xs text-mute">{[u.what, u.who].filter(Boolean).join(" · ")}</div>
                   </div>
                 </div>
               ))}
               {!upcoming.length ? <Empty>No commitments in this window.</Empty> : null}
             </div>
-          </Panel>
+          </Panel></div>
           <BusinessPipeline />
-          <Panel title="Recent Important Updates">
+          <Panel title="Recent Important Updates" meta={<CheckCircle2 className="size-4" />}>
             <div className="divide-y divide-line/60">
               {updates.map((u, i) => (
                 <div key={i} className="flex items-start justify-between gap-3 px-4 py-2 text-sm">
                   <div className="flex min-w-0 items-start gap-2">
-                    <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", tone[u.t].split(" ")[0]!.replace("/10", ""))} />
+                    <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", tone[u.t].split(" ")[0]?.replace("/10", ""))} />
                     <div className="min-w-0"><div className="truncate">{u.text}</div><div className="text-xs text-mute">{u.sub}</div></div>
                   </div>
                   <span className="num shrink-0 text-xs text-mute">{fmtDate(u.d)}</span>
@@ -244,6 +250,7 @@ function Overview({ m, period }: { m: Model; period: Period }) {
           </Panel>
         </div>
       </div>
+      <AmcPanel data={data} inCat={inCat} />
     </>
   );
 }
