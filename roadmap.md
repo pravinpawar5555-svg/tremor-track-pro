@@ -1,6 +1,6 @@
 # Reports Control Center
-- [ ] Add an interactive Delivery Horizon bar, selectable weekly calendar dates and focused overdue view over existing scoped records.
-- [ ] Verify horizon/date filtering, overdue empty state, register access and phone layout with a signed-in account; run report regressions.
+- [x] Add an interactive Delivery Horizon bar, selectable weekly calendar dates and focused overdue view over existing scoped records.
+- [x] Twenty-eight report/access regression tests pass; signed-in manager checked nine next-week deliveries, date selection, overdue empty state, K-1 filtering and register access; desktop/390px phone verified without overflow or runtime errors, build clean. Existing report actions and generation rules unchanged; no real report statuses edited.
 
 # Demo plant lifecycle
 - [x] Add persistent Active / Sales follow-up / Lost archive views, actual demo removal date, sales follow-up date, loss reason and append-only dated status history; confirmed orders return immediately as active Order. No automatic sensor moves or customer deletion.
