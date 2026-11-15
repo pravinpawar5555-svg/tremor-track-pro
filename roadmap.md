@@ -1,3 +1,8 @@
+# Access Control presentation
+- [ ] Reorganize existing dashboard, module, reminder, handoff and history settings with role-focused views and phone-friendly controls.
+- [ ] Add permission summary, search/status filtering and review-before-save without changing enforcement rules.
+- [ ] Verify real signed-in views, draft/discard/review flow, tests and clean build.
+
 # Device notifications
 - [x] Move device controls to Settings for every approved account; automatically reconnect allowed devices without prompting again.
 - [x] Send saved ticket/reminder/message alerts to authorized recipients; signed-in test alert and real saved plant message each accepted by one device service, without errors; test message removed.
