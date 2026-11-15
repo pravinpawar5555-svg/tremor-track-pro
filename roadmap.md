@@ -1,3 +1,8 @@
+# Engineers monitoring presentation
+- [ ] Add team overview, searchable role-specific monitoring, focused account management and clearer activity views.
+- [ ] Preserve non-manager Workload-only access and existing approval/work rules.
+- [ ] Verify real manager desktop/phone flows and run regression tests.
+
 # Access Control presentation
 - [x] Reorganize existing dashboard, module, reminder, handoff and history settings with role-focused views and phone-friendly controls.
 - [x] Add permission summary, search/status filtering and review-before-save without changing enforcement rules.
