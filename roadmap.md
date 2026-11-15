@@ -1,6 +1,6 @@
 # Dashboard monitoring presentation
-- [ ] Improve the manager dashboard hierarchy, action queue, deadline/owner visibility and mobile layout using existing data only.
-- [ ] Preserve role dashboards, report scoping, AMC/demo separation and existing work rules; verify signed-in filters/navigation and regression tests.
+- [x] Improve the manager dashboard hierarchy, searchable/expandable action queue, stored deadlines/owners and mobile layout using existing data only; retain customer-risk, delivery, execution, upcoming work, pipeline and AMC monitoring.
+- [x] Thirty-six regression tests pass; signed-in manager checks cover nine real report actions, search/clear, risk filters, show-all, report navigation, Today/Month and all three views; desktop and 552/390px phone layouts have no page overflow or runtime errors, and build is clean. Engineer dashboards and live records unchanged; physical device alerts remain blocked separately below.
 
 # Engineers monitoring presentation
 - [x] Add team overview, searchable role-specific monitoring, focused account management and clearer activity views; fleet/report detail remains expandable.
