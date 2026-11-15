@@ -929,6 +929,10 @@ function pushDiff<T extends { id: string }>(table: string, prev: T[], next: T[],
       .upsert(ups)
       .then((res: { error?: unknown }) => {
         if (res?.error) console.error(`cloud save failed (${table})`, res.error);
+        else if (table === "messages" || table === "tickets") {
+          for (const item of next.filter((x) => !before.has(x.id)))
+            notifyNew({ data: { kind: table === "messages" ? "message" : "ticket", id: item.id } }).catch((e) => console.error("push notify failed", e));
+        }
       });
   }
   if (dels.length) {
@@ -1389,8 +1393,6 @@ export function createTicket(input: {
     assignedTo: manager,
   };
   commit({ ...data, tickets: [ticket, ...data.tickets] });
-  if (manager && manager !== input.raisedBy)
-    notifyNew({ data: { kind: "ticket", id: ticket.id } }).catch((e) => console.error("push notify failed", e));
   return { ok: true, message: `Ticket ${ticket.ticketNo} raised with ${engineerName(data, manager)}.`, id: ticket.id };
 }
 
