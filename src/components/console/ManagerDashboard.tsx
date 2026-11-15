@@ -1,6 +1,6 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { Activity, ArrowRight, CalendarDays, CheckCircle2, ClipboardList, Factory, Search, ShieldAlert, Users, X } from "lucide-react";
+import { Activity, ArrowRight, CalendarDays, CheckCircle2, ClipboardList, Search, ShieldAlert, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Empty, Panel, PageHeader, Select } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
@@ -134,7 +134,6 @@ type Model = ReturnType<typeof useModel>;
 /* ------------------------------------------------------------ OVERVIEW */
 function Overview({ m, period }: { m: Model; period: Period }) {
   const { data, visits, ex, comms } = m;
-  const nav = useNavigate();
   const [chip, setChip] = useState<"all" | "review" | "report" | "exec" | "commit">("all");
   const [cat, setCat] = useState<"all" | "order" | "demo">("all");
   const [query, setQuery] = useState("");
@@ -154,9 +153,9 @@ function Overview({ m, period }: { m: Model; period: Period }) {
   type Q = { key: string; kind: "review" | "report" | "exec" | "commit"; level: 0 | 1 | 2; ref?: string; title: string; plant: string; who: string; cta: string; to: string; date?: string; search?: Record<string, unknown> };
   const queue: Q[] = [
     ...tickets.map((t): Q => ({ key: t.id, kind: "review", level: prio[t.priority], ref: t.ticketNo, title: `${t.subject}${t.machine ? ` — ${t.machine}` : ""}`, plant: plantName(data, t.plantId), who: `Raised by ${engineerName(data, t.raisedBy)}`, cta: "Review", to: "/discussions", search: { tickets: true } })),
-    ...repRisk.map((r): Q => ({ key: r.id, kind: "report", level: reportTiming(r).late ? 1 : 2, title: `${frequencyLabel[r.type]} report ${reportTiming(r).late ? "overdue" : `due ${fmtDate(r.dueDate)}`}`, plant: plantName(data, r.plantId), who: `Owner: ${engineerName(data, r.byEngineerId)}`, cta: "Review Report", to: "/reports", search: reportTiming(r).late ? { timing: "overdue" } : { timing: "due" } })),
-    ...execRisk.map((j): Q => ({ key: j.id, kind: "exec", level: j.priority === "high" ? 0 : 1, title: jobStage(j) === "blocked" ? `Execution pending — ${j.pendingReason || "reason not given"}` : `${installTypeLabel[j.installationType]} past planned date`, plant: j.plantName || plantName(data, j.plantId), who: `Owner: ${m.ex.engineers.find((e) => e.id === j.assignedEngineerId)?.name || "Unassigned"}`, cta: "Open Job", to: "/execution" })),
-    ...commits.map((c): Q => ({ key: c.id, kind: "commit", level: c.nextFollowUp && c.nextFollowUp < TODAY ? 1 : 2, title: `Customer commitment pending${c.subject ? ` — ${c.subject}` : ""}`, plant: plantName(data, c.plantId), who: c.followUpOwner ? `Owner: ${engineerName(data, c.followUpOwner) || c.followUpOwner}` : "", cta: "Open Communication", to: "/discussions" })),
+    ...repRisk.map((r): Q => ({ key: r.id, kind: "report", level: reportTiming(r).late ? 1 : 2, title: `${frequencyLabel[r.type]} report ${reportTiming(r).late ? "overdue" : `due ${fmtDate(r.dueDate)}`}`, date: r.dueDate, plant: plantName(data, r.plantId), who: `Owner: ${engineerName(data, r.byEngineerId)}`, cta: "Review Report", to: "/reports", search: reportTiming(r).late ? { timing: "overdue" } : { timing: "due" } })),
+    ...execRisk.map((j): Q => ({ key: j.id, kind: "exec", level: j.priority === "high" ? 0 : 1, title: jobStage(j) === "blocked" ? `Execution pending — ${j.pendingReason || "reason not given"}` : `${installTypeLabel[j.installationType]} past planned date`, date: jobEnd(j), plant: j.plantName || plantName(data, j.plantId), who: `Owner: ${m.ex.engineers.find((e) => e.id === j.assignedEngineerId)?.name || "Unassigned"}`, cta: "Open Job", to: "/execution" })),
+    ...commits.map((c): Q => ({ key: c.id, kind: "commit", level: c.nextFollowUp && c.nextFollowUp < TODAY ? 1 : 2, title: `Customer commitment pending${c.subject ? ` — ${c.subject}` : ""}`, date: c.nextFollowUp, plant: plantName(data, c.plantId), who: c.followUpOwner ? `Owner: ${engineerName(data, c.followUpOwner) || c.followUpOwner}` : "Owner: Unassigned", cta: "Open Communication", to: "/discussions" })),
   ].sort((a, b) => a.level - b.level);
   const shown = queue.filter((q) => (chip === "all" || q.kind === chip) && `${q.title} ${q.plant} ${q.who} ${q.ref ?? ""}`.toLowerCase().includes(query.trim().toLowerCase()));
   const levelBadge = (l: number) => (l === 0 ? <Badge t="red">High priority</Badge> : l === 1 ? <Badge t="orange">Attention</Badge> : <Badge t="grey">Follow up</Badge>);
@@ -207,7 +206,7 @@ function Overview({ m, period }: { m: Model; period: Period }) {
             {(expanded ? shown : shown.slice(0, 7)).map((q) => (
               <Row key={`${q.kind}-${q.key}`} to={q.to} search={q.search}>
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5">{levelBadge(q.level)}{q.ref ? <span className="num text-[11px] text-mute">{q.ref}</span> : null}</div>
+                  <div className="flex flex-wrap items-center gap-1.5">{levelBadge(q.level)}{q.ref ? <span className="num text-[11px] text-mute">{q.ref}</span> : null}{q.date ? <span className={cn("inline-flex items-center gap-1 text-[11px]", q.date < TODAY ? "text-sev-critical" : "text-mute")}><CalendarDays className="size-3" />{q.date < TODAY ? "Overdue · " : "Due · "}{fmtDate(q.date)}</span> : null}</div>
                   <div className="mt-0.5 font-medium">{q.title}</div>
                   <div className="text-xs text-mute">{[q.plant, q.who].filter(Boolean).join(" · ")}</div>
                 </div>
