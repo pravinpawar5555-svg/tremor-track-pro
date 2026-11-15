@@ -1,25 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/console/AppShell";
-import { Bar, Chip, Empty, Field, Kpi, PageHeader, Panel, Select, SpecRow, Td, Th, TextInput, Tr } from "@/components/console/ui";
+import { Chip, Empty, Field, PageHeader, Panel, Select, Td, Th, TextInput, Tr } from "@/components/console/ui";
 import {
   TODAY,
-  analystsOf,
-  engineerFleetTotals,
-  engineerSummary,
   engineerUsage,
   fmtDate,
-  plantName,
   removeEngineer,
   saveEngineer,
   shiftDate,
   useData,
   type Engineer,
 } from "@/lib/store";
-import { useExecution, ensureExecEngineer, execRecordFor } from "@/lib/execution";
+import { useExecution, ensureExecEngineer } from "@/lib/execution";
 import { Button } from "@/components/console/ui";
 import { reviewUser, deleteAccount } from "@/lib/store";
-import { Trash2 } from "lucide-react";
+import { Activity as ActivityIcon, CalendarDays, LayoutDashboard, Search, ShieldCheck, Trash2 } from "lucide-react";
+import { EngineerMonitoring } from "@/components/console/EngineerMonitoring";
 import { Workload } from "@/components/console/Workload";
 import { cn } from "@/lib/utils";
 import { engineerName } from "@/lib/store";
@@ -49,18 +46,15 @@ export const Route = createFileRoute("/_authenticated/engineers")({
 
 function EngineersPage() {
   const data = useData();
-  const ex = useExecution();
-  const team = analystsOf(data);
-  const executionTeam = data.engineers.filter((e) => e.role === "execution");
-  const from = shiftDate(TODAY, -6);
-  const days = Array.from({ length: 7 }, (_, i) => shiftDate(TODAY, -6 + i));
 
   const blank = { id: "", name: "", role: "analyst" as Engineer["role"] };
   const [form, setForm] = useState(blank);
   const [note, setNote] = useState<{ ok: boolean; message: string } | null>(null);
   const [confirmId, setConfirmId] = useState("");
   const [moveTo, setMoveTo] = useState("");
-  const [tab, setTab] = useState<"engineers" | "workload" | "activity">("engineers");
+  const [tab, setTab] = useState<"overview" | "engineers" | "workload" | "activity">("overview");
+  const [accountSearch, setAccountSearch] = useState("");
+  const [accountStatus, setAccountStatus] = useState("all");
 
   const submit = () => {
     const res = saveEngineer(form.id ? { id: form.id, name: form.name, role: form.role } : { name: form.name, role: form.role });
@@ -103,17 +97,18 @@ function EngineersPage() {
     <AppShell>
       <PageHeader
         title="Engineers"
-        subtitle={tab === "workload" ? "Resource planning — who has work, when, and where it is accumulating" : tab === "activity" ? "Recent work activity across the team" : "Manage the team and review the last 7 days of work"}
+        subtitle="Team monitoring, workload and account management"
       />
-      <div className="mb-4 inline-flex overflow-hidden rounded-md ring-1 ring-line">
-        {([["engineers", "Engineers"], ["workload", "Workload"], ["activity", "Activity"]] as const).map(([id, l]) => (
-          <button key={id} type="button" onClick={() => setTab(id)} className={cn("px-3 py-1.5 text-xs font-medium", tab === id ? "bg-signal text-signal-foreground" : "bg-panel text-mute hover:bg-base")}>{l}</button>
-        ))}
+      <div className="mb-5 flex gap-2 overflow-x-auto border-b border-line pb-3">
+        {([{ id: "overview", label: "Team overview", icon: LayoutDashboard }, { id: "workload", label: "Workload", icon: CalendarDays }, { id: "activity", label: "Activity", icon: ActivityIcon }, { id: "engineers", label: "Team & accounts", icon: ShieldCheck }] as const).map(({ id, label, icon: Icon }) => <Button key={id} variant={tab === id ? "solid" : "ghost"} className="shrink-0" onClick={() => setTab(id)}><Icon className="size-4" />{label}{id === "engineers" && pendingUsers.length ? <span className="num">{pendingUsers.length}</span> : null}</Button>)}
       </div>
+      {tab === "overview" && <EngineerMonitoring onWorkload={() => setTab("workload")} />}
       {tab === "workload" ? <Workload data={data} myName={engineerName(data, data.currentUserId) || "Manager"} /> : null}
       {tab === "activity" ? <Activity /> : null}
       {tab === "engineers" ? (<>
 
+      <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3"><div className="relative min-w-0"><Search className="pointer-events-none absolute top-2 left-2 size-4 text-mute" /><TextInput aria-label="Search team accounts" placeholder="Search name or email…" className="pl-8" value={accountSearch} onChange={(e) => setAccountSearch(e.target.value)} /></div><Select aria-label="Account status" className="w-auto" value={accountStatus} onChange={(e) => setAccountStatus(e.target.value)}><option value="all">All statuses</option><option value="pending">Pending approval</option><option value="approved">Approved</option><option value="rejected">Rejected</option></Select></div>
+      {note && <p role="status" className={cn("mb-3 text-xs", note.ok ? "text-sev-low" : "text-sev-critical")}>{note.message}</p>}
       <Panel title="Account approvals" meta={`${pendingUsers.length} waiting`} className="mb-4">
         {data.profiles.length ? (
           <div className="overflow-x-auto">
@@ -128,7 +123,7 @@ function EngineersPage() {
                 </tr>
               </thead>
               <tbody>
-                {[...pendingUsers, ...data.profiles.filter((p) => p.status !== "pending")].map((p) => (
+                {[...pendingUsers, ...data.profiles.filter((p) => p.status !== "pending")].filter((p) => (accountStatus === "all" || p.status === accountStatus) && `${p.fullName} ${p.email}`.toLowerCase().includes(accountSearch.toLowerCase())).map((p) => (
                   <Tr key={p.id}>
                     <Td>{p.fullName || "—"}</Td>
                     <Td className="text-mute">{p.email}</Td>
@@ -213,7 +208,7 @@ function EngineersPage() {
               </tr>
             </thead>
             <tbody>
-              {data.engineers.map((e) => {
+              {data.engineers.filter((e) => e.name.toLowerCase().includes(accountSearch.toLowerCase())).map((e) => {
                 const usage = engineerUsage(data, e.id);
                 const others = data.engineers.filter((o) => o.id !== e.id);
                 return (
@@ -252,82 +247,6 @@ function EngineersPage() {
         </div>
       </Panel>
 
-      <div className="grid items-start gap-4 xl:grid-cols-2">
-        {team.map((a) => {
-          const s = engineerSummary(data, a.id);
-          const usage = engineerUsage(data, a.id);
-          const fleet = engineerFleetTotals(data, a.id);
-          return (
-            <Panel
-              key={a.id}
-              title={a.name}
-              meta={<Chip severity={s.activeToday ? "low" : "high"} label={s.activeToday ? "Tasks planned today" : "No tasks today"} />}
-            >
-              <div className="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
-                <Kpi label="Active days" value={`${s.activeDays}/${s.days}`} tone={s.activeDays >= 5 ? "low" : "medium"} />
-                <Kpi label="Tasks · 7 d" value={s.tasks} />
-                <Kpi label="Completed" value={s.done} tone="low" hint={`${s.pending} pending`} />
-                <Kpi label="Reports late" value={s.reportsLate} tone={s.reportsLate ? "high" : "low"} hint={`${s.reportsSent} sent`} />
-                <Kpi label="Total machines" value={fleet.machines} hint={`${usage.plants} plants`} />
-                <Kpi label="Total assets" value={fleet.assets} />
-                <Kpi label="Node 6 sensors" value={fleet.node6} />
-                <Kpi label="Node X sensors" value={fleet.nodeX} />
-                <Kpi label="VibAssist sensors" value={fleet.vibassist ?? 0} />
-              </div>
-              <div className="px-4 pb-3">
-                <SpecRow label="Reports pending" value={s.reportsPending} />
-                <SpecRow label="Reports overdue" value={s.reportsOverdue} />
-              </div>
-              <div className="border-t border-line/60 px-4 py-3">
-                <div className="label-caps mb-2">Daily task list — last 7 days</div>
-                <div className="flex flex-wrap gap-2">
-                  {days.map((d) => (
-                    <span
-                      key={d}
-                      className={`num rounded-md px-2 py-1 text-[11px] ${s.activeOn(d) ? "bg-sev-low/10 text-sev-low" : "bg-sev-high/10 text-sev-high"}`}
-                    >
-                      {fmtDate(d).slice(0, 6)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </Panel>
-          );
-        })}
-      </div>
-
-      {executionTeam.length ? (
-        <div className="grid items-start gap-4 xl:grid-cols-2">
-          {executionTeam.map((e) => {
-            const rec = execRecordFor(e.id);
-            const j = rec ? ex.jobs.filter((x) => x.assignedEngineerId === rec.id || x.secondaryEngineerId === rec.id) : [];
-            const byType = (t: string) => j.filter((x) => x.installationType === t).length;
-            const done = j.filter((x) => x.status === "completed").length;
-            const open = j.filter((x) => !["completed", "cancelled"].includes(x.status)).length;
-            const sensors = j.reduce((s, x) => s + x.sensorsInstalled, 0);
-            const machines = j.reduce((s, x) => s + x.machinesCovered, 0);
-            const visits = rec ? ex.updates.filter((u) => j.some((x) => x.id === u.jobId)).length : 0;
-            return (
-              <Panel key={e.id} title={e.name} meta={<Chip severity="low" label="Execution Engineer" />}>
-                <div className="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
-                  <Kpi label="Installation sensors" value={sensors} />
-                  <Kpi label="Machines covered" value={machines} />
-                  <Kpi label="Site visits" value={visits} hint="daily updates" />
-                  <Kpi label="Jobs completed" value={done} tone="low" hint={`${j.length} total`} />
-                  <Kpi label="Demo jobs" value={byType("demo")} />
-                  <Kpi label="Order jobs" value={byType("order")} />
-                  <Kpi label="Troubleshooting jobs" value={byType("troubleshooting")} />
-                  <Kpi label="Open jobs" value={open} />
-                </div>
-                <div className="px-4 pb-3">
-                  <SpecRow label="Pending / follow-up" value={j.filter((x) => x.status === "pending").length} />
-                  <SpecRow label="On hold" value={j.filter((x) => x.status === "on_hold").length} />
-                </div>
-              </Panel>
-            );
-          })}
-        </div>
-      ) : null}
       </>) : null}
     </AppShell>
   );
@@ -336,21 +255,13 @@ function EngineersPage() {
 function Activity() {
   const data = useData();
   const ex = useExecution();
+  const [query, setQuery] = useState("");
+  const [domain, setDomain] = useState("all");
+  const [period, setPeriod] = useState("7");
+  const cutoff = period === "all" ? "" : shiftDate(TODAY, -(Number(period) - 1));
   const rows = [
-    ...data.tasks.flatMap((t) => t.activity.map((a) => ({ at: a.at, who: engineerName(data, t.engineerId), text: `${a.text} — ${t.title}`, dom: "Customer Success" }))),
-    ...ex.activity.map((a) => { const j = ex.jobs.find((x) => x.id === a.jobId); return { at: a.createdAt, who: a.byUser, text: `${a.text}${j ? ` — ${j.plantName || j.customerName}` : ""}`, dom: "Execution" }; }),
-  ].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 80);
-  return (
-    <Panel title="Recent activity" meta={<span>Latest 80</span>}>
-      <div className="divide-y divide-line/60">
-        {rows.map((r, i) => (
-          <div key={i} className="flex items-start justify-between gap-3 px-4 py-2 text-sm">
-            <div className="min-w-0"><div className="truncate">{r.text}</div><div className="text-xs text-mute">{r.who} · {r.dom}</div></div>
-            <span className="num shrink-0 text-xs text-mute">{fmtDate(r.at.slice(0, 10))}</span>
-          </div>
-        ))}
-        {!rows.length ? <Empty>No activity yet.</Empty> : null}
-      </div>
-    </Panel>
-  );
+    ...data.tasks.flatMap((t) => t.activity.map((a) => ({ at: a.at, who: engineerName(data, a.by), text: `${a.text} — ${t.title}`, dom: data.engineers.find((e) => e.id === t.engineerId)?.role === "execution" ? "Execution" : data.engineers.find((e) => e.id === t.engineerId)?.role === "manager" ? "Manager" : "Customer Success" }))),
+    ...ex.activity.map((a) => { const j = ex.jobs.find((x) => x.id === a.jobId); const person = data.profiles.find((p) => p.id === a.byUser); return { at: a.createdAt, who: engineerName(data, person?.engineerId ?? a.byUser), text: `${a.text}${j ? ` — ${j.plantName || j.customerName}` : ""}`, dom: "Execution" }; }),
+  ].filter((r) => (!cutoff || r.at.slice(0, 10) >= cutoff) && (domain === "all" || r.dom === domain) && `${r.who} ${r.text}`.toLowerCase().includes(query.toLowerCase())).sort((a, b) => a.at < b.at ? 1 : -1).slice(0, 80);
+  return <section className="space-y-4"><div className="flex flex-wrap gap-3"><TextInput aria-label="Search activity" className="min-w-0 flex-1" placeholder="Search engineer or activity…" value={query} onChange={(e) => setQuery(e.target.value)} /><Select aria-label="Activity team" className="w-auto" value={domain} onChange={(e) => setDomain(e.target.value)}><option value="all">All teams</option><option>Customer Success</option><option>Execution</option><option>Manager</option></Select><Select aria-label="Activity period" className="w-auto" value={period} onChange={(e) => setPeriod(e.target.value)}><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="all">All recorded activity</option></Select></div><h2 className="font-semibold">Recent activity <span className="num text-xs font-normal text-mute">{rows.length}</span></h2><ol className="divide-y divide-line border-y border-line">{rows.map((r, i) => <li key={`${r.at}-${i}`} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-4"><div className="min-w-0"><p className="break-words text-sm">{r.text}</p><p className="mt-2 text-xs text-mute">{r.who} · {r.dom}</p></div><time className="num shrink-0 text-[10px] text-mute">{fmtDate(r.at.slice(0, 10))}<span className="block text-right">{r.at.slice(11, 16)}</span></time></li>)}</ol>{!rows.length && <Empty>No activity matches these filters.</Empty>}</section>;
 }

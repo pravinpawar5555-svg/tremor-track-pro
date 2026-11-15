@@ -1,3 +1,8 @@
+# Engineers monitoring presentation
+- [x] Add team overview, searchable role-specific monitoring, focused account management and clearer activity views; fleet/report detail remains expandable.
+- [x] Preserve non-manager Workload-only access and existing approval/work rules; reuse execScope for multi-engineer jobs and standalone site visits.
+- [x] Twenty-five regression tests pass; real manager checks show four engineer cards, two Execution cards, search filtering, 80 activity entries, approved account search, edit cancellation and Workload; desktop/phone checked without runtime errors. No account or work records changed.
+
 # Access Control presentation
 - [x] Reorganize existing dashboard, module, reminder, handoff and history settings with role-focused views and phone-friendly controls.
 - [x] Add permission summary, search/status filtering and review-before-save without changing enforcement rules.
