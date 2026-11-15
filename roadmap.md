@@ -1,7 +1,8 @@
 # Device notifications
-- [ ] Move device controls to Settings for every approved account; automatically reconnect allowed devices without prompting again.
-- [ ] Send saved ticket/reminder/message alerts to authorized recipients and verify delivery results.
-- [ ] Run focused tests and signed-in desktop/phone checks; identify accounts needing device permission.
+- [x] Move device controls to Settings for every approved account; automatically reconnect allowed devices without prompting again.
+- [x] Send saved ticket/reminder/message alerts to authorized recipients; signed-in test alert and real saved plant message each accepted by one device service, without errors; test message removed.
+- [x] Twenty-five focused tests pass; manager desktop/phone Settings and Bell checked, clean build. Isha, Laxmi and Abhisek have no registered devices.
+- [ ] Confirm physical phone/laptop banners for every account — requires each unregistered device to grant permission in the published portal, publication of these changes, and recipient confirmation. Engineer live Settings views remain unverified.
 
 # Ticket status filter
 - [x] Default to exact Open status, remove duplicate Open option and keep details within the filtered list.
