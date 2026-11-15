@@ -1,3 +1,7 @@
+# Ticket status filter
+- [x] Default to exact Open status, remove duplicate Open option and keep details within the filtered list.
+- [ ] Run regression tests and verify real ticket filters end-to-end.
+
 # Exhibition opportunities
 - [x] Add Exhibition type and save exhibition name/location with each opportunity; show in details and search.
 - [x] Verify storage columns, mapping tests (7 checks passed), and clean build.
