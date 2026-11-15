@@ -1,5 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { CalendarDays, List, MoreHorizontal, Settings2, Trash2 } from "lucide-react";
+import { Button as ControlButton } from "@/components/ui/button";
+import { ReportDeliveryOverview } from "@/components/console/ReportDeliveryOverview";
 import { peekDomain } from "@/lib/domain";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
@@ -26,7 +28,6 @@ import {
   analystsOf,
   engineerName,
   fmtDate,
-  frequencyText,
   plantName,
   removeReport,
   reportKpis,
@@ -75,7 +76,7 @@ function ReportsPage() {
   const manager = data.role === "manager"; // engineers see only their own reports
   const me = data.currentUserId;
   const search = Route.useSearch();
-  const [view, setView] = useState<"register" | "recurring">("register");
+  const [view, setView] = useState<"overview" | "register" | "recurring">(search.timing ? "register" : "overview");
   const [cat, setCat] = useState<"total" | CustomerCategory>("total");
   const categoryCounts = {
     order: data.plants.filter((p) => (p.category ?? "order") === "order").length,
@@ -121,6 +122,7 @@ function ReportsPage() {
       ? allReports
       : allReports.filter((r) => r.byEngineerId === me);
   const rk = reportKpis({ ...data, reports: kpiReports });
+  const forecastSchedules = scopedRecurring(data).filter((r) => catIds.has(r.plantId) && (type === "all" || r.type === type) && (eng === "all" || r.engineerId === eng) && (!q || plantName(data, r.plantId).toLowerCase().includes(q)) && status === "all");
   const rows = scoped
     .filter((r) => {
       if (timing === "all") return true;
@@ -140,9 +142,9 @@ function ReportsPage() {
     <AppShell>
       <PageHeader
         title="Report Delivery Tracker"
-        subtitle="On-demand, weekly and monthly reports — was it sent to the customer on time?"
+        subtitle="Customer delivery · deadlines, owners and upcoming report schedules"
         actions={
-          view === "register" ? (
+          view !== "recurring" ? (
             <Button variant={adding ? "ghost" : "solid"} onClick={() => setAdding((a) => !a)}>{adding ? "Cancel" : "Create report"}</Button>
           ) : null
         }
@@ -156,41 +158,15 @@ function ReportsPage() {
         <Kpi label="Due in 7 days" value={rk.dueThisWeek} />
       </div>
 
-      <div className="mt-4 flex items-center border-b border-line">
-        <button
-          type="button"
-          onClick={() => setView("register")}
-          className={`relative px-4 py-3 text-sm font-semibold transition-colors ${
-            view === "register" ? "text-signal" : "text-mute hover:text-ink"
-          }`}
-        >
-          Report Register
-          <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] ${view === "register" ? "bg-signal/10" : "bg-canvas"}`}>
-            {allReports.length}
-          </span>
-          {view === "register" ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-signal" /> : null}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setAdding(false);
-            setView("recurring");
-          }}
-          className={`relative px-4 py-3 text-sm font-semibold transition-colors ${
-            view === "recurring" ? "text-signal" : "text-mute hover:text-ink"
-          }`}
-        >
-          Recurring Settings
-          <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] ${view === "recurring" ? "bg-signal/10" : "bg-canvas"}`}>
-            {scopedRecurring(data).length}
-          </span>
-          {view === "recurring" ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-signal" /> : null}
-        </button>
+      <div className="mt-4 flex flex-wrap items-center gap-1 border-b border-line pb-1">
+        <ControlButton variant="ghost" aria-pressed={view === "overview"} onClick={() => { setAdding(false); setView("overview"); }} className={view === "overview" ? "rounded-none border-b-2 border-signal text-signal" : "text-mute"}><CalendarDays />Delivery overview</ControlButton>
+        <ControlButton variant="ghost" aria-pressed={view === "register"} onClick={() => setView("register")} className={view === "register" ? "rounded-none border-b-2 border-signal text-signal" : "text-mute"}><List />Report Register<span className="num text-[11px]">{allReports.length}</span></ControlButton>
+        <ControlButton variant="ghost" aria-pressed={view === "recurring"} onClick={() => { setAdding(false); setView("recurring"); }} className={view === "recurring" ? "rounded-none border-b-2 border-signal text-signal" : "text-mute"}><Settings2 />Recurring Settings<span className="num text-[11px]">{scopedRecurring(data).length}</span></ControlButton>
       </div>
 
       {view === "recurring" ? <RecurringReports catFilter={cat} onCatFilter={setCat} /> : null}
 
-      {view === "register" && adding ? (
+      {view !== "recurring" && adding ? (
         <Panel className="mt-4" title="Schedule a report">
           <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5">
             <Field label="Plant">
@@ -228,9 +204,9 @@ function ReportsPage() {
         </Panel>
       ) : null}
 
-      {view === "register" ? <Panel
+      {view !== "recurring" ? <Panel
         className="mt-4"
-        title="Report register"
+        title={view === "overview" ? "Delivery filters" : "Report register"}
         meta={
           <span className="flex flex-wrap items-center gap-2">
             <span className="inline-flex rounded-md ring-1 ring-line/80 p-0.5">
@@ -247,7 +223,7 @@ function ReportsPage() {
                 </button>
               ))}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full ring-1 ring-line/80 p-1">
+            {view === "register" ? <span className="inline-flex flex-wrap items-center gap-1 rounded-md ring-1 ring-line/80 p-1">
               {([
                 ["all", `All (${allCount})`],
                 ["due", `Due (${dueCount})`],
@@ -264,14 +240,15 @@ function ReportsPage() {
                   {label}
                 </button>
               ))}
-            </span>
+            </span> : null}
             <TextInput
+              aria-label="Search report plants"
               className="w-44"
               value={plantQ}
               onChange={(e) => setPlantQ(e.target.value)}
               placeholder="Search plant name…"
             />
-            <Select className="w-40" value={eng} onChange={(e) => setEng(e.target.value)}>
+            <Select aria-label="Report engineer" className="w-40" value={eng} onChange={(e) => setEng(e.target.value)}>
               <option value="all">All engineers</option>
               {(manager ? data.engineers : data.engineers.filter((e) => e.id === me)).map((e) => (
                 <option key={e.id} value={e.id}>{e.name}</option>
@@ -292,7 +269,7 @@ function ReportsPage() {
           </span>
         }
       >
-        {rows.length ? (
+        {view === "overview" ? null : rows.length ? (
           <>
           <ul className="divide-y divide-line/60 md:hidden">
             {rows.map((r) => {
@@ -415,11 +392,8 @@ function ReportsPage() {
         ) : (
           <Empty>No reports match these filters.</Empty>
         )}
-        <div className="border-t border-line/60 px-4 py-2 text-[11px] text-mute">
-          "Mark sent" records today's date as the delivery date; on time or late is calculated against the due date. Report cycle per plant: {" "}
-          {data.plants.map((p) => `${p.name.split(" — ")[0]} ${frequencyText(p)}`).join(" · ")}
-        </div>
       </Panel> : null}
+      {view === "overview" ? <ReportDeliveryOverview data={data} reports={scoped} schedules={forecastSchedules} onRegister={() => setView("register")} /> : null}
     </AppShell>
   );
 }
