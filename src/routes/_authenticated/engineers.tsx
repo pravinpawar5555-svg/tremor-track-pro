@@ -1,25 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/console/AppShell";
-import { Bar, Chip, Empty, Field, Kpi, PageHeader, Panel, Select, SpecRow, Td, Th, TextInput, Tr } from "@/components/console/ui";
+import { Chip, Empty, Field, PageHeader, Panel, Select, Td, Th, TextInput, Tr } from "@/components/console/ui";
 import {
   TODAY,
-  analystsOf,
-  engineerFleetTotals,
-  engineerSummary,
   engineerUsage,
   fmtDate,
-  plantName,
   removeEngineer,
   saveEngineer,
   shiftDate,
   useData,
   type Engineer,
 } from "@/lib/store";
-import { useExecution, ensureExecEngineer, execRecordFor } from "@/lib/execution";
+import { useExecution, ensureExecEngineer } from "@/lib/execution";
 import { Button } from "@/components/console/ui";
 import { reviewUser, deleteAccount } from "@/lib/store";
-import { Activity as ActivityIcon, CalendarDays, LayoutDashboard, Search, ShieldCheck, Trash2, Users } from "lucide-react";
+import { Activity as ActivityIcon, CalendarDays, LayoutDashboard, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { EngineerMonitoring } from "@/components/console/EngineerMonitoring";
 import { Workload } from "@/components/console/Workload";
 import { cn } from "@/lib/utils";
@@ -50,11 +46,6 @@ export const Route = createFileRoute("/_authenticated/engineers")({
 
 function EngineersPage() {
   const data = useData();
-  const ex = useExecution();
-  const team = analystsOf(data);
-  const executionTeam = data.engineers.filter((e) => e.role === "execution");
-  const from = shiftDate(TODAY, -6);
-  const days = Array.from({ length: 7 }, (_, i) => shiftDate(TODAY, -6 + i));
 
   const blank = { id: "", name: "", role: "analyst" as Engineer["role"] };
   const [form, setForm] = useState(blank);
