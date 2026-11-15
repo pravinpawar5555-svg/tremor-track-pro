@@ -43,6 +43,11 @@ export interface Plant {
   /** AMC contract start / end dates (YYYY-MM-DD). */
   amcStart?: string;
   amcEnd?: string;
+  operationalStatus?: import("./plant-lifecycle").PlantStatus;
+  demoRemovedDate?: string;
+  salesFollowupDate?: string;
+  lifecycleNote?: string;
+  lifecycleHistory?: import("./plant-lifecycle").LifecycleHistory[];
 }
 
 export type CustomerCategory = "order" | "demo";
@@ -585,6 +590,11 @@ const rowToPlant = (r: any): Plant => ({
   salesEngineerId: r.sales_engineer_id ?? "",
   amcStart: r.amc_start ?? "",
   amcEnd: r.amc_end ?? "",
+  operationalStatus: r.operational_status ?? "active",
+  demoRemovedDate: r.demo_removed_date ?? "",
+  salesFollowupDate: r.sales_followup_date ?? "",
+  lifecycleNote: r.lifecycle_note ?? "",
+  lifecycleHistory: r.lifecycle_history ?? [],
 });
 const plantToRow = (p: Plant) => ({
   id: p.id,
@@ -1201,6 +1211,17 @@ export function removePlant(id: string) {
     tickets: data.tickets.filter((t) => t.plantId !== id),
     messages: data.messages.filter((x) => x.thread !== plantThread(id) && !dropped.includes(x.thread)),
   });
+}
+
+/** Lifecycle saves read back before publishing the new snapshot. */
+export async function updatePlantLifecycle(id: string, patch: Record<string, unknown>) {
+  const { data: row, error } = await db.from("plants").update(patch).eq("id", id).select("*").single();
+  if (error) throw new Error(error.message);
+  if (!row) throw new Error("Plant change was not saved");
+  const saved = rowToPlant(row);
+  data = { ...data, plants: data.plants.map((plant) => plant.id === id ? saved : plant) };
+  listeners.forEach((listener) => listener());
+  return saved;
 }
 
 export function addUpdate(entry: Omit<DailyUpdate, "id" | "submittedAt"> & { submittedAt?: string }) {
