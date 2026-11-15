@@ -1,7 +1,7 @@
 # Access Control presentation
-- [ ] Reorganize existing dashboard, module, reminder, handoff and history settings with role-focused views and phone-friendly controls.
-- [ ] Add permission summary, search/status filtering and review-before-save without changing enforcement rules.
-- [ ] Verify real signed-in views, draft/discard/review flow, tests and clean build.
+- [x] Reorganize existing dashboard, module, reminder, handoff and history settings with role-focused views and phone-friendly controls.
+- [x] Add permission summary, search/status filtering and review-before-save without changing enforcement rules.
+- [x] Sixteen regression tests pass; signed-in manager checks cover all categories, real draft review/discard, role/search filtering and handoff reversal; desktop/phone checked with no runtime errors and clean build. No live permissions changed.
 
 # Device notifications
 - [x] Move device controls to Settings for every approved account; automatically reconnect allowed devices without prompting again.
