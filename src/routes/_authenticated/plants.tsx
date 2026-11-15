@@ -369,6 +369,7 @@ function PlantsPage() {
         </div>
       ) : null}
       <PlantTechnical plant={techPlant} onClose={() => setTechPlant(null)} />
+      {lifecycleAction ? <PlantLifecycleDialog key={`${lifecycleAction.plant.id}-${lifecycleAction.action}`} plant={lifecycleAction.plant} action={lifecycleAction.action} onClose={() => setLifecycleAction(null)} /> : null}
       {canBilling ? <BillingDialog plant={billPlant} open={!!billPlant} onClose={() => setBillPlant(null)} /> : null}
       {tab === "billing" && canBilling ? (
         <Panel title="Billing tracker" meta="Current billing period per rental plant"><BillingTracker plants={shownPlants} onOpen={setBillPlant} /></Panel>
