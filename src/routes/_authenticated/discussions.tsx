@@ -1,6 +1,7 @@
 import { CustomerComms } from "@/components/console/CustomerComms";
 import { MachineAnalysisSection, MachinePicker, useKnownPlantMachines, type PickedMachine } from "@/components/console/TicketAnalysis";
 import { analysisRows, blankAnalysis } from "@/lib/ticket-analysis";
+import { DEFAULT_TICKET_FILTER, matchesTicketFilter, selectedFilteredTicket, type TicketFilter } from "@/lib/ticket-filter";
 import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
@@ -111,7 +112,7 @@ function DiscussionsPage() {
   const tk = ticketKpis(data, meId);
 
   const [tab, setTab] = useState<"tickets" | "plants" | "comms">(exec ? "plants" : "tickets");
-  const [statusFilter, setStatusFilter] = useState<"open" | TicketStatus | "all">("open");
+  const [statusFilter, setStatusFilter] = useState<TicketFilter>(DEFAULT_TICKET_FILTER);
   const [plantFilter, setPlantFilter] = useState("all");
   const [catFilter, setCatFilter] = useState<"total" | CustomerCategory>("total");
   const [showNew, setShowNew] = useState(false);
@@ -135,9 +136,7 @@ function DiscussionsPage() {
     () =>
       data.tickets
         .filter((t) => manager || t.raisedBy === meId || t.assignedTo === meId)
-        .filter((t) =>
-          statusFilter === "all" ? true : statusFilter === "open" ? t.status !== "closed" : t.status === statusFilter,
-        )
+        .filter((t) => matchesTicketFilter(t.status, statusFilter))
         .filter((t) => (plantFilter === "all" ? true : t.plantId === plantFilter))
         .map((t) => {
           const raised = `${t.raisedOn} ${t.raisedAt}`;
@@ -149,7 +148,7 @@ function DiscussionsPage() {
     [data.tickets, statusFilter, plantFilter, manager, meId, lastKey],
   );
 
-  const ticket = data.tickets.find((t) => t.id === selectedTicket) ?? tickets[0];
+  const ticket = selectedFilteredTicket(tickets, selectedTicket);
   const chatPlants = useMemo(
     () =>
       (catFilter === "total" ? data.plants : data.plants.filter((p) => (p.category ?? "order") === catFilter))
@@ -349,8 +348,7 @@ function DiscussionsPage() {
             title="Tickets"
             meta={
               <div className="flex gap-2">
-                <Select className="w-28" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as TicketStatus | "open" | "all")}>
-                  <option value="open">Open</option>
+                <Select aria-label="Ticket status" className="w-28" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as TicketFilter)}>
                   {allTicketStatuses.map((s) => (
                     <option key={s} value={s}>{ticketStatusLabel[s]}</option>
                   ))}
