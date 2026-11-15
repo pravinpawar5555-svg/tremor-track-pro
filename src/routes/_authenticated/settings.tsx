@@ -16,10 +16,10 @@ import {
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
-      { title: "Branch & Sales Mapping — Forbes Marshall CM Portal" },
-      { name: "description", content: "Manage HO Division KAMs, branches with Branch RM contacts, and Sales Engineers." },
-      { property: "og:title", content: "Branch & Sales Mapping — Forbes Marshall CM Portal" },
-      { property: "og:description", content: "Central Forbes Marshall commercial hierarchy for plant ownership." },
+      { title: "Settings — Forbes Marshall CM Portal" },
+      { name: "description", content: "Manage device notifications and authorized Forbes Marshall portal settings." },
+      { property: "og:title", content: "Settings — Forbes Marshall CM Portal" },
+      { property: "og:description", content: "Device alerts and authorized commercial, workload and access settings." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
