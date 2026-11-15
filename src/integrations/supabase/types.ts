@@ -1494,15 +1494,20 @@ export type Database = {
           contact_phone: string
           created_at: string
           customer: string
+          demo_removed_date: string | null
           engineer_id: string
           frequencies: string[]
           id: string
+          lifecycle_history: Json
+          lifecycle_note: string
           location: string
           machines: number
           name: string
           node_x: number
           node6: number
+          operational_status: string
           sales_engineer_id: string
+          sales_followup_date: string | null
           vibassist: number
         }
         Insert: {
@@ -1515,15 +1520,20 @@ export type Database = {
           contact_phone?: string
           created_at?: string
           customer?: string
+          demo_removed_date?: string | null
           engineer_id?: string
           frequencies?: string[]
           id: string
+          lifecycle_history?: Json
+          lifecycle_note?: string
           location?: string
           machines?: number
           name: string
           node_x?: number
           node6?: number
+          operational_status?: string
           sales_engineer_id?: string
+          sales_followup_date?: string | null
           vibassist?: number
         }
         Update: {
@@ -1536,15 +1546,20 @@ export type Database = {
           contact_phone?: string
           created_at?: string
           customer?: string
+          demo_removed_date?: string | null
           engineer_id?: string
           frequencies?: string[]
           id?: string
+          lifecycle_history?: Json
+          lifecycle_note?: string
           location?: string
           machines?: number
           name?: string
           node_x?: number
           node6?: number
+          operational_status?: string
           sales_engineer_id?: string
+          sales_followup_date?: string | null
           vibassist?: number
         }
         Relationships: []

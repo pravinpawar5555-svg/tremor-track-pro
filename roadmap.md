@@ -1,3 +1,7 @@
+# Demo plant lifecycle
+- [ ] Add persistent Active / Sales follow-up / Lost archive views, explicit demo removal and confirmed-order return, with dated history; never delete plants or move sensors automatically.
+- [ ] Preserve role access and existing operations; test lifecycle transitions and signed-in save/reload without changing a customer's real status.
+
 # Report delivery monitoring
 - [x] Add a delivery overview with overdue, remaining this-week and next-week lanes, two-week date distribution and owner/status cards; include labelled not-yet-generated recurring schedules without double-counting, preserving existing report actions.
 - [x] Share plant/engineer/type/status filters with the register; 28 regression tests pass including calendar boundaries and forecast deduplication. Signed-in manager checks show nine November 16 deliveries, K-1 search returns one, empty search returns none, all 167 register rows and recurring settings remain accessible. Desktop and 552/390px phones verified without overflow/runtime errors; build clean. No report dates/statuses or access policies changed; live status-save flow not re-exercised.
