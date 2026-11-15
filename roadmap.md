@@ -1,3 +1,7 @@
+# Report delivery monitoring
+- [ ] Add a delivery overview with overdue, remaining this-week and next-week lanes, date distribution and owner visibility; include not-yet-generated recurring schedules without double-counting.
+- [ ] Share plant/engineer/type/status filters with the register, preserve existing report updates and access, test week boundaries and verify signed-in desktop/phone navigation.
+
 # Dashboard monitoring presentation
 - [x] Replace divider-style metrics with consistent icon-led, status-accented cards across Management Overview, Customer Success and Execution; neutral zero states, navy planned work, attention accents and green ready-to-close. Thirty-six regression tests pass; signed-in checks confirm five cards per view, report-filter action preserved, 552/390px phone layouts without overflow, no runtime errors and clean build. Counts and permissions unchanged.
 - [x] Improve the manager dashboard hierarchy, searchable/expandable action queue, stored deadlines/owners and mobile layout using existing data only; retain customer-risk, delivery, execution, upcoming work, pipeline and AMC monitoring.
