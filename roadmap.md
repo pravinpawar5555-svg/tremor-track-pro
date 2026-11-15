@@ -1,3 +1,7 @@
+# Reports Control Center
+- [ ] Add an interactive Delivery Horizon bar, selectable weekly calendar dates and focused overdue view over existing scoped records.
+- [ ] Verify horizon/date filtering, overdue empty state, register access and phone layout with a signed-in account; run report regressions.
+
 # Demo plant lifecycle
 - [x] Add persistent Active / Sales follow-up / Lost archive views, actual demo removal date, sales follow-up date, loss reason and append-only dated status history; confirmed orders return immediately as active Order. No automatic sensor moves or customer deletion.
 - [x] Thirty-nine regression tests pass; signed-in temporary plant verified removal/save/reload, lost archive, reopening and confirmed-order return with four history entries, then deleted only the temporary test. Desktop/390px phone checked with no overflow/runtime errors and clean build. Existing customer statuses, report schedules, opportunities and equipment records unchanged; lifecycle is explicit, not inferred from execution or opportunity stages.
