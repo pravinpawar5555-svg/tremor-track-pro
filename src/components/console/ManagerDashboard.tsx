@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { Activity, ArrowRight, CalendarDays, CheckCircle2, ClipboardList, Search, ShieldAlert, Users, X } from "lucide-react";
+import { Activity, ArrowRight, CalendarDays, CheckCircle2, ClipboardList, Clock3, FileWarning, Handshake, MessageSquare, Search, ShieldAlert, Users, Wrench, type LucideIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Empty, Panel, PageHeader, Select } from "@/components/console/ui";
 import { cn } from "@/lib/utils";
@@ -44,15 +44,24 @@ function Badge({ t, children }: { t: Tone; children: ReactNode }) {
   return <span className={cn("inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1", tone[t])}>{children}</span>;
 }
 
-function Card({ label, value, hint, t, onClick }: { label: string; value: number; hint?: string; t: Tone; onClick?: () => void }) {
-  const dot = tone[t].split(" ")[1];
-  return (
-    <Button type="button" variant="ghost" onClick={onClick} disabled={!onClick} className="dashboard-stat group h-auto min-h-28 min-w-0 flex-col items-start justify-start whitespace-normal rounded-none border-l-2 border-line px-4 py-3 text-left disabled:opacity-100">
-      <span className="flex w-full items-start justify-between gap-2"><span className="text-xs font-medium text-mute">{label}</span>{onClick ? <ArrowRight className="text-mute" /> : <Activity className="text-mute" />}</span>
-      <span className={cn("num mt-2 text-3xl font-semibold", value ? dot : "text-mute")}>{value}</span>
-      {hint ? <span className="mt-1 text-[11px] font-normal text-mute">{hint}</span> : null}
-    </Button>
-  );
+const metricAccent: Record<Tone, string> = {
+  red: "border-t-sev-critical", orange: "border-t-sev-high", amber: "border-t-sev-medium",
+  green: "border-t-sev-low", blue: "border-t-signal", purple: "border-t-signal", grey: "border-t-line",
+};
+
+function Card({ label, value, hint, t, icon: Icon = Activity, onClick }: { label: string; value: number; hint?: string; t: Tone; icon?: LucideIcon; onClick?: () => void }) {
+  const active = value > 0;
+  const classes = cn("dashboard-stat group relative flex h-full min-h-40 min-w-0 flex-col items-stretch justify-start gap-0 overflow-hidden whitespace-normal rounded-lg border border-line border-t-[3px] bg-panel p-4 text-left", active ? metricAccent[t] : "border-t-line", onClick && "transition-shadow hover:shadow-sm hover:bg-panel focus-visible:ring-2 focus-visible:ring-signal");
+  const content = <>
+    <span className="flex items-center justify-between gap-2">
+      <span className={cn("grid size-8 shrink-0 place-items-center rounded-md", active ? tone[t] : tone.grey)}><Icon className="size-4" /></span>
+      {onClick ? <ArrowRight className="size-4 text-mute transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" /> : null}
+    </span>
+    <span className="mt-3 min-h-9 break-words text-xs font-medium leading-[18px] text-ink">{label}</span>
+    <span className={cn("num mt-1 text-3xl font-semibold leading-none", active ? tone[t].split(" ")[1] : "text-mute")}>{value}</span>
+    {hint ? <span className="mt-3 block text-[11px] font-normal leading-4 text-mute">{hint}</span> : null}
+  </>;
+  return onClick ? <Button type="button" variant="ghost" onClick={onClick} className={classes}>{content}</Button> : <article aria-label={label} className={classes}>{content}</article>;
 }
 
 function Seg<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { id: T; label: string }[] }) {
@@ -184,11 +193,11 @@ function Overview({ m, period }: { m: Model; period: Period }) {
         <Seg value={cat} onChange={setCat} options={[{ id: "all", label: "All Plants" }, { id: "order", label: "Order" }, { id: "demo", label: "Demo" }]} />
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <Card label="Needs My Decision" value={tickets.length} hint="Tickets waiting on you" t="purple" onClick={() => setChip("review")} />
-        <Card label="Customer Commitments" value={commits.length} hint="Open customer actions" t="amber" onClick={() => setChip("commit")} />
-        <Card label="Reports at Risk" value={repRisk.length} hint="Overdue or due in 2 days" t="red" onClick={() => setChip("report")} />
-        <Card label="Execution at Risk" value={execRisk.length} hint="Blocked or past date" t="orange" onClick={() => setChip("exec")} />
-        <Card label={period === "month" ? "Upcoming 30 Days" : period === "today" ? "Upcoming Today" : "Upcoming 7 Days"} value={upcoming.length} hint="Visits, reports, jobs" t="blue" onClick={() => document.getElementById("dashboard-upcoming")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" })} />
+        <Card label="Needs My Decision" value={tickets.length} hint="Tickets waiting on you" t="purple" icon={ShieldAlert} onClick={() => setChip("review")} />
+        <Card label="Customer Commitments" value={commits.length} hint="Open customer actions" t="amber" icon={Handshake} onClick={() => setChip("commit")} />
+        <Card label="Reports at Risk" value={repRisk.length} hint="Overdue or due in 2 days" t="red" icon={FileWarning} onClick={() => setChip("report")} />
+        <Card label="Execution at Risk" value={execRisk.length} hint="Blocked or past date" t="orange" icon={Wrench} onClick={() => setChip("exec")} />
+        <Card label={period === "month" ? "Upcoming 30 Days" : period === "today" ? "Upcoming Today" : "Upcoming 7 Days"} value={upcoming.length} hint="Visits, reports, jobs" t="blue" icon={CalendarDays} onClick={() => document.getElementById("dashboard-upcoming")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" })} />
       </div>
 
       <div className="mt-7 grid items-start gap-7 xl:grid-cols-[1.5fr_1fr]">
@@ -318,11 +327,11 @@ function CustomerSuccess({ m, period, extra }: { m: Model; period: Period; extra
         </Select>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <Card label="Customers Needing Attention" value={attention.length} t="red" />
-        <Card label="Open Follow-ups" value={followReq.length + waitCust.length} t="amber" />
-        <Card label="Reports at Risk" value={risk.length} t="red" />
-        <Card label="Technical Reviews" value={waitingReview.length} t="purple" />
-        <Card label="Visits This Week" value={weekVisits.length} t="blue" />
+        <Card label="Customers Needing Attention" value={attention.length} t="red" icon={Users} />
+        <Card label="Open Follow-ups" value={followReq.length + waitCust.length} t="amber" icon={MessageSquare} />
+        <Card label="Reports at Risk" value={risk.length} t="red" icon={FileWarning} />
+        <Card label="Technical Reviews" value={waitingReview.length} t="purple" icon={ShieldAlert} />
+        <Card label="Visits This Week" value={weekVisits.length} t="blue" icon={CalendarDays} />
       </div>
 
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.4fr_1fr]">
@@ -482,8 +491,8 @@ function Execution({ m, period }: { m: Model; period: Period }) {
         </Select>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        {cols.map((c) => <Card key={c.id} label={c.l} value={c.list.length} t={c.t} />)}
-        <Card label="Overdue" value={overdue.length} hint="Past planned date" t="red" />
+        {cols.map((c) => <Card key={c.id} label={c.l} value={c.list.length} t={c.t} icon={c.id === "scheduled" ? CalendarDays : c.id === "progress" ? Wrench : c.id === "blocked" ? ShieldAlert : CheckCircle2} />)}
+        <Card label="Overdue" value={overdue.length} hint="Past planned date" t="red" icon={Clock3} />
       </div>
 
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.6fr_1fr]">
