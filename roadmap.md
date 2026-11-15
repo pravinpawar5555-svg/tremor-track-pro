@@ -1,6 +1,6 @@
 # Ticket status filter
 - [x] Default to exact Open status, remove duplicate Open option and keep details within the filtered list.
-- [ ] Run regression tests and verify real ticket filters end-to-end.
+- [x] Fifteen regression tests pass; signed-in checks confirm one Open option, 6 Responded tickets, 41 Closed tickets, 47 under All, no out-of-filter details, and Open after reopening; desktop/mobile checked with no runtime errors.
 
 # Exhibition opportunities
 - [x] Add Exhibition type and save exhibition name/location with each opportunity; show in details and search.
