@@ -1,7 +1,6 @@
 // @ts-nocheck -- Web Crypto BufferSource typing noise (Uint8Array<ArrayBufferLike>); logic is tested end to end.
 // Minimal Web Push sender (VAPID + RFC 8291 aes128gcm) using Web Crypto only — runs on the Worker runtime.
-export const VAPID_PUBLIC_KEY =
-  "BDlgMlxE2HlljiT1RwuhP7PuaMxa5buSwd7ElHq6k-BNu4iiOyw9GsQ-Ya6kbz7Xh2yyWdy61mMsj977ktC_ofQ";
+import { VAPID_PUBLIC_KEY } from "./push-rules";
 
 const enc = new TextEncoder();
 const b64u = (u: Uint8Array) => {
@@ -77,5 +76,6 @@ export async function sendWebPush(sub: PushSub, message: object, privD: string):
     },
     body,
   });
+  if (!res.ok) console.error("Push provider rejected delivery", res.status, await res.text());
   return res.status;
 }

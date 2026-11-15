@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { connectDevicePush } from "@/lib/device-push";
 import { Settings as SettingsIcon, CalendarDays, Factory, Wrench, FileText, LayoutDashboard, ListChecks, Menu, MessageSquare, Users, Target } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -42,6 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const data = useData();
   const meId = data.currentUserId;
+  useEffect(() => { void connectDevicePush().catch((e) => console.error("Device reconnect failed", e)); }, [meId]);
   const manager = data.role === "manager";
   const domain = useDomain() ?? (manager ? "manager" : "customer_success");
   const exec = domain === "execution";
