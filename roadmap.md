@@ -1,6 +1,6 @@
 # Demo plant lifecycle
-- [ ] Add persistent Active / Sales follow-up / Lost archive views, explicit demo removal and confirmed-order return, with dated history; never delete plants or move sensors automatically.
-- [ ] Preserve role access and existing operations; test lifecycle transitions and signed-in save/reload without changing a customer's real status.
+- [x] Add persistent Active / Sales follow-up / Lost archive views, actual demo removal date, sales follow-up date, loss reason and append-only dated status history; confirmed orders return immediately as active Order. No automatic sensor moves or customer deletion.
+- [x] Thirty-nine regression tests pass; signed-in temporary plant verified removal/save/reload, lost archive, reopening and confirmed-order return with four history entries, then deleted only the temporary test. Desktop/390px phone checked with no overflow/runtime errors and clean build. Existing customer statuses, report schedules, opportunities and equipment records unchanged; lifecycle is explicit, not inferred from execution or opportunity stages.
 
 # Report delivery monitoring
 - [x] Add a delivery overview with overdue, remaining this-week and next-week lanes, two-week date distribution and owner/status cards; include labelled not-yet-generated recurring schedules without double-counting, preserving existing report actions.
