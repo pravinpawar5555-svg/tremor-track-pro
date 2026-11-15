@@ -323,6 +323,13 @@
       "when": 1794397302001,
       "tag": "0045_bulk_technical_import",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1794743278213,
+      "tag": "0046_plant_demo_lifecycle",
+      "breakpoints": true
     }
   ]
 }
