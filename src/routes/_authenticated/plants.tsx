@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Fragment, useState } from "react";
-import { ChevronRight, MoreHorizontal } from "lucide-react";
+import { Archive, ArrowRight, CheckCircle2, ChevronRight, Factory, Handshake, MoreHorizontal, PackageCheck } from "lucide-react";
+import { Button as ActionButton } from "@/components/ui/button";
+import { PlantLifecycleDialog } from "@/components/console/PlantLifecycleDialog";
+import { plantStatus, type PlantLifecycleAction, type PlantStatus } from "@/lib/plant-lifecycle";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ownershipOf, useBranches } from "@/lib/branches";
 import { useDomain } from "@/lib/domain";
@@ -106,9 +109,12 @@ function PlantsPage() {
   const [salesF, setSalesF] = useState("");
   const [csF, setCsF] = useState("");
   const [q, setQ] = useState("");
+  const [lifecycleView, setLifecycleView] = useState<PlantStatus>("active");
+  const [lifecycleAction, setLifecycleAction] = useState<{ plant: Plant; action: PlantLifecycleAction } | null>(null);
   const branchOpts = bs.branches.filter((b) => !kamF || b.kamId === kamF);
   const salesOpts = bs.sales.filter((x) => !branchF || x.branchId === branchF);
   const shownPlants = (catFilter === "total" ? plants : plants.filter((p) => (p.category ?? "order") === catFilter)).filter((p) => {
+    if (plantStatus(p) !== lifecycleView) return false;
     const o = ownershipOf(bs, p);
     if (kamF && o.kam?.id !== kamF) return false;
     if (branchF && p.branchId !== branchF) return false;
@@ -122,8 +128,8 @@ function PlantsPage() {
   const formKam = bs.kams.find((k) => k.id === formBranch?.kamId);
   const formSales = [...bs.sales].filter((x) => x.status === "active" || x.id === form.salesEngineerId).sort((a, b) => Number(b.branchId === form.branchId) - Number(a.branchId === form.branchId));
   const catCounts = {
-    order: plants.filter((p) => (p.category ?? "order") === "order").length,
-    demo: plants.filter((p) => (p.category ?? "order") === "demo").length,
+    order: plants.filter((p) => plantStatus(p) === lifecycleView && (p.category ?? "order") === "order").length,
+    demo: plants.filter((p) => plantStatus(p) === lifecycleView && (p.category ?? "order") === "demo").length,
   };
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -322,6 +328,9 @@ function PlantsPage() {
         </Panel>
       ) : null}
 
+      <div className="mb-5 grid gap-3 sm:grid-cols-3">
+        {([{ id: "active", label: "Active plants", icon: Factory, accent: "text-signal" }, ...(canBilling ? [{ id: "sales_followup", label: "Sales follow-up", icon: Handshake, accent: "text-sev-medium" }, { id: "closed_lost", label: "Lost archive", icon: Archive, accent: "text-mute" }] : [])] as const).map((item) => <ActionButton key={item.id} variant="outline" aria-pressed={lifecycleView === item.id} onClick={() => { setLifecycleView(item.id as PlantStatus); setTab("master"); setCatFilter("total"); }} className={`h-auto min-h-20 min-w-0 justify-between whitespace-normal bg-panel p-4 ${lifecycleView === item.id ? "border-signal ring-1 ring-signal" : "border-line"}`}><span className={`flex items-center gap-2 ${item.accent}`}><item.icon />{item.label}</span><span className="num text-xl">{plants.filter((plant) => plantStatus(plant) === item.id).length}</span></ActionButton>)}
+      </div>
       <div className="mb-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
         {[
           { l: "Plants", v: String(shownPlants.length), h: `${shownPlants.filter((p) => (p.category ?? "order") === "order").length} order · ${shownPlants.filter((p) => p.category === "demo").length} demo` },
@@ -365,7 +374,7 @@ function PlantsPage() {
         <Panel title="Billing tracker" meta="Current billing period per rental plant"><BillingTracker plants={shownPlants} onOpen={setBillPlant} /></Panel>
       ) : (
       <Panel
-        title="Plant master"
+        title={lifecycleView === "active" ? "Active plants" : lifecycleView === "sales_followup" ? "Demo removed · sales follow-up" : "Lost orders · retained history"}
         meta={
           <span className="flex items-center gap-3">
             <span className="inline-flex rounded-md ring-1 ring-line/80 p-0.5">
@@ -378,7 +387,7 @@ function PlantsPage() {
                     catFilter === c ? "bg-signal/10 text-signal" : "text-mute hover:bg-black/5"
                   }`}
                 >
-                  {c === "total" ? `Total (${plants.length})` : `${c} (${catCounts[c]})`}
+                  {c === "total" ? `Total (${plants.filter((plant) => plantStatus(plant) === lifecycleView).length})` : `${c} (${catCounts[c]})`}
                 </button>
               ))}
             </span>
@@ -386,7 +395,15 @@ function PlantsPage() {
           </span>
         }
       >
-        {shownPlants.length ? (
+        {lifecycleView !== "active" ? <div className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">{shownPlants.map((p) => <article key={p.id} className="min-w-0 rounded-lg border border-line bg-panel p-4">
+          <div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1 text-xs text-mute"><PackageCheck className="size-4" />Demo removed</span><span className="num text-xs text-mute">{fmtDate(p.demoRemovedDate)}</span></div>
+          <h3 className="mt-3 break-words font-semibold">{p.name}</h3><p className="mt-1 text-xs text-mute">{[p.customer, p.location].filter(Boolean).join(" · ")}</p>
+          <div className="mt-3 grid gap-1 text-xs"><span>Sales: {ownershipOf(bs, p).sales?.name || "Unassigned"}</span><span>CS: {engineerName(data, p.engineerId)}</span>{p.salesFollowupDate ? <span className={p.salesFollowupDate < TODAY ? "text-sev-critical" : "text-signal"}>Follow-up {fmtDate(p.salesFollowupDate)}</span> : null}{p.lifecycleNote ? <p className="mt-1 break-words text-mute">{p.lifecycleNote}</p> : null}</div>
+          <div className="mt-4 flex flex-wrap gap-2">{lifecycleView === "sales_followup" ? <><ActionButton size="sm" onClick={() => setLifecycleAction({ plant: p, action: "won" })}><CheckCircle2 />Confirm order</ActionButton><ActionButton size="sm" variant="outline" onClick={() => setLifecycleAction({ plant: p, action: "lost" })}><Archive />Close as lost</ActionButton></> : <ActionButton size="sm" variant="outline" onClick={() => setLifecycleAction({ plant: p, action: "reopen" })}><ArrowRight />Reopen follow-up</ActionButton>}
+          <ActionButton variant="ghost" size="sm" asChild><Link to="/opportunities" search={{ plant: p.id }}>Sales opportunities<ArrowRight /></Link></ActionButton><ActionButton variant="ghost" size="sm" onClick={() => setTechPlant(p)}>Technical history</ActionButton></div>
+          {lifecycleView === "sales_followup" ? <DemoFollowUp plant={p} userId={me} /> : null}
+          <details className="mt-4 border-t border-line pt-3"><summary className="cursor-pointer text-xs text-signal">Status history ({p.lifecycleHistory?.length ?? 0})</summary><ol className="mt-2 grid gap-2">{(p.lifecycleHistory ?? []).slice().reverse().map((event, index) => <li key={`${event.date}-${index}`} className="text-xs"><span className="font-medium">{event.from.replaceAll("_", " ")} → {event.to.replaceAll("_", " ")}</span><div className="text-mute">{fmtDate(event.date.slice(0, 10))} · {event.by}{event.note ? ` · ${event.note}` : ""}</div></li>)}</ol></details>
+        </article>)}{!shownPlants.length ? <Empty>No plants in this view.</Empty> : null}</div> : shownPlants.length ? (
           <>
           <ul className="divide-y divide-line/60 md:hidden">
             {shownPlants.map((p) => {
@@ -428,6 +445,7 @@ function PlantsPage() {
                     <div className="px-3 pb-2"><Ownership o={ownershipOf(bs, p)} /></div>
                   </details>
                   <div className="mt-3 grid grid-cols-2 gap-2">
+                    {canBilling && p.category === "demo" ? <ActionButton variant="outline" className="col-span-2 h-11" onClick={() => setLifecycleAction({ plant: p, action: "removed" })}><PackageCheck />Record demo removal</ActionButton> : null}
                     <button type="button" onClick={() => setTechPlant(p)} className="h-11 rounded-md bg-signal text-sm font-medium text-signal-foreground">Technical</button>
                     <Link to="/visits" search={{ plant: p.id }} className="grid h-11 place-items-center rounded-md text-sm font-medium text-signal ring-1 ring-signal/40">Visit history</Link>
                     <Link to="/contacts" search={{ plant: p.id }} className="grid h-11 place-items-center rounded-md text-sm ring-1 ring-line">Contacts</Link>
@@ -513,6 +531,7 @@ function PlantsPage() {
                                   <button type="button" aria-label={`More actions for ${p.name}`} className="grid size-7 place-items-center rounded-md text-mute ring-1 ring-line hover:bg-black/5"><MoreHorizontal className="size-4" /></button>
                                 </PopoverTrigger>
                                 <PopoverContent align="end" className="w-44 p-1">
+                                  {canBilling && p.category === "demo" ? <ActionButton variant="ghost" className="h-auto w-full justify-start whitespace-normal px-3 py-2 text-sm" onClick={() => setLifecycleAction({ plant: p, action: "removed" })}><PackageCheck />Record demo removal</ActionButton> : null}
                                   <button type="button" onClick={() => setExpanded(p.id)} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-black/5">View plant</button>
                                   <button type="button" onClick={() => edit(p)} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-black/5">Edit plant</button>
                                   {canBilling ? <button type="button" onClick={() => setBillPlant(p)} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-black/5">Billing & Invoice</button> : null}
