@@ -10,7 +10,7 @@ export type NavPath = (typeof NAV_PATHS)[number];
 /** Which main tabs a login sees. `perms` (role access matrix from Settings) overrides the defaults when loaded. */
 export function navAllowed(manager: boolean, domain: Domain, to: string, perms?: Perm[] | null): boolean {
   if (manager) return true;
-  if (to === "/settings") return false;
+  if (to === "/settings") return true; // non-managers see only their own device controls
   const mod = PATH_MODULE[to];
   if (perms && perms.length && mod && (domain === "customer_success" || domain === "execution")) return levelOf(perms, domain, mod, "view") !== "none";
   if (to === "/engineers") return true; // engineers see Workload only

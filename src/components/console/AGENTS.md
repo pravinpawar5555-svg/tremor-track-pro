@@ -4,3 +4,4 @@
 - Workload day types (Office / Site / Holiday work / Leave / Off) derive in Workload.tsx from visits, job dates, engineer_leaves and non-working days — no attendance records.
 - Standalone Execution site visits (factory inspection, sensor collection, etc.) live in public.execution_site_visits via src/lib/execution.ts; they count as Site days in Workload and in the manager Execution view, with an optional related_job_id — avoids fake jobs for non-job visits.
 - Approved WFH overrides overlapping leave through workload.ts effectiveLeaves/leaveOn and access.ts dayKind; original requests remain intact, visible leave ranges exclude WFH dates, and holidays/site-work rules stay authoritative — preserves audit history and unrelated leave dates.
+- Settings exposes only device notifications to non-managers; permitted devices reconnect in AppShell without requesting permission, and message/ticket push runs after successful cloud saves to avoid lost alerts.

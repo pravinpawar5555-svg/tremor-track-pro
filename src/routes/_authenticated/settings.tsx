@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { PushToggle } from "@/components/console/PushToggle";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AccessControl } from "@/components/console/AccessControl";
@@ -13,15 +14,12 @@ import {
 } from "@/lib/branches";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  beforeLoad: () => {
-    if (peekDomain() !== "manager") throw redirect({ to: "/" });
-  },
   head: () => ({
     meta: [
-      { title: "Branch & Sales Mapping — Forbes Marshall CM Portal" },
-      { name: "description", content: "Manage HO Division KAMs, branches with Branch RM contacts, and Sales Engineers." },
-      { property: "og:title", content: "Branch & Sales Mapping — Forbes Marshall CM Portal" },
-      { property: "og:description", content: "Central Forbes Marshall commercial hierarchy for plant ownership." },
+      { title: "Settings — Forbes Marshall CM Portal" },
+      { name: "description", content: "Manage device notifications and authorized Forbes Marshall portal settings." },
+      { property: "og:title", content: "Settings — Forbes Marshall CM Portal" },
+      { property: "og:description", content: "Device alerts and authorized commercial, workload and access settings." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -42,9 +40,11 @@ function StatusPill({ s }: { s: string }) {
 
 function SettingsPage() {
   const [tab, setTab] = useState<Tab>("branches");
+  if (peekDomain() !== "manager") return <AppShell><PageHeader title="Settings" subtitle="Your device" /><PushToggle /></AppShell>;
   return (
     <AppShell>
       <PageHeader title="Settings" subtitle="Branch & Sales Mapping — HO Division KAM → Branch → Branch RM → Sales Engineer → Plant" />
+      <div className="mb-4"><PushToggle /></div>
       <div className="mb-4 flex flex-wrap gap-1">
         {tabs.map(([t, l]) => (
           <button key={t} onClick={() => setTab(t)} className={`rounded-md px-3 py-1.5 text-xs ring-1 ${tab === t ? "bg-signal/10 font-medium text-signal ring-signal/40" : "text-mute ring-line/80 hover:bg-black/5"}`}>{l}</button>

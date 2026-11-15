@@ -12,9 +12,9 @@ describe("role access matrix", () => {
     const p: Perm[] = [{ role: "execution", module: "plants", action: "view", level: "none" }];
     expect(navAllowed(false, "execution", "/plants", p)).toBe(false);
   });
-  it("Settings stays manager-only", () => {
+  it("Settings navigation permits engineers to reach their device controls", () => {
     const p: Perm[] = [{ role: "execution", module: "settings", action: "view", level: "all" }];
-    expect(navAllowed(false, "execution", "/settings", p)).toBe(false);
+    expect(navAllowed(false, "execution", "/settings", p)).toBe(true);
     expect(navAllowed(true, "manager", "/settings", p)).toBe(true);
   });
 });

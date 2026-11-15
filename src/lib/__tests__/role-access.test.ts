@@ -20,9 +20,9 @@ const tabs = (m: boolean, d: Parameters<typeof navAllowed>[1]) => NAV_PATHS.filt
 describe("tab access per login", () => {
   it("manager sees every tab", () => expect(tabs(true, "manager")).toEqual([...NAV_PATHS]));
   it("customer success engineer never sees Execution, Engineers or Settings", () =>
-    expect(tabs(false, "customer_success")).toEqual(["/", "/tasks", "/discussions", "/visits", "/opportunities", "/reports", "/plants", "/contacts", "/engineers"]));
+    expect(tabs(false, "customer_success")).toEqual(["/", "/tasks", "/discussions", "/visits", "/opportunities", "/reports", "/plants", "/contacts", "/engineers", "/settings"]));
   it("execution engineer never sees Visits, Reports, Engineers or Settings", () =>
-    expect(tabs(false, "execution")).toEqual(["/", "/tasks", "/discussions", "/execution", "/opportunities", "/plants", "/contacts", "/engineers"]));
+    expect(tabs(false, "execution")).toEqual(["/", "/tasks", "/discussions", "/execution", "/opportunities", "/plants", "/contacts", "/engineers", "/settings"]));
 });
 
 describe("Execution visit and lead counts", () => {
