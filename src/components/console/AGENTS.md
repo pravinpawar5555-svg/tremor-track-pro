@@ -9,3 +9,4 @@
 - Settings exposes only device notifications to non-managers; permitted devices reconnect in AppShell without requesting permission, and message/ticket push runs after successful cloud saves to avoid lost alerts.
 - Engineer monitoring is a manager-only read view over existing summaries and execScope; non-managers retain Workload only, and task-planning indicators are not attendance or online status.
 - Plant operational status is independent of category and retained in the main store; lifecycle updates read back before emit and database triggers append history, while ordinary plant edits omit lifecycle fields — prevents stale edits overwriting status, and retains technical/report history without automatic equipment movement.
+- Billing deletion is manager-only with explicit confirmation, targets one saved plant/period and checks returned deleted rows before refreshing; plant config and reports are untouched — prevents silent denied deletes and unrelated data loss.

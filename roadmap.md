@@ -1,3 +1,6 @@
+# Billing sample cleanup
+- [ ] Add manager-only confirmed invoice deletion and remove only the LAXMI ORGANIC UNIT#1 sample invoice; preserve plants, reports and billing settings.
+
 # Reports Control Center
 - [x] Add an interactive Delivery Horizon bar, selectable weekly calendar dates and focused overdue view over existing scoped records.
 - [x] Twenty-eight report/access regression tests pass; signed-in manager checked nine next-week deliveries, date selection, overdue empty state, K-1 filtering and register access; desktop/390px phone verified without overflow or runtime errors, build clean. Existing report actions and generation rules unchanged; no real report statuses edited.
