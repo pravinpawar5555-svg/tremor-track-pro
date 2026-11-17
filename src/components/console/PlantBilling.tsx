@@ -20,12 +20,10 @@ export function BillingBadge({ status }: { status: PeriodStatus | null }) {
 /** Small "Billing: Quarterly · status" line used under Report cycle. */
 export function BillingLine({ view, onOpen }: { view: PlantBillingView; onOpen?: () => void }) {
   const rental = view.config.model === "rental";
+  const content = <><span>Billing:</span>{rental ? <><span>{freqLabel[view.config.frequency]}</span><BillingBadge status={view.config.status === "paused" ? "on_hold" : view.status} /></> : view.config.model === "none" ? <BillingBadge status={null} /> : <span>{modelLabel[view.config.model]}</span>}</>;
+  if (!onOpen) return <div className="mt-1 flex flex-wrap items-center gap-1 text-xs text-mute">{content}</div>;
   return (
-    <button type="button" onClick={onOpen} className="mt-1 flex flex-wrap items-center gap-1 text-left text-xs text-mute">
-      <span>Billing:</span>
-      {rental ? <><span>{freqLabel[view.config.frequency]}</span><BillingBadge status={view.config.status === "paused" ? "on_hold" : view.status} /></>
-        : view.config.model === "none" ? <BillingBadge status={null} /> : <span>{modelLabel[view.config.model]}</span>}
-    </button>
+    <Button variant="ghost" onClick={onOpen} className="mt-1 flex flex-wrap items-center gap-1 text-left">{content}</Button>
   );
 }
 
