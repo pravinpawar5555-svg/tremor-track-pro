@@ -1,3 +1,6 @@
+# Billing sample cleanup
+- [x] Add manager-only confirmed invoice deletion; eight tests pass. Signed-in cancellation/delete/reload verified on desktop/phone; removed only LAXMI ORGANIC UNIT#1 sample ysaxbdb (Aug–Oct 2026), database confirms removal with plant/config retained and report unchanged; no runtime errors, clean build.
+
 # Reports Control Center
 - [x] Add an interactive Delivery Horizon bar, selectable weekly calendar dates and focused overdue view over existing scoped records.
 - [x] Twenty-eight report/access regression tests pass; signed-in manager checked nine next-week deliveries, date selection, overdue empty state, K-1 filtering and register access; desktop/390px phone verified without overflow or runtime errors, build clean. Existing report actions and generation rules unchanged; no real report statuses edited.

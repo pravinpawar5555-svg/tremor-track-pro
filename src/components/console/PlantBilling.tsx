@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button, Field, Select, TextInput } from "@/components/console/ui";
 import { TODAY, engineerName, fmtDate, useData, type Plant } from "@/lib/store";
@@ -19,12 +20,10 @@ export function BillingBadge({ status }: { status: PeriodStatus | null }) {
 /** Small "Billing: Quarterly · status" line used under Report cycle. */
 export function BillingLine({ view, onOpen }: { view: PlantBillingView; onOpen?: () => void }) {
   const rental = view.config.model === "rental";
+  const content = <><span>Billing:</span>{rental ? <><span>{freqLabel[view.config.frequency]}</span><BillingBadge status={view.config.status === "paused" ? "on_hold" : view.status} /></> : view.config.model === "none" ? <BillingBadge status={null} /> : <span>{modelLabel[view.config.model]}</span>}</>;
+  if (!onOpen) return <div className="mt-1 flex flex-wrap items-center gap-1 text-xs text-mute">{content}</div>;
   return (
-    <button type="button" onClick={onOpen} className="mt-1 flex flex-wrap items-center gap-1 text-left text-xs text-mute">
-      <span>Billing:</span>
-      {rental ? <><span>{freqLabel[view.config.frequency]}</span><BillingBadge status={view.config.status === "paused" ? "on_hold" : view.status} /></>
-        : view.config.model === "none" ? <BillingBadge status={null} /> : <span>{modelLabel[view.config.model]}</span>}
-    </button>
+    <Button variant="ghost" onClick={onOpen} className="mt-1 flex flex-wrap items-center gap-1 text-left">{content}</Button>
   );
 }
 
@@ -72,6 +71,34 @@ const FLOW: { key: PeriodStatus; label: string }[] = [
 function useActor() {
   const data = useData();
   return engineerName(data, data.currentUserId);
+}
+
+function DeleteBillingRecord({ plant, record, onDeleted }: { plant: Plant; record: NonNullable<PlantBillingView["record"]>; onDeleted: () => void }) {
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const b = useBilling();
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await removePeriod(plant.id, record.periodStart);
+      await b.refresh();
+      setConfirm(false);
+      onDeleted();
+      toast.success("Billing record deleted");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete billing record");
+    } finally { setBusy(false); }
+  };
+  return <>
+    <Button onClick={() => setConfirm(true)}><Trash2 size={14} />Delete invoice</Button>
+    <Dialog open={confirm} onOpenChange={(open) => { if (!busy) setConfirm(open); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>Delete billing record?</DialogTitle></DialogHeader>
+        <div className="space-y-2 text-sm"><p className="font-semibold">{plant.name}</p><p>{periodLabel(record.periodStart, record.periodEnd)}{record.invoiceNo ? ` · ${record.invoiceNo}` : ""}</p><p className="text-mute">The invoice and handoff details for this period will be permanently removed. Plant details, reports and billing settings stay unchanged.</p></div>
+        <div className="flex flex-wrap justify-end gap-2"><Button disabled={busy} onClick={() => setConfirm(false)}>Cancel</Button><Button variant="solid" disabled={busy} onClick={remove}><Trash2 size={14} />{busy ? "Deleting…" : "Confirm deletion"}</Button></div>
+      </DialogContent>
+    </Dialog>
+  </>;
 }
 
 /** Billing & Invoice detail for one plant. */
@@ -158,6 +185,7 @@ export function BillingDialog({ plant, open, onClose }: { plant: Plant | null; o
                 {st === "on_hold" ? <Button disabled={busy} onClick={release}>Release hold</Button> : st !== "invoice_sent" ? <Button variant="ghost" onClick={() => setMode("hold")}>Put on hold</Button> : null}
               </div>
             ) : null}
+            {isManager && rec ? <DeleteBillingRecord key={rec.id} plant={plant} record={rec} onDeleted={() => setMode("")} /> : null}
             {st === "waiting" ? <div className="text-xs text-amber-700">Waiting for {view.total - view.sent || "scheduled"} report(s) — the invoice can be sent once all reports in this period are marked Sent.</div> : null}
 
             {mode === "handoff" ? (
@@ -227,6 +255,7 @@ export function BillingDialog({ plant, open, onClose }: { plant: Plant | null; o
 /** Manager / CS Billing Tracker — current period per rental plant. */
 export function BillingTracker({ plants, onOpen }: { plants: Plant[]; onOpen: (p: Plant) => void }) {
   const data = useData();
+  const isManager = useDomain() === "manager";
   const b = useBilling();
   const bs = useBranches();
   const [q, setQ] = useState("");
@@ -269,7 +298,7 @@ export function BillingTracker({ plants, onOpen }: { plants: Plant[]; onOpen: (p
               <li key={p.id} className="py-3">
                 <div className="font-semibold">{p.name}</div>
                 <div className="mt-1 text-sm text-mute">{v.period ? periodLabel(v.period.start, v.period.end) : ""} · Billing {freqLabel[v.config.frequency]} · <span className="num">{v.sent}/{v.total}</span> reports</div>
-                <div className="mt-1 flex items-center justify-between"><BillingBadge status={v.status} /><button type="button" className="text-sm text-signal" onClick={() => onOpen(p)}>Open billing</button></div>
+                <div className="mt-1 flex flex-wrap items-center justify-between gap-2"><BillingBadge status={v.status} /><Button onClick={() => onOpen(p)}>Open billing</Button>{isManager && v.record ? <DeleteBillingRecord plant={p} record={v.record} onDeleted={() => {}} /> : null}</div>
               </li>
             ))}
           </ul>
@@ -285,7 +314,7 @@ export function BillingTracker({ plants, onOpen }: { plants: Plant[]; onOpen: (p
                   <td><BillingBadge status={v.status} /></td>
                   <td className="num truncate text-xs">{v.record?.invoiceNo || "—"}</td>
                   <td className="num text-xs">{v.record ? fmtDate(v.record.updatedAt.slice(0, 10)) : "—"}</td>
-                  <td className="text-right"><button type="button" className="rounded-md px-2 py-1 text-xs text-signal ring-1 ring-signal/40" onClick={() => onOpen(p)}>{v.status === "ready" ? "Send" : v.status === "invoice_sent" ? "View" : "Open"}</button></td>
+                  <td><div className="flex flex-wrap justify-end gap-2"><Button onClick={() => onOpen(p)}>{v.status === "ready" ? "Send" : v.status === "invoice_sent" ? "View" : "Open"}</Button>{isManager && v.record ? <DeleteBillingRecord plant={p} record={v.record} onDeleted={() => {}} /> : null}</div></td>
                 </tr>
               ))}
             </tbody>

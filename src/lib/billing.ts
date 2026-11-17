@@ -172,6 +172,8 @@ export async function upsertPeriod(input: Partial<BillingRecord> & { plantId: st
 }
 
 export async function removePeriod(plantId: string, periodStart: string) {
-  const { error } = await supabase.from("billing_periods").delete().eq("plant_id", plantId).eq("period_start", periodStart);
+  if (!plantId || !periodStart) throw new Error("Select a saved billing period to delete.");
+  const { data, error } = await supabase.from("billing_periods").delete().eq("plant_id", plantId).eq("period_start", periodStart).select("id");
   if (error) throw error;
+  if (!data?.length) throw new Error("Billing record was not deleted. Refresh and check your access.");
 }
