@@ -1,5 +1,5 @@
 # Billing sample cleanup
-- [ ] Add manager-only confirmed invoice deletion and remove only the LAXMI ORGANIC UNIT#1 sample invoice; preserve plants, reports and billing settings.
+- [x] Add manager-only confirmed invoice deletion; eight tests pass. Signed-in cancellation/delete/reload verified on desktop/phone; removed only LAXMI ORGANIC UNIT#1 sample ysaxbdb (Aug–Oct 2026), database confirms removal with plant/config retained and report unchanged; no runtime errors, clean build.
 
 # Reports Control Center
 - [x] Add an interactive Delivery Horizon bar, selectable weekly calendar dates and focused overdue view over existing scoped records.
